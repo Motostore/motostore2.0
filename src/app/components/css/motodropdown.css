@@ -1,0 +1,7 @@
+.bg-cyan-700 {
+    background-color: #6B7280;
+}
+
+.enabled\:hover\:bg-cyan-800:hover:enabled {
+    background-color: #6B7280;
+}

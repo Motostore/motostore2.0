@@ -1,0 +1,28 @@
+'use client';
+
+import { useSession } from "next-auth/react";
+import GalleryRechargesItem from "./GalleryRechargesItem";
+
+export default function GalleryRecharges({items, buttonText, className}) {
+
+  const {data: session} = useSession();
+
+  return (
+    <div className={`grid grid-cols-1 px-4 py-2 md:px-6 ${className}`}>
+    {
+      items?.length > 0
+      ?
+      items?.filter((item) => (item.status) || ["ADMIN", "SUPERUSER"].includes(session?.user.role))
+        .map((item) => (
+        <div key={item.id}>
+          <GalleryRechargesItem item={item} buttonText={buttonText} />
+        </div>
+      ))
+      :
+      <div>
+          No hay servicios creados
+      </div>
+    }
+    </div>
+  )
+}

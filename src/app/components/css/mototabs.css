@@ -1,0 +1,9 @@
+.focus\:ring-cyan-300:focus {
+    --tw-ring-opacity: 0 !important;
+}
+.text-cyan-600, .hover\:text-gray-600:hover {
+    color: black;
+}
+.border-cyan-600, .hover\:border-gray-300:hover:hover {
+    border-color: black;
+}

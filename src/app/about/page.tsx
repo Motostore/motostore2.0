@@ -1,4 +1,13 @@
+// src/app/about/page.tsx
+
 import Image from "next/image";
+import { Metadata } from 'next'; // <--- ¡IMPORTA Metadata aquí!
+
+// Define la metadata para esta página específica
+export const metadata: Metadata = {
+  title: 'Quiénes somos', // <-- ¡ESTO ESTABLECE EL TÍTULO DE LA PESTAÑA!
+  description: 'Conoce a Moto Store LLC, nuestro compromiso, misión y visión en soluciones digitales 24/7.', // Opcional: añade una descripción para SEO
+};
 
 export default function Page() {
   return (
@@ -6,7 +15,8 @@ export default function Page() {
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-10 py-8`}>
         
         <div className="order-1 py-4">
-          <h2 className="text-3xl font-extrabold mb-4 text-center text-orange-600"></h2>
+          {/* Este h2 estaba vacío en tu código original, si es un título principal debería ir aquí */}
+          <h2 className="text-3xl font-extrabold mb-4 text-center text-orange-600">Quiénes somos</h2> 
           <p className="text-lg leading-relaxed text-justify first-letter:text-5xl first-letter:text-orange-500 first-letter:pr-2 first-letter:pl-4">
             En <strong>Moto Store LLC</strong>, somos un equipo comprometido y apasionado por ayudar a nuestros clientes a alcanzar su máximo potencial. Ofrecemos soluciones innovadoras y de alta calidad en plataformas digitales, siempre con dedicación y excelencia. Nuestra misión es satisfacer las necesidades de nuestros clientes con productos y servicios que generen un impacto real, aumentando su rendimiento y expansión.
           </p>

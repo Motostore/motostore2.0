@@ -1,170 +1,222 @@
-// src/app/calculadora-comisiones-paypal/page.tsx
-
-'use client'; // Mantén esta directiva si usas useState/useEffect
+'use client';
 
 import React, { useState } from 'react';
-import { Metadata } from 'next'; // Importa Metadata
-
-// --- ¡¡¡METADATA PARA SEO!!! ---
-export const metadata: Metadata = {
-    title: 'Calculadora de Comisiones PayPal 2025 - ¡Calcula Gratis!', // Título optimizado para SEO
-    description: 'Calcula las comisiones de PayPal para enviar y recibir dinero GRATIS. Herramienta online precisa y actualizada para tus transacciones PayPal. ¡Evita sorpresas en tus pagos!', // Descripción optimizada
-    keywords: 'calculadora paypal, comisiones paypal, calcular paypal, paypal gratis, paypal venezuela, paypal colombia, paypal peru', // Palabras clave relevantes
-    openGraph: { // Configuración para redes sociales (opcional, pero buena para SEO)
-        title: 'Calculadora de Comisiones PayPal 2025',
-        description: 'Calcula las comisiones de PayPal para enviar y recibir dinero GRATIS.',
-        url: 'https://www.motostorellic.com/calculadora-comisiones-paypal', // Asegúrate de que sea tu dominio
-        siteName: 'Moto Store LLC',
-        images: [
-            {
-                url: 'https://paypalfeescalculator.net/wp-content/uploads/2024/12/Calculadora-Taxa-Paypal.jpg', // URL de una imagen representativa
-                width: 800,
-                height: 600,
-                alt: 'Calculadora de Comisiones PayPal',
-            },
-        ],
-    },
-    twitter: { // Configuración para Twitter (opcional)
-        card: 'summary_large_image',
-        title: 'Calculadora de Comisiones PayPal 2025',
-        description: 'Calcula las comisiones de PayPal para enviar y recibir dinero GRATIS.',
-        images: ['https://paypalfeescalculator.net/wp-content/uploads/2024/12/Calculadora-Taxa-Paypal.jpg'],
-    },
-};
-// ----------------------------
+import Head from 'next/head'; // Para el título dinámico de la pestaña
 
 const CalculadoraPaypal: React.FC = () => {
-    const [percentage, setPercentage] = useState(5.4);
-    const [fee, setFee] = useState(0.3);
-    const [recibir, setRecibir] = useState<number>(0);
-    const [enviar1, setEnviar1] = useState<number>(0);
-    const [comision1, setComision1] = useState<number>(0);
-    const [enviar, setEnviar] = useState<number>(0);
-    const [comision2, setComision2] = useState<number>(0);
-    const [recibir2, setRecibir2] = useState<number>(0);
+  const currentYear = new Date().getFullYear();
 
-    const calcularRecibir = () => {
-        const montoEnviar = (recibir + fee) / (1 - percentage / 100);
-        const comisionRecibir = montoEnviar * (percentage / 100) + fee;
+  const [percentage, setPercentage] = useState(5.4);
+  const [fee, setFee] = useState(0.3);
+  const [recibir, setRecibir] = useState<string>('');
+  const [enviar1, setEnviar1] = useState<number>(0);
+  const [comision1, setComision1] = useState<number>(0);
+  const [enviar, setEnviar] = useState<string>('');
+  const [comision2, setComision2] = useState<number>(0);
+  const [recibir2, setRecibir2] = useState<number>(0);
 
-        setEnviar1(parseFloat(montoEnviar.toFixed(2)));
-        setComision1(parseFloat(comisionRecibir.toFixed(2)));
-    };
+  const calcularRecibir = () => {
+    const recibirFloat = parseFloat(recibir.replace(',', '.'));
+    if (isNaN(recibirFloat)) return;
 
-    const calcularEnviar = () => {
-        const comisionEnviar = enviar * (percentage / 100) + fee;
-        const montoRecibido = enviar - comisionEnviar;
+    const montoEnviar = (recibirFloat + fee) / (1 - percentage / 100);
+    const comisionRecibir = montoEnviar * (percentage / 100) + fee;
 
-        setComision2(parseFloat(comisionEnviar.toFixed(2)));
-        setRecibir2(parseFloat(montoRecibido.toFixed(2)));
-    };
+    setEnviar1(parseFloat(montoEnviar.toFixed(2)));
+    setComision1(parseFloat(comisionRecibir.toFixed(2)));
+  };
 
-    return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100 py-8 px-4">
-            <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
-                {/* H1 para el título principal de la página, crucial para SEO */}
-                <h1 className="text-center text-2xl font-semibold mb-6">Calculadora de Comisiones PayPal</h1>
+  const calcularEnviar = () => {
+    const enviarFloat = parseFloat(enviar.replace(',', '.'));
+    if (isNaN(enviarFloat)) return;
 
-                <div className="mb-4">
-                    <label htmlFor="percentage" className="block text-sm font-medium text-gray-700">Comisión PayPal (%):</label>
-                    <input
-                        type="number"
-                        id="percentage"
-                        value={percentage}
-                        onChange={(e) => setPercentage(parseFloat(e.target.value))}
-                        className="mt-1 p-2 w-full border border-gray-300 rounded-md"
-                    />
-                </div>
+    const comisionEnviar = enviarFloat * (percentage / 100) + fee;
+    const montoRecibido = enviarFloat - comisionEnviar;
 
-                <div className="mb-4">
-                    <label htmlFor="fee" className="block text-sm font-medium text-gray-700">Comisión Fija (USD):</label>
-                    <input
-                        type="number"
-                        id="fee"
-                        value={fee}
-                        onChange={(e) => setFee(parseFloat(e.target.value))}
-                        className="mt-1 p-2 w-full border border-gray-300 rounded-md"
-                    />
-                </div>
+    setComision2(parseFloat(comisionEnviar.toFixed(2)));
+    setRecibir2(parseFloat(montoRecibido.toFixed(2)));
+  };
 
-                <h2 className="text-lg font-medium mt-6 mb-4">Calculadora PayPal para Recibir</h2>
-                <div className="mb-4">
-                    <label htmlFor="recibir" className="block text-sm font-medium text-gray-700">Para Recibir (USD):</label>
-                    <input
-                        type="number"
-                        id="recibir"
-                        value={recibir}
-                        onChange={(e) => setRecibir(parseFloat(e.target.value))}
-                        onBlur={calcularRecibir}
-                        className="mt-1 p-2 w-full border border-gray-300 rounded-md"
-                    />
-                </div>
+  return (
+    <>
+      <Head>
+        <title>Calculadora de Comisiones PayPal Actualizada {currentYear}</title>
+      </Head>
 
-                <div className="mb-4">
-                    <label htmlFor="enviar1" className="block text-sm font-medium text-gray-700">Hay que Enviar (USD):</label>
-                    <input type="number" id="enviar1" value={enviar1} disabled className="mt-1 p-2 w-full border border-gray-300 rounded-md bg-gray-100" />
-                </div>
+      <div className="flex justify-center items-center min-h-screen bg-gray-100 py-8 px-4">
+        <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
+          <h1 className="text-center text-3xl font-bold text-indigo-700 mb-8">
+            Calculadora de Comisiones PayPal Actualizada {currentYear}
+          </h1>
 
-                <div className="mb-6">
-                    <label htmlFor="comision1" className="block text-sm font-medium text-gray-700">La Comisión es de (USD):</label>
-                    <input type="number" id="comision1" value={comision1} disabled className="mt-1 p-2 w-full border border-gray-300 rounded-md bg-gray-100" />
-                </div>
+          <h2 className="text-center text-2xl font-semibold mb-6">
+            Calculadora de Comisiones PayPal
+          </h2>
 
-                <h2 className="text-lg font-medium mt-6 mb-4">Calculadora PayPal para Enviar</h2>
-                <div className="mb-4">
-                    <label htmlFor="enviar" className="block text-sm font-medium text-gray-700">Si se Envían (USD):</label>
-                    <input
-                        type="number"
-                        id="enviar"
-                        value={enviar}
-                        onChange={(e) => setEnviar(parseFloat(e.target.value))}
-                        onBlur={calcularEnviar}
-                        className="mt-1 p-2 w-full border border-gray-300 rounded-md"
-                    />
-                </div>
+          <div className="mb-4">
+            <label htmlFor="percentage" className="block text-sm font-medium text-gray-700">
+              Comisión PayPal (%):
+            </label>
+            <input
+              type="number"
+              id="percentage"
+              value={percentage}
+              onChange={(e) => setPercentage(parseFloat(e.target.value))}
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md"
+            />
+          </div>
 
-                <div className="mb-4">
-                    <label htmlFor="comision2" className="block text-sm font-medium text-gray-700">La Comisión es de (USD):</label>
-                    <input type="number" id="comision2" value={comision2} disabled className="mt-1 p-2 w-full border border-gray-300 rounded-md bg-gray-100" />
-                </div>
+          <div className="mb-4">
+            <label htmlFor="fee" className="block text-sm font-medium text-gray-700">
+              Comisión Fija (USD):
+            </label>
+            <input
+              type="number"
+              id="fee"
+              value={fee}
+              onChange={(e) => setFee(parseFloat(e.target.value))}
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md"
+            />
+          </div>
 
-                <div className="mb-6">
-                    <label htmlFor="recibir2" className="block text-sm font-medium text-gray-700">Se Reciben (USD):</label>
-                    <input type="number" id="recibir2" value={recibir2} disabled className="mt-1 p-2 w-full border border-gray-300 rounded-md bg-gray-100" />
-                </div>
+          <h3 className="text-lg font-medium mt-6 mb-4">Calculadora PayPal para Recibir</h3>
+          <div className="mb-4">
+            <label htmlFor="recibir" className="block text-sm font-medium text-gray-700">
+              Para Recibir (USD):
+            </label>
+            <input
+              type="text"
+              id="recibir"
+              value={recibir}
+              onChange={(e) => setRecibir(e.target.value)}
+              onBlur={calcularRecibir}
+              placeholder="Ej: 10,89"
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md"
+            />
+          </div>
 
-                {/* Calculadora de imagen antes de ¿Cómo usar la calculadora de Comisiones PayPal? */}
-                <div className="flex justify-center mt-8">
-                    <img
-                        src="https://paypalfeescalculator.net/wp-content/uploads/2024/12/Calculadora-Taxa-Paypal.jpg"
-                        alt="Calculadora PayPal"
-                        className="max-w-xs"
-                    />
-                </div>
+          <div className="mb-4">
+            <label htmlFor="enviar1" className="block text-sm font-medium text-gray-700">
+              Hay que Enviar (USD):
+            </label>
+            <input
+              type="number"
+              id="enviar1"
+              value={enviar1}
+              disabled
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md bg-gray-100"
+            />
+          </div>
 
-                <div className="mt-8">
-                    <div className="bg-gray-50 p-6 rounded-lg mt-8">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4">¿Cómo usar la calculadora de Comisiones PayPal?</h3>
-                        <p className="mb-4 text-gray-700">Usar esta calculadora es muy sencillo. Llena el cuadro de texto dependiendo si quieres saber el cálculo para enviar o recibir dinero.</p>
-                        <p className="mb-4 text-gray-700">Los bloques solo podrán ser llenados con números. Si deseas agregar un decimal (por ejemplo 10.89) debes hacerlo colocando una coma de esta forma: 10,89.</p>
-                        <p className="mb-4 text-gray-700">Por defecto colocamos los valores estándar de las comisiones de PayPal que son 5,4% + un fijo de 0,3 USD por transacción(*). Revisa si tu país tiene una comisión distinta y colócala de forma manual en la parte de &quot;Las Comisiones PayPal&quot;.</p>
+          <div className="mb-6">
+            <label htmlFor="comision1" className="block text-sm font-medium text-gray-700">
+              La Comisión es de (USD):
+            </label>
+            <input
+              type="number"
+              id="comision1"
+              value={comision1}
+              disabled
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md bg-gray-100"
+            />
+          </div>
 
-                        <h4 className="font-semibold text-gray-800 mt-6 mb-4">¿Monto Bruto y Monto Neto?</h4>
-                        <p className="mb-4 text-gray-700">El monto bruto es el dinero enviado o recibido sin contar ningún tipo de comisión. En pocas palabras, es lo que el pagador envía desde su cuenta sin aplicar descuentos.</p>
-                        <p className="mb-4 text-gray-700">Por ejemplo: Si te envían 10 USD brutos, te llegarán solamente 9,16 USD netos.</p>
+          <h3 className="text-lg font-medium mt-6 mb-4">Calculadora PayPal para Enviar</h3>
+          <div className="mb-4">
+            <label htmlFor="enviar" className="block text-sm font-medium text-gray-700">
+              Si se Envían (USD):
+            </label>
+            <input
+              type="text"
+              id="enviar"
+              value={enviar}
+              onChange={(e) => setEnviar(e.target.value)}
+              onBlur={calcularEnviar}
+              placeholder="Ej: 10,89"
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md"
+            />
+          </div>
 
-                        <p className="mb-4 text-gray-700">El monto neto es el dinero enviado descontado todo tipo de comisiones. Es decir, lo que llega a destino luego de todos los &quot;recortes&quot;.</p>
-                        <p className="mb-4 text-gray-700">Por ejemplo: Si te envían 10 USD netos, realmente el que paga te estará enviado 10,89 USD brutos. La diferencia de los 0,89 son las comisiones de PayPal.</p>
+          <div className="mb-4">
+            <label htmlFor="comision2" className="block text-sm font-medium text-gray-700">
+              La Comisión es de (USD):
+            </label>
+            <input
+              type="number"
+              id="comision2"
+              value={comision2}
+              disabled
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md bg-gray-100"
+            />
+          </div>
 
-                        <p className="text-gray-700"><strong>(*)Importante:</strong> Esta calculadora no incluye ningún tipo de comisión relacionada a nuestro servicio. Es solo una herramienta de ayuda para el usuario que desea enviar o recibir dinero sin intermediarios a través del sitio web de PayPal.</p>
-                    </div>
-                </div>
+          <div className="mb-6">
+            <label htmlFor="recibir2" className="block text-sm font-medium text-gray-700">
+              Se Reciben (USD):
+            </label>
+            <input
+              type="number"
+              id="recibir2"
+              value={recibir2}
+              disabled
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md bg-gray-100"
+            />
+          </div>
+
+          <div className="flex justify-center mt-8">
+            <img
+              src="https://paypalfeescalculator.net/wp-content/uploads/2024/12/Calculadora-Taxa-Paypal.jpg"
+              alt="Calculadora PayPal"
+              className="max-w-xs"
+            />
+          </div>
+
+          <div className="mt-8">
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                ¿Cómo usar la calculadora de Comisiones PayPal?
+              </h3>
+              <p className="mb-4 text-gray-700">
+                Usar esta calculadora es muy sencillo. Llena el cuadro de texto dependiendo si quieres saber el cálculo para enviar o recibir dinero.
+              </p>
+              <p className="mb-4 text-gray-700">
+                Los bloques solo podrán ser llenados con números. Si deseas agregar un decimal (por ejemplo 10.89) debes hacerlo colocando una coma de esta forma: 10,89.
+              </p>
+              <p className="mb-4 text-gray-700">
+                Por defecto colocamos los valores estándar de las comisiones de PayPal que son 5,4% + un fijo de 0,3 USD por transacción(*). Revisa si tu país tiene una comisión distinta y colócala de forma manual en la parte de "Las Comisiones PayPal".
+              </p>
+              <h4 className="font-semibold text-gray-800 mt-6 mb-4">¿Monto Bruto y Monto Neto?</h4>
+              <p className="mb-4 text-gray-700">
+                El monto bruto es el dinero enviado o recibido sin contar ningún tipo de comisión. En pocas palabras, es lo que el pagador envía desde su cuenta sin aplicar descuentos.
+              </p>
+              <p className="mb-4 text-gray-700">
+                Por ejemplo: Si te envían 10 USD brutos, te llegarán solamente 9,16 USD netos.
+              </p>
+              <p className="mb-4 text-gray-700">
+                El monto neto es el dinero enviado descontado todo tipo de comisiones. Es decir, lo que llega a destino luego de todos los "recortes".
+              </p>
+              <p className="mb-4 text-gray-700">
+                Por ejemplo: Si te envían 10 USD netos, realmente el que paga te estará enviado 10,89 USD brutos. La diferencia de los 0,89 son las comisiones de PayPal.
+              </p>
+              <p className="text-gray-700">
+                <strong>(*)Importante:</strong> Esta calculadora no incluye ningún tipo de comisión relacionada a nuestro servicio. Es solo una herramienta de ayuda para el usuario que desea enviar o recibir dinero sin intermediarios a través del sitio web de PayPal.
+              </p>
             </div>
+          </div>
         </div>
-    );
+      </div>
+    </>
+  );
 };
 
 export default CalculadoraPaypal;
+
+
+
+
+
+
+
 
 
 

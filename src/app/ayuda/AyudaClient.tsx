@@ -4,14 +4,14 @@ import { InformationCircleIcon, QuestionMarkCircleIcon, ListBulletIcon } from '@
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import './tabs.css';
 import Tutorial from '../ui/common/tutorial';
-import { Accordion, AccordionItem, AccordionItemButton, AccordionItemHeading, AccordionItemPanel } from 'react-accessible-accordion';  // Correct import
+import { Accordion, AccordionItem, AccordionItemButton, AccordionItemHeading, AccordionItemPanel } from 'react-accessible-accordion';
 import AccordionMoto from '../ui/common/accordion';
 import Gallery from '../components/GalleryStreaming';
 
-export default function Page() {
+export default function AyudaClient() {
     return (
         <div className='text-gray-500'>
-            <Tabs>
+            <Tabs defaultIndex={0}>
                 <TabList>
                     <Tab>
                         <a href="#" className="inline-flex items-center px-4 py-1" aria-current="page" title='¿Cómo funciona?'>
@@ -210,29 +210,8 @@ export default function Page() {
                         <Gallery buttonText={''} items={[]} className={"md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4"} />
                     </div>
                 </TabPanel>
-
             </Tabs>
         </div>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -1,16 +1,20 @@
 'use client';
 
-import { usePathname } from "next/navigation";
-import clsx from 'clsx';
-import { signOut, useSession } from "next-auth/react";
-import {
+import { 
+  DocumentDuplicateIcon, 
   HomeIcon,
-  UserGroupIcon,
+  UsersIcon, // Asegúrate de que este sea el ícono correcto que quieres usar (UserGroupIcon o UsersIcon)
+  GlobeAltIcon, 
+  BuildingLibraryIcon,
   QuestionMarkCircleIcon,
   UserPlusIcon,
   ArrowRightOnRectangleIcon,
   CalculatorIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import clsx from 'clsx';
+import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 
 // Definir los enlaces de navegación
 const links = [
@@ -23,19 +27,19 @@ const links = [
   {
     key: 'about',
     name: 'Quiénes somos',
-    href: '/QuienesSomos', // <--- ¡CORREGIDO AQUÍ!
-    icon: UserGroupIcon,
-  },
+    href: '/QuienesSomos',
+    icon: UsersIcon, // Si en tu screenshot aparece UserGroupIcon, asegúrate de importarlo. Aquí uso UsersIcon como en tu código previo.
+  }, // <--- ¡Asegúrate de que esta coma esté presente!
   {
     key: 'help',
     name: 'Cómo funciona',
-    href: '/help',
+    href: '/ayuda',
     icon: QuestionMarkCircleIcon,
   },
   {
     key: 'calculadora-paypal',
     name: 'Calculadora PayPal',
-    href: '/calculadora-comisiones-paypal', // <--- ¡CORREGIDO AQUÍ!
+    href: '/calculadora-comisiones-paypal',
     icon: CalculatorIcon,
   },
   {
@@ -52,15 +56,27 @@ const links = [
   },
 ];
 
+const productOptions = [
+  { name: 'Recargas', href: '/dashboard/products/recharges', enableFor: ["ADMIN", "SUPERUSER"] },
+  { name: 'Marketing', href: '/dashboard/products/marketing', enableFor: ["ADMIN", "SUPERUSER"] },
+];
+
+const streamingOptions = [
+  { name: 'Gestión de proveedores', href: '/dashboard/products', enableFor: ["ADMIN", "SUPERUSER"] },
+  { name: 'Gestión de cuentas', href: '/dashboard/products/accounts', enableFor: ["ADMIN", "SUPERUSER"] },
+  { name: 'Gestión de perfiles', href: '/dashboard/products/accounts/profiles', enableFor: ["ADMIN", "SUPERUSER"] },
+];
+
+const licenseOptions = [
+  { name: 'Gestión de licencias', href: '/dashboard/products/licenses/manage', enableFor: ["ADMIN", "SUPERUSER"] },
+];
+
 export default function NavLinks() {
   const { data: session } = useSession();
   const pathname = usePathname();
 
-  // Si el usuario está autenticado, se actualizan los enlaces de navegación
   let menuLinks = [...links];
   if (session?.user) {
-    // Si el usuario está logueado, reemplazamos 'Registro' y 'Acceso' con 'Tablero' y 'Salir'
-    // También nos aseguramos de que 'Quiénes somos' y otros enlaces principales se mantengan.
     menuLinks = [
       menuLinks.find(link => link.key === 'home'),
       menuLinks.find(link => link.key === 'about'),

@@ -115,13 +115,13 @@ const CalculadoraPaypal: React.FC = () => {
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">¿Cómo usar la calculadora de Comisiones PayPal?</h3>
                         <p className="mb-4 text-gray-700">Usar esta calculadora es muy sencillo. Llena el cuadro de texto dependiendo si quieres saber el cálculo para enviar o recibir dinero.</p>
                         <p className="mb-4 text-gray-700">Los bloques solo podrán ser llenados con números. Si deseas agregar un decimal (por ejemplo 10.89) debes hacerlo colocando una coma de esta forma: 10,89.</p>
-                        <p className="mb-4 text-gray-700">Por defecto colocamos los valores estándar de las comisiones de PayPal que son 5,4% + un fijo de 0,3 USD por transacción(*). Revisa si tu país tiene una comisión distinta y colócala de forma manual en la parte de "Las Comisiones PayPal".</p>
+                        <p className="mb-4 text-gray-700">Por defecto colocamos los valores estándar de las comisiones de PayPal que son 5,4% + un fijo de 0,3 USD por transacción(*). Revisa si tu país tiene una comisión distinta y colócala de forma manual en la parte de &quot;Las Comisiones PayPal&quot;.</p>
 
                         <h4 className="font-semibold text-gray-800 mt-6 mb-4">¿Monto Bruto y Monto Neto?</h4>
                         <p className="mb-4 text-gray-700">El monto bruto es el dinero enviado o recibido sin contar ningún tipo de comisión. En pocas palabras, es lo que el pagador envía desde su cuenta sin aplicar descuentos.</p>
                         <p className="mb-4 text-gray-700">Por ejemplo: Si te envían 10 USD brutos, te llegarán solamente 9,16 USD netos.</p>
 
-                        <p className="mb-4 text-gray-700">El monto neto es el dinero enviado descontado todo tipo de comisiones. Es decir, lo que llega a destino luego de todos los "recortes".</p>
+                        <p className="mb-4 text-gray-700">El monto neto es el dinero enviado descontado todo tipo de comisiones. Es decir, lo que llega a destino luego de todos los &quot;recortes&quot;.</p>
                         <p className="mb-4 text-gray-700">Por ejemplo: Si te envían 10 USD netos, realmente el que paga te estará enviado 10,89 USD brutos. La diferencia de los 0,89 son las comisiones de PayPal.</p>
 
                         <p className="text-gray-700"><strong>(*)Importante:</strong> Esta calculadora no incluye ningún tipo de comisión relacionada a nuestro servicio. Es solo una herramienta de ayuda para el usuario que desea enviar o recibir dinero sin intermediarios a través del sitio web de PayPal.</p>

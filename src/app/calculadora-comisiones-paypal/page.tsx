@@ -1,6 +1,37 @@
-'use client';
+// src/app/calculadora-comisiones-paypal/page.tsx
+
+'use client'; // Mantén esta directiva si usas useState/useEffect
 
 import React, { useState } from 'react';
+import { Metadata } from 'next'; // Importa Metadata
+
+// --- ¡¡¡METADATA PARA SEO!!! ---
+export const metadata: Metadata = {
+    title: 'Calculadora de Comisiones PayPal 2025 - ¡Calcula Gratis!', // Título optimizado para SEO
+    description: 'Calcula las comisiones de PayPal para enviar y recibir dinero GRATIS. Herramienta online precisa y actualizada para tus transacciones PayPal. ¡Evita sorpresas en tus pagos!', // Descripción optimizada
+    keywords: 'calculadora paypal, comisiones paypal, calcular paypal, paypal gratis, paypal venezuela, paypal colombia, paypal peru', // Palabras clave relevantes
+    openGraph: { // Configuración para redes sociales (opcional, pero buena para SEO)
+        title: 'Calculadora de Comisiones PayPal 2025',
+        description: 'Calcula las comisiones de PayPal para enviar y recibir dinero GRATIS.',
+        url: 'https://www.motostorellic.com/calculadora-comisiones-paypal', // Asegúrate de que sea tu dominio
+        siteName: 'Moto Store LLC',
+        images: [
+            {
+                url: 'https://paypalfeescalculator.net/wp-content/uploads/2024/12/Calculadora-Taxa-Paypal.jpg', // URL de una imagen representativa
+                width: 800,
+                height: 600,
+                alt: 'Calculadora de Comisiones PayPal',
+            },
+        ],
+    },
+    twitter: { // Configuración para Twitter (opcional)
+        card: 'summary_large_image',
+        title: 'Calculadora de Comisiones PayPal 2025',
+        description: 'Calcula las comisiones de PayPal para enviar y recibir dinero GRATIS.',
+        images: ['https://paypalfeescalculator.net/wp-content/uploads/2024/12/Calculadora-Taxa-Paypal.jpg'],
+    },
+};
+// ----------------------------
 
 const CalculadoraPaypal: React.FC = () => {
     const [percentage, setPercentage] = useState(5.4);
@@ -16,21 +47,22 @@ const CalculadoraPaypal: React.FC = () => {
         const montoEnviar = (recibir + fee) / (1 - percentage / 100);
         const comisionRecibir = montoEnviar * (percentage / 100) + fee;
 
-        setEnviar1(parseFloat(montoEnviar.toFixed(2))); // Redondeamos a 2 decimales
-        setComision1(parseFloat(comisionRecibir.toFixed(2))); // Redondeamos a 2 decimales
+        setEnviar1(parseFloat(montoEnviar.toFixed(2)));
+        setComision1(parseFloat(comisionRecibir.toFixed(2)));
     };
 
     const calcularEnviar = () => {
         const comisionEnviar = enviar * (percentage / 100) + fee;
         const montoRecibido = enviar - comisionEnviar;
 
-        setComision2(parseFloat(comisionEnviar.toFixed(2))); // Redondeamos a 2 decimales
-        setRecibir2(parseFloat(montoRecibido.toFixed(2))); // Redondeamos a 2 decimales
+        setComision2(parseFloat(comisionEnviar.toFixed(2)));
+        setRecibir2(parseFloat(montoRecibido.toFixed(2)));
     };
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-100 py-8 px-4">
             <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-lg">
+                {/* H1 para el título principal de la página, crucial para SEO */}
                 <h1 className="text-center text-2xl font-semibold mb-6">Calculadora de Comisiones PayPal</h1>
 
                 <div className="mb-4">

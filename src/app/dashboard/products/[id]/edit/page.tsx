@@ -1,31 +1,27 @@
-'use client'
 import Breadcrumbs from "@/app/ui/transactions/breadcrumbs";
 import HeaderProfile from "@/app/ui/dashboard/header-profile";
 import { Streaming } from "@/app/lib/definitions";
-import { useEffect, useState } from "react";
 import { fetchProductById } from "@/app/lib/products.service";
 import Form from "../../form";
 
-export default function Page({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default async function Page({ params }: PageProps) {
   const link = "/dashboard/products/";
   const productPath = "streaming";
   const id = params.id;
 
-  const [item, setItem] = useState<Streaming>();
+  const response = await fetchProductById(id, productPath);
+  let item: Streaming | null = null;
 
-  useEffect(() => {
-    getItem();
-  }, []);
-
-  async function getItem() {
-    const response = await fetchProductById(id, productPath);
-    if (response.ok) {
-      const json = await response.json();
-      console.log(json);
-      setItem(json);
-    } else {
-      console.log("Ha ocurrido un error");
-    }
+  if (response.ok) {
+    item = await response.json();
+  } else {
+    console.log("Ha ocurrido un error");
   }
 
   return (
@@ -54,5 +50,6 @@ export default function Page({ params }: { params: { id: string } }) {
         : null
       }
     </main>
-  )
+  );
 }
+

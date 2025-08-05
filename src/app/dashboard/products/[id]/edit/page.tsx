@@ -1,27 +1,35 @@
+// src/app/dashboard/products/[id]/edit/page.tsx
+
+"use client"; // ¡IMPORTANTE! Esta línea debe estar al principio.
+
 import Breadcrumbs from "@/app/ui/transactions/breadcrumbs";
 import HeaderProfile from "@/app/ui/dashboard/header-profile";
 import { Streaming } from "@/app/lib/definitions";
 import { fetchProductById } from "@/app/lib/products.service";
-import Form from "../../form";
+import Form from "../../form"; // Verifica que esta ruta a Form sea correcta.
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default async function Page({ params }: PageProps) {
+// NO DEBE HABER NINGUNA INTERFAZ LLAMADA 'PageProps' O 'ProductEditPageProps' DEFINIDA AQUÍ.
+// Los 'params' se tipan directamente en la firma de la función.
+export default function Page({ params }: { params: { id: string } }) {
   const link = "/dashboard/products/";
   const productPath = "streaming";
   const id = params.id;
 
-  const response = await fetchProductById(id, productPath);
-  let item: Streaming | null = null;
+  const [item, setItem] = useState<Streaming>();
 
-  if (response.ok) {
-    item = await response.json();
-  } else {
-    console.log("Ha ocurrido un error");
+  useEffect(() => {
+    getItems();
+  }, []);
+
+  async function getItems() {
+    const response = await fetchProductById(id, productPath);
+    if (response.ok) {
+      const json = await response.json();
+      console.log(json);
+      setItem(json);
+    } else {
+      console.log("Ha ocurrido un error");
+    }
   }
 
   return (
@@ -45,7 +53,7 @@ export default async function Page({ params }: PageProps) {
       </div>
       <hr className='w-full h-1 bg-gray-200 mx-auto my-5' />
       {
-        item 
+        item
         ? <Form provider={item} />
         : null
       }

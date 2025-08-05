@@ -1,4 +1,7 @@
-"use client";
+// src/app/dashboard/products/[id]/page.tsx
+
+"use client"; // ¡IMPORTANTE! Esta línea es clave para usar useState y useEffect.
+
 import Breadcrumbs from "@/app/ui/transactions/breadcrumbs";
 import HeaderProfile from "@/app/ui/dashboard/header-profile";
 import { currentDate } from "@/app/common";
@@ -10,6 +13,8 @@ import { BadgeItems, BadgeStatus } from "@/app/components/MyBadgets";
 import ImageS3 from "@/app/ui/common/ImageS3";
 import { formatCurrency, pluralizeMonth } from "@/app/lib/utils";
 
+// NOTA: La interfaz PageProps no se define aquí para evitar conflictos de tipos.
+// Los parámetros de la página (params) se tipan directamente en la función.
 export default function Page({ params }: { params: { id: string } }) {
   const link = "/dashboard/products/";
   const productPath = "streaming";

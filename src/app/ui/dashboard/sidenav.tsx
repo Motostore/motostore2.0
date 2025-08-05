@@ -1,10 +1,13 @@
+// src/app/ui/dashboard/sidenav.tsx
+
 'use client';
 import Link from 'next/link';
-import MotostoreLogo from '../motostore-logo';
+import MotostoreLogo from '../motostore-logo'; // Asumo que MotostoreLogo está un nivel arriba de ui/dashboard
 import NavLinksDashboard from './nav-links-dashboard';
 import { useRouter } from 'next/navigation';
 
 export default function SideNav() {
+
   const router = useRouter();
 
   function logout() {
@@ -20,7 +23,7 @@ export default function SideNav() {
       >
         <div className="text-black flex flex-col items-center"> {/* CAMBIADO: text-black y flex-col para alinear logo y texto */}
           <MotostoreLogo className="w-8 h-8 mb-2" /> {/* Agregué clases para el tamaño del logo y un pequeño margen */}
-          {/* ¡¡¡AÑADIDO EL TEXTO DEL ENCABEZADO AQUÍ!!! */}
+          {/* ¡¡¡AÑADIENDO EL TEXTO DEL ENCABEZADO AQUÍ!!! */}
           <h1 className="text-xl font-bold text-gray-800 text-center">
             Moto Store LLC
           </h1>

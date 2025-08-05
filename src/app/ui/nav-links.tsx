@@ -23,7 +23,7 @@ const links = [
   {
     key: 'about',
     name: 'Quiénes somos',
-    href: '/about',
+    href: '/QuienesSomos', // <--- ¡CAMBIADO AQUÍ! Ahora apunta a /QuienesSomos
     icon: UserGroupIcon,
   },
   {
@@ -40,7 +40,7 @@ const links = [
   },
   {
     key: 'register',
-    name: 'Registro', // <-- CAMBIO AQUI
+    name: 'Registro',
     href: '/register',
     icon: UserPlusIcon,
   },
@@ -59,30 +59,37 @@ export default function NavLinks() {
   // Si el usuario está autenticado, se actualizan los enlaces de navegación
   let menuLinks = [...links];
   if (session?.user) {
+    // Si el usuario está logueado, reemplazamos 'Registro' y 'Acceso' con 'Tablero' y 'Salir'
+    // También nos aseguramos de que 'Quiénes somos' y otros enlaces principales se mantengan.
     menuLinks = [
-      ...links.slice(0, 4), // Hasta "Calculadora PayPal"
+      menuLinks.find(link => link.key === 'home'), // Inicio
+      menuLinks.find(link => link.key === 'about'), // Quiénes somos
+      menuLinks.find(link => link.key === 'help'), // Cómo funciona
+      menuLinks.find(link => link.key === 'calculadora-paypal'), // Calculadora PayPal
       {
         key: 'dashboard',
-        name: 'Tablero',
+        name: 'Tablero', // Este es el enlace al dashboard
         href: '/dashboard',
         icon: HomeIcon,
       },
       {
         key: 'logout',
         name: 'Salir',
-        href: '#',
+        href: '#', // '#' para que no navegue, ya que la acción es un onClick
         icon: ArrowRightOnRectangleIcon,
         action: () => signOut({ callbackUrl: '/', redirect: true }), // Acción de cerrar sesión
       }
-    ];
+    ].filter(Boolean); // Filtra cualquier enlace que pueda ser undefined si no se encuentra
   }
 
   return (
     <>
       {menuLinks.map((link) => {
         const Icon = link.icon; // Obtener el ícono del enlace
-        const isActive =
-          link.href === '/' ? pathname === '/' : pathname === link.href; // Verificar si el enlace está activo
+        // isActive: Verifica si la ruta actual coincide con el href del enlace.
+        // Para la página de inicio ('/'), solo es activo si el pathname es exactamente '/'.
+        // Para otras páginas, es activo si el pathname comienza con el href del enlace (para subrutas).
+        const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
 
         return (
           <a
@@ -93,11 +100,13 @@ export default function NavLinks() {
               "flex h-[48px] items-center text-gray-500 font-bold justify-center gap-2 rounded-md p-3 text-sm hover:bg-gray-500 md:hover:bg-gray-500 md:hover:text-white md:flex-none md:justify-start md:p-2 md:px-3",
               {
                 'bg-gray-500 text-white': isActive, // Clases cuando el enlace está activo
-                'text-orange-500': !isActive, // Clases cuando el enlace no está activo
+                'text-orange-500': !isActive, // Clases cuando el enlace no está activo (si no está activo, su color es naranja)
               }
             )}
           >
-            <Icon className={clsx("w-5 h-5", isActive ? "text-black" : "text-orange-500")} />
+            {/* Renderiza el ícono si está presente */}
+            {Icon && <Icon className={clsx("w-5 h-5", isActive ? "text-white" : "text-orange-500")} />}
+            {/* Asegúrate de que el span para el nombre del enlace siempre exista para el layout */}
             <span className="md:block">{link.name}</span>
           </a>
         );

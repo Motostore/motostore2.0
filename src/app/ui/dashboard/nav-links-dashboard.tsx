@@ -2,11 +2,10 @@
 
 import { 
   DocumentDuplicateIcon, 
-  HomeIcon,
+  HomeIcon, // El ícono de Home que usabas para 'Tablero'
   UsersIcon, 
   GlobeAltIcon, 
   BuildingLibraryIcon,
-  // ChevronDownIcon, // Ya no se usa directamente aquí, puedes eliminar la importación si no se usa en ningún otro lugar en este archivo
   Squares2X2Icon
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -17,14 +16,12 @@ import { ButtonDropdown } from "@/app/components/MyButtons";
 
 
 const links = [
-  // --- ¡¡¡NUEVO ENLACE AÑADIDO AQUÍ!!! ---
   {
     name: 'Quiénes somos',
-    href: '/about',
-    icon: UsersIcon, // Icono para "Quiénes somos"
-    enableFor: ["ADMIN", "RESELLER", "SUPERUSER", "CLIENT", "ALL"] // Puedes ajustar los roles que pueden ver este enlace
+    href: '/QuienesSomos',
+    icon: UsersIcon, 
+    enableFor: ["ADMIN", "RESELLER", "SUPERUSER", "CLIENT", "ALL"] 
   },
-  // ------------------------------------
   {
     name: 'Usuarios',
     href: '/dashboard/users',
@@ -102,22 +99,27 @@ export default function NavLinksDashboard() {
       <GlobeAltIcon className="w-6" />
       <p className="hidden md:block">{'Web'}</p>
     </Link>
-    {/* Enlace al Tablero (Dashboard) */}
+    {/* ¡¡¡AQUÍ HEMOS ELIMINADO O MODIFICADO EL ENLACE "Tablero" / "Dashboard"!!! */}
+    {/* Si quieres que NO APAREZCA, simplemente se quita el bloque <Link> de 'Tablero'. */}
+    {/* Si quieres que diga otra cosa, cambias el texto dentro del <p>. */}
+    {/* Por ejemplo, si quieres que diga 'Inicio del Panel': */}
+    {/*
     <Link
       href={'/dashboard'}
       className={clsx("flex h-[48px] grow items-center justify-center gap-2 rounded-md p-3 text-gray-500 text-sm font-bold hover:bg-gray-300  md:flex-none md:justify-start md:p-2 md:px-3 bg-white",
         {
-          'bg-gray-200 text-gray-500': pathname === 'dashboard',
+          'bg-gray-200 text-gray-500': pathname === '/dashboard', // Nota: cambié a '/dashboard' para ser exacto con la ruta
         },
       )}
     >
       <HomeIcon className="w-6" />
-      <p className="hidden md:block">{'Tablero'}</p>
+      <p className="hidden md:block">{'Inicio del Panel'}</p> // Texto cambiado
     </Link>
+    */}
 
     {/* Dropdown de Productos (solo si el rol lo permite) */}
     {
-      session?.user?.role && ['ADMIN' , 'SUPERUSER'].includes(session.user.role) // Asegurarse de que session.user.role no sea undefined
+      session?.user?.role && ['ADMIN' , 'SUPERUSER'].includes(session.user.role) 
       ?
       <ButtonDropdown responsive="hidden md:block" mainLink={'/dashboard/products'} title={'Productos'} titleIcon={Squares2X2Icon} options={productOptions}>
         <>
@@ -132,10 +134,9 @@ export default function NavLinksDashboard() {
       : null
     }
 
-    {/* Renderizado de enlaces generales (incluye 'Quiénes somos') */}
+    {/* Renderizado de enlaces generales (incluye 'Quiénes somos' y otros) */}
     {links.map((link) => {
       const LinkIcon = link.icon;
-      // Asegurarse de que session.user no sea undefined antes de acceder a .role
       const userRole = session?.user?.role;
       
       return (
@@ -149,7 +150,7 @@ export default function NavLinksDashboard() {
             },
           )}
         >
-          {LinkIcon && <LinkIcon className="w-6" />} {/* Renderiza el ícono solo si existe */}
+          {LinkIcon && <LinkIcon className="w-6" />}
           <p className="hidden md:block">{link.name}</p>
         </Link>
       );

@@ -2,7 +2,7 @@
 
 'use client';
 import Link from 'next/link';
-import MotostoreLogo from '../motostore-logo'; // Asumo que MotostoreLogo está un nivel arriba de ui/dashboard
+import MotostoreLogo from '../motostore-logo';
 import NavLinksDashboard from './nav-links-dashboard';
 import { useRouter } from 'next/navigation';
 
@@ -21,9 +21,8 @@ export default function SideNav() {
         className="mb-2 flex items-center justify-center rounded-md bg-white p-4"
         href="/"
       >
-        <div className="text-black flex flex-col items-center"> {/* CAMBIADO: text-black y flex-col para alinear logo y texto */}
-          <MotostoreLogo className="w-8 h-8 mb-2" /> {/* Agregué clases para el tamaño del logo y un pequeño margen */}
-          {/* ¡¡¡AÑADIENDO EL TEXTO DEL ENCABEZADO AQUÍ!!! */}
+        <div className="text-black flex flex-col items-center">
+          <MotostoreLogo className="w-8 h-8 mb-2" />
           <h1 className="text-xl font-bold text-gray-800 text-center">
             Moto Store LLC
           </h1>
@@ -35,7 +34,6 @@ export default function SideNav() {
       <div className="flex grow flex-row overflow-x-scroll md:overflow-x-hidden justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-1 bg-gray-200">
         <NavLinksDashboard />
         <div className="hidden h-auto w-full grow rounded-md bg-white md:block"></div>
-        {/* Agregado un botón de Cerrar sesión por si lo necesitas, ya que la función logout existe */}
         <button
           onClick={logout}
           className="flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3 mt-auto"

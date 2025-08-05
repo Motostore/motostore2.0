@@ -5,24 +5,18 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "flowbite.s3.amazonaws.com",
-        port: "",
         pathname: "/docs/gallery/masonry/**",
       },
       {
         protocol: "https",
         hostname: "images.unsplash.com",
-        port: "",
         pathname: "/**",
-      },
-      {
-        hostname: process.env.NEXTAUTH_URL,
       },
       {
         protocol: "https",
-        hostname: `${process.env.NEXT_PUBLIC_AWS_URL_IMAGES}`,
-        port: "",
+        hostname: process.env.NEXT_PUBLIC_AWS_URL_IMAGES, // Variable de entorno
         pathname: "/**",
-      }
+      },
     ],
   },
 
@@ -37,22 +31,19 @@ const nextConfig = {
           { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" },
         ]
       }
-    ]
-  },
-
-  devIndicators: {
-    allowedDevOrigins: ['http://localhost:3000', 'http://192.168.31.208:3000'],
+    ];
   },
 
   reactStrictMode: true,
 
-  // ✅ Esta línea evita que Vercel falle por errores de ESLint
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // Evita que errores de ESLint detengan el build
   },
 };
 
 export default nextConfig;
+
+
 
 
 

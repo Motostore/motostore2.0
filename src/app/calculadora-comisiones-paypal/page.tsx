@@ -111,8 +111,8 @@ export default function Page() {
           </div>
         )}
 
-        {/* NUEVO BLOQUE DE TEXTO DESCRIPTIVO */}
-        <div className="bg-gray-50 border border-gray-200 text-gray-700 px-6 py-4 rounded mt-6 text-base text-justify text-sm md:text-base">
+        {/* NUEVO BLOQUE DE TEXTO DESCRIPTIVO RESPONSIVO */}
+        <div className="bg-gray-50 border border-gray-200 text-gray-700 px-4 py-4 rounded mt-6 text-sm leading-tight md:px-6 md:py-6 md:text-base md:leading-relaxed text-justify">
           <p className="font-semibold mb-2">¿Cómo usar esta calculadora?</p>
           <p>
             Usar esta calculadora es muy sencillo. Llena el cuadro de texto dependiendo si quieres saber el cálculo para enviar o recibir dinero.
@@ -123,7 +123,7 @@ export default function Page() {
           <p className="mt-2">
             Por defecto colocamos los valores estándar de las comisiones de PayPal que son <strong>5,4%</strong> + un fijo de <strong>0,3 USD</strong> por transacción(*). Revisa si tu país tiene una comisión distinta y colócala de forma manual en la parte de "Las Comisiones PayPal".
           </p>
-          <p className="mt-2 font-semibold">¿Monto Bruto y Monto Neto?</p>
+          <p className="mt-3 font-semibold">¿Monto Bruto y Monto Neto?</p>
           <p>
             El monto <strong>bruto</strong> es el dinero enviado o recibido sin contar ningún tipo de comisión. En pocas palabras, es lo que el pagador envía desde su cuenta sin aplicar descuentos.
           </p>
@@ -136,15 +136,16 @@ export default function Page() {
           <p className="mt-1">
             <em>Ejemplo:</em> Si te envían <strong>10 USD netos</strong>, realmente el que paga te estará enviando <strong>10,89 USD brutos</strong>.
           </p>
-          <p className="mt-3 italic text-xs text-gray-500">
+          <p className="mt-3 italic text-[11px] text-gray-500 md:text-xs">
             *Importante: Esta calculadora no incluye ningún tipo de comisión relacionada a nuestro servicio. Es solo una herramienta de ayuda para el usuario que desea enviar o recibir dinero sin intermediarios a través del sitio web de PayPal.
           </p>
         </div>
-        {/* FIN DEL BLOQUE DESCRIPTIVO */}
+        {/* FIN DEL BLOQUE RESPONSIVO */}
       </div>
     </div>
   );
 }
+
 
 
 

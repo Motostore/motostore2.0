@@ -17,6 +17,7 @@
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.3.4",
+    "@vercel/analytics": "^1.5.0",
     "aws-crt": "^1.21.2",
     "aws-sdk": "^2.1603.0",
     "classnames": "^2.5.1",

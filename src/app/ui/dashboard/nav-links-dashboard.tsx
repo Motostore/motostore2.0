@@ -1,160 +1,168 @@
+// src/app/ui/dashboard/nav-links-dashboard.tsx
 'use client';
 
-import { 
-  DocumentDuplicateIcon, 
-  HomeIcon, // El ícono de Home que usabas para 'Tablero'
-  UsersIcon, 
-  GlobeAltIcon, 
-  BuildingLibraryIcon,
-  Squares2X2Icon
-} from "@heroicons/react/24/outline";
-import Link from "next/link";
-import clsx from 'clsx';
-import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { ButtonDropdown } from "@/app/components/MyButtons";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useMemo } from 'react';
 
+function Item({
+  href,
+  children,
+  className = '',
+}: {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const pathname = usePathname();
+  const active =
+    pathname === href || (href !== '/' && pathname.startsWith(href + '/'));
 
-const links = [
-  {
-    name: 'Quiénes somos',
-    href: '/QuienesSomos',
-    icon: UsersIcon, 
-    enableFor: ["ADMIN", "RESELLER", "SUPERUSER", "CLIENT", "ALL"] 
-  },
-  {
-    name: 'Usuarios',
-    href: '/dashboard/users',
-    icon: UsersIcon,
-    enableFor: ["ADMIN", "RESELLER"]
-  },
-  {
-    name: 'Transacciones',
-    href: '/dashboard/transactions',
-    icon: BuildingLibraryIcon,
-    enableFor: ["RESELLER", "ADMIN", "SUPERUSER"]
-  },
-  {
-    name: 'Reportes',
-    href: '/dashboard/reports',
-    icon: DocumentDuplicateIcon,
-    enableFor: ["ADMIN", "RESELLER"]
-  },
-];
-
-const productOptions = [
-  {
-    name: 'Recargas',
-    href: '/dashboard/products/recharges',
-    enableFor: ["ADMIN", "SUPERUSER"]
-  },
-
-  {
-    name: 'Marketing',
-    href: '/dashboard/products/marketing',
-    enableFor: ["ADMIN", "SUPERUSER"]
-  },
-]
-
-const streamingOptions = [
-  {
-    name: 'Gestión de proveedores',
-    href: '/dashboard/products',
-    enableFor: ["ADMIN", "SUPERUSER"]
-  },
-  {
-    name: 'Gestión de cuentas',
-    href: '/dashboard/products/accounts',
-    enableFor: ["ADMIN", "SUPERUSER"]
-  },
-  {
-    name: 'Gestión de perfiles',
-    href: '/dashboard/products/accounts/profiles',
-    enableFor: ["ADMIN", "SUPERUSER"]
-  },
-]
-const licenseOptions = [
-  {
-    name: 'Gestión de licencias',
-    href: '/dashboard/products/licenses/manage',
-    enableFor: ["ADMIN", "SUPERUSER"]
-  },
-]
+  return (
+    <Link
+      href={href}
+      className={[
+        'block rounded-lg px-3 py-2 text-sm transition',
+        active
+          ? 'bg-orange-50 ring-1 ring-orange-300 text-orange-700'
+          : 'hover:bg-gray-50 text-slate-700',
+        className,
+      ].join(' ')}
+      prefetch={false}
+    >
+      {children}
+    </Link>
+  );
+}
 
 export default function NavLinksDashboard() {
   const pathname = usePathname();
-  const {data: session} = useSession();
+
+  // Detecta si estás dentro de cada sección (solo para abrir por defecto)
+  const purchasesDefaultOpen = useMemo(
+    () =>
+      pathname.startsWith('/dashboard/purchases') ||
+      pathname.startsWith('/dashboard/payments') ||
+      pathname.startsWith('/dashboard/wallet/withdraw'),
+    [pathname]
+  );
+
+  const reportsDefaultOpen = useMemo(
+    () => pathname.startsWith('/dashboard/reports'),
+    [pathname]
+  );
+
+  const usersDefaultOpen = useMemo(
+    () => pathname.startsWith('/dashboard/users'),
+    [pathname]
+  );
+
+  const settingsDefaultOpen = useMemo(
+    () => pathname.startsWith('/dashboard/settings'),
+    [pathname]
+  );
 
   return (
-    <>
-    {/* Enlace a la Web principal */}
-    <Link
-      href={'/'}
-      className={clsx("flex h-[48px] grow items-center justify-center gap-2 rounded-md p-3 text-gray-500 text-sm font-bold hover:bg-gray-300  md:flex-none md:justify-start md:p-2 md:px-3 bg-white",
-        {
-          'bg-gray-200 text-gray-500': pathname === '/',
-        },
-      )}
-    >
-      <GlobeAltIcon className="w-6" />
-      <p className="hidden md:block">{'Web'}</p>
-    </Link>
-    {/* ¡¡¡AQUÍ HEMOS ELIMINADO O MODIFICADO EL ENLACE "Tablero" / "Dashboard"!!! */}
-    {/* Si quieres que NO APAREZCA, simplemente se quita el bloque <Link> de 'Tablero'. */}
-    {/* Si quieres que diga otra cosa, cambias el texto dentro del <p>. */}
-    {/* Por ejemplo, si quieres que diga 'Inicio del Panel': */}
-    {/*
-    <Link
-      href={'/dashboard'}
-      className={clsx("flex h-[48px] grow items-center justify-center gap-2 rounded-md p-3 text-gray-500 text-sm font-bold hover:bg-gray-300  md:flex-none md:justify-start md:p-2 md:px-3 bg-white",
-        {
-          'bg-gray-200 text-gray-500': pathname === '/dashboard', // Nota: cambié a '/dashboard' para ser exacto con la ruta
-        },
-      )}
-    >
-      <HomeIcon className="w-6" />
-      <p className="hidden md:block">{'Inicio del Panel'}</p> // Texto cambiado
-    </Link>
-    */}
+    <nav className="space-y-2">
+      {/* OJO: apunta al dashboard, no a "/" */}
+      <Item href="/dashboard">Inicio</Item>
+      <Item href="/dashboard/products">Productos</Item>
 
-    {/* Dropdown de Productos (solo si el rol lo permite) */}
-    {
-      session?.user?.role && ['ADMIN' , 'SUPERUSER'].includes(session.user.role) 
-      ?
-      <ButtonDropdown responsive="hidden md:block" mainLink={'/dashboard/products'} title={'Productos'} titleIcon={Squares2X2Icon} options={productOptions}>
-        <>
-        <ButtonDropdown mainLink={'/dashboard/products'} title={'Streaming'} options={streamingOptions}>
-          <></>
-        </ButtonDropdown>
-        <ButtonDropdown mainLink={'/dashboard/products/licenses'} title={'Licencias'} options={licenseOptions}>
-          <></>
-        </ButtonDropdown>
-        </>
-      </ButtonDropdown>
-      : null
-    }
-
-    {/* Renderizado de enlaces generales (incluye 'Quiénes somos' y otros) */}
-    {links.map((link) => {
-      const LinkIcon = link.icon;
-      const userRole = session?.user?.role;
-      
-      return (
-        (userRole && link.enableFor.includes(userRole) || link.enableFor.includes("ALL")) &&
-        <Link
-          key={link.name}
-          href={link.href}
-          className={clsx("flex h-[48px] grow items-center justify-center gap-2 rounded-md p-3 text-gray-500 text-sm font-bold hover:bg-gray-300  md:flex-none md:justify-start md:p-2 md:px-3 bg-white",
-            {
-              'bg-gray-200 text-gray-500': pathname === link.href,
-            },
-          )}
+      {/* Compras */}
+      <details defaultOpen={purchasesDefaultOpen} className="rounded-lg">
+        <summary
+          className={[
+            'list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition',
+            purchasesDefaultOpen
+              ? 'bg-orange-50 ring-1 ring-orange-300 text-orange-700'
+              : 'hover:bg-gray-50 text-slate-700',
+          ].join(' ')}
         >
-          {LinkIcon && <LinkIcon className="w-6" />}
-          <p className="hidden md:block">{link.name}</p>
-        </Link>
-      );
-    })}
-    </>
+          Compras
+        </summary>
+        <div className="mt-1 ml-3 border-l pl-3 space-y-1">
+          <Item href="/dashboard/purchases">Compras</Item>
+          <Item href="/dashboard/purchases/report-payment">Reportar pago</Item>
+          <Item href="/dashboard/payments/methods">Métodos de pago</Item>
+          <Item href="/dashboard/purchases/mine">Mis compras</Item>
+          <Item href="/dashboard/purchases/users">Compras de usuarios</Item>
+          <Item href="/dashboard/wallet/withdraw">Retirar dinero</Item>
+        </div>
+      </details>
+
+      {/* Reportes */}
+      <details defaultOpen={reportsDefaultOpen} className="rounded-lg">
+        <summary
+          className={[
+            'list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition',
+            reportsDefaultOpen
+              ? 'bg-orange-50 ring-1 ring-orange-300 text-orange-700'
+              : 'hover:bg-gray-50 text-slate-700',
+          ].join(' ')}
+        >
+          Reportes
+        </summary>
+        <div className="mt-1 ml-3 border-l pl-3 space-y-1">
+          <Item href="/dashboard/reports/general">General</Item>
+          <Item href="/dashboard/reports/movimiento">Movimiento</Item>
+          <Item href="/dashboard/reports/utilidades">Utilidades</Item>
+          <Item href="/dashboard/reports/transactions">Transacciones</Item>
+        </div>
+      </details>
+
+      {/* Usuarios */}
+      <details defaultOpen={usersDefaultOpen} className="rounded-lg">
+        <summary
+          className={[
+            'list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition',
+            usersDefaultOpen
+              ? 'bg-orange-50 ring-1 ring-orange-300 text-orange-700'
+              : 'hover:bg-gray-50 text-slate-700',
+          ].join(' ')}
+        >
+          Usuarios
+        </summary>
+        <div className="mt-1 ml-3 border-l pl-3 space-y-1">
+          <Item href="/dashboard/users">Usuarios</Item>
+          <Item href="/dashboard/users/create">Crear cuenta</Item>
+          <Item href="/dashboard/users/list">Lista de usuarios</Item>
+          <Item href="/dashboard/users/register-url">URL de registro</Item>
+          <Item href="/dashboard/users/announcement-bar">Barra informativa</Item>
+          <Item href="/dashboard/users/transactions">Transacciones de usuarios</Item>
+        </div>
+      </details>
+
+      {/* Configuración */}
+      <details defaultOpen={settingsDefaultOpen} className="rounded-lg">
+        <summary
+          className={[
+            'list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition',
+            settingsDefaultOpen
+              ? 'bg-orange-50 ring-1 ring-orange-300 text-orange-700'
+              : 'hover:bg-gray-50 text-slate-700',
+          ].join(' ')}
+        >
+          Configuración
+        </summary>
+        <div className="mt-1 ml-3 border-l pl-3 space-y-1">
+          <Item href="/dashboard/settings/account">Datos de cuenta</Item>
+          <Item href="/dashboard/settings/password">Cambio de clave</Item>
+          <Item href="/dashboard/settings/phone">Teléfono SMS y/o Whatsapp</Item>
+          <Item href="/dashboard/settings/email">Correo electrónico</Item>
+          <Item href="/dashboard/settings/commissions">Comisiones</Item>
+        </div>
+      </details>
+    </nav>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

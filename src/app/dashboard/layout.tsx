@@ -1,21 +1,53 @@
-import SideNav from '@/app/ui/dashboard/sidenav';
-import { ProfileProvider } from '../Context/profileContext';
+// src/app/dashboard/layout.tsx
+import type { ReactNode } from "react";
+import type { Metadata } from "next";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+import TopNav from "../ui/dashboard/topnav";
+import BrandHeader from "../ui/dashboard/brand-header";
+import NoticeChips from "../ui/dashboard/notice-chips";
+
+export const metadata: Metadata = {
+  title: "Panel",
+  description: "Panel de administración de Motostore",
+};
+
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <ProfileProvider>
-      <div className="flex h-screen flex-col md:flex-row md:overflow-hidden bg-gray-200">
-        {/* Barra lateral de navegación */}
-        <div className="w-full flex-none md:w-72">
-          <SideNav />
-        </div>
-        
-        <div className="flex-grow py-4 px-2 md:overflow-y-auto md:py-4">
-          <div className="flex min-h-full flex-col p-2 md:p-6 text-gray-500 bg-white rounded-md">
-            {children}
-          </div>
-        </div>
+    <div className="min-h-dvh flex flex-col bg-slate-50">
+      <div className="bg-white border-b">
+        <BrandHeader />
       </div>
-    </ProfileProvider>
+
+      <NoticeChips />
+
+      <TopNav />
+
+      <main className="flex-1 mx-auto w-full max-w-screen-2xl px-4 md:px-6 py-4 md:py-6">
+        {children}
+      </main>
+    </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

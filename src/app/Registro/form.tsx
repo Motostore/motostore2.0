@@ -9,15 +9,26 @@ import { signIn } from "next-auth/react";
 import toast, { Toaster } from 'react-hot-toast';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { LocationSelectContext } from '../Context/locationSelectContext';
-import { RegisterSchema } from "@/app/utils/schemas";
 import { Animation } from '../components/InputErrors';
 import { input_tailwind } from '../utils/tailwindStyles';
 import * as Yup from 'yup';
 import { useRouter } from "next/navigation";
 
+// Helpers para deduplicar y generar keys estables
+const norm = (s: string) =>
+  (s ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+type Opt = { value: string; name: string };
+const dedupe = (arr: Opt[]) =>
+  Array.from(new Map(arr.map(o => [norm(o.value || o.name), o])).values());
 
 // Regex para validar email
-const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const emailRegex =
+  /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 // Esquema de validación con Yup
 const schema = Yup.object({
@@ -41,13 +52,12 @@ const schema = Yup.object({
 });
 
 export default function RegisterForm() {
-  const [country, setCountry] = useState();
-  const [state, setState] = useState();
-  const [city, setCity] = useState();
+  const [country, setCountry] = useState<string | undefined>();
+  const [state, setState] = useState<string | undefined>();
+  const [city, setCity] = useState<string | undefined>();
   const [revealPassword, setRevealPassword] = useState(false);
   const [revealPassword2, setRevealPassword2] = useState(false);
   const router = useRouter();
-
 
   const {
     countries,
@@ -56,12 +66,13 @@ export default function RegisterForm() {
     cities,
     getCities,
     loadingLocations,
-  } = useContext(LocationSelectContext);
+  } = useContext(LocationSelectContext)!;
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    resetField,
   } = useForm({
     defaultValues: {
       username: "",
@@ -79,77 +90,70 @@ export default function RegisterForm() {
     },
     resolver: yupResolver(schema),
   });
-  
-  // Cargar estados cuando se cambia el país
+
+  // Listas deduplicadas y ordenadas para la UI
+  const countriesUI = dedupe(countries).sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  const statesUI    = dedupe(states).sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  const citiesUI    = dedupe(cities).sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+
+  // Cargar estados cuando cambia el país
   useEffect(() => {
-    if (country) {
-      getStates(country);
-    }
+    if (country) getStates(country);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [country]);
 
-  // Cargar ciudades cuando se cambia el estado
+  // Cargar ciudades cuando cambia el estado
   useEffect(() => {
-    if (state) {
-      getCities(state);
-    }
+    if (state) getCities(state);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  function onCountryChange(e) {
+  function onCountryChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const countrySelected = e.target.value;
     setCountry(countrySelected);
+    // Limpiar dependientes
+    setState(undefined);
+    setCity(undefined);
+    resetField('state');
+    resetField('city');
   }
 
-  function onStateChange(e) {
+  function onStateChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const stateSelected = e.target.value;
     setState(stateSelected);
+    setCity(undefined);
+    resetField('city');
   }
 
-  function onCityChange(e) {
+  function onCityChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const citySelected = e.target.value;
     setCity(citySelected);
   }
 
   const handleCancel = () => {
-    // Redirige al usuario a la página de inicio de sesión o a la página principal
     router.push('/login');
   };
 
   const onSubmit = handleSubmit(async (data) => {
-    // Verificar que el país, estado y ciudad estén seleccionados
     if (!data.country || !data.state || !data.city) {
       toast.error('Por favor, selecciona país, estado y ciudad.', {
-        style: {
-          backgroundColor: '#fba6a9',
-          width: '100%',
-        },
+        style: { backgroundColor: '#fba6a9', width: '100%' },
       });
-      return; // No enviar el formulario si faltan estos datos
+      return;
     }
 
-    const username = data['username'];
-    const password = data['password'];
-    const email = data['email'];
-    const name = data['name'];
-    const lastName = data['lastName'];
-    const identificationCard = data['identificationCard'];
-    const phone = data['phone'];
-    const country = data['country'];
-    const city = data['city'];
-    const state = data['state'];
-    const referredCode = data['referredCode'];
-
     const body = {
-      username,
-      password,
-      email,
-      name,
-      lastName,
-      identificationCard,
-      phone,
-      country,
-      state,
-      city,
-      referredCode,
+      username: data.username,
+      password: data.password,
+      email: data.email,
+      name: data.name,
+      lastName: data.lastName,
+      identificationCard: data.identificationCard,
+      phone: data.phone,
+      country: data.country,
+      state: data.state,
+      city: data.city,
+      referredCode: data.referredCode,
     };
 
     const response = await fetch(
@@ -161,26 +165,20 @@ export default function RegisterForm() {
       }
     );
 
-    const resp = await response.json() as AuthResponse;
+    const resp = (await response.json()) as AuthResponse;
     if (!resp.error) {
       await signIn("credentials", {
-        username,
-        password,
+        username: data.username,
+        password: data.password,
         redirect: true,
         callbackUrl: "/dashboard",
       });
       toast.success('¡Registro exitoso!', {
-        style: {
-          backgroundColor: '#a6e5b6',
-          width: '100%',
-        },
+        style: { backgroundColor: '#a6e5b6', width: '100%' },
       });
     } else {
       toast.error('Ha ocurrido un error.', {
-        style: {
-          backgroundColor: '#fba6a9',
-          width: '100%',
-        },
+        style: { backgroundColor: '#fba6a9', width: '100%' },
       });
     }
   });
@@ -207,39 +205,85 @@ export default function RegisterForm() {
     </div>
   ) : (
     <form onSubmit={onSubmit} noValidate autoComplete="off" className="space-y-4 mb-4">
+      {/* Usuario */}
       <div>
         <Animation errors={errors} field="username" />
-        <input {...register('username')} type="text" placeholder="Usuario" className={`${input_tailwind} text-gray-900`} />
+        <input
+          {...register('username')}
+          type="text"
+          placeholder="Usuario"
+          className={`${input_tailwind} text-gray-900`}
+        />
       </div>
+
+      {/* Nombre / Apellido */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Animation errors={errors} field="name" />
-          <input {...register('name')} type="text" placeholder="Nombre" className={`${input_tailwind} text-gray-900`} />
+          <input
+            {...register('name')}
+            type="text"
+            placeholder="Nombre"
+            className={`${input_tailwind} text-gray-900`}
+          />
         </div>
         <div>
           <Animation errors={errors} field="lastName" />
-          <input {...register('lastName')} type="text" placeholder="Apellido" className={`${input_tailwind} text-gray-900`} />
+          <input
+            {...register('lastName')}
+            type="text"
+            placeholder="Apellido"
+            className={`${input_tailwind} text-gray-900`}
+          />
         </div>
       </div>
+
+      {/* Cédula / Teléfono */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Animation errors={errors} field="identificationCard" />
-          <input {...register('identificationCard')} placeholder="Cédula" className={`${input_tailwind} text-gray-900`} />
+          <input
+            {...register('identificationCard')}
+            placeholder="Cédula"
+            className={`${input_tailwind} text-gray-900`}
+          />
         </div>
         <div>
           <Animation errors={errors} field="phone" />
-          <input {...register('phone')} type="text" placeholder="Teléfono" className={`${input_tailwind} text-gray-900`} />
+          <input
+            {...register('phone')}
+            type="text"
+            placeholder="Teléfono"
+            className={`${input_tailwind} text-gray-900`}
+          />
         </div>
       </div>
+
+      {/* Email */}
       <div>
         <Animation errors={errors} field="email" />
-        <input {...register('email')} type="text" placeholder="Correo Electrónico" className={`${input_tailwind} text-gray-900`} />
+        <input
+          {...register('email')}
+          type="text"
+          placeholder="Correo Electrónico"
+          className={`${input_tailwind} text-gray-900`}
+        />
       </div>
+
+      {/* Código referido */}
       <div>
         <Animation errors={errors} field="referredCode" />
-        <input {...register('referredCode')} type="text" placeholder="Código Referido (opcional)" className={`${input_tailwind} text-gray-900`} />
+        <input
+          {...register('referredCode')}
+          type="text"
+          placeholder="Código Referido (opcional)"
+          className={`${input_tailwind} text-gray-900`}
+        />
       </div>
+
+      {/* País / Estado / Ciudad */}
       <div className="grid grid-cols-3 gap-4">
+        {/* País */}
         <div className="flex flex-col w-full gap-2">
           <Animation errors={errors} field="country" />
           <select
@@ -247,51 +291,54 @@ export default function RegisterForm() {
             value={country ?? 'DISABLED'}
             className={`${input_tailwind} text-gray-500`}
           >
-            <option value="DISABLED" disabled>
-              País
-            </option>
-            {countries.map((option) => (
-              <option key={option.value} value={option.value}>
+            <option value="DISABLED" disabled>País</option>
+            {countriesUI.map((option, idx) => (
+              <option key={`${option.value}-${idx}`} value={option.value}>
                 {option.name}
               </option>
             ))}
           </select>
         </div>
+
+        {/* Estado */}
         <div className="flex flex-col w-full gap-2">
           <Animation errors={errors} field="state" />
           <select
             {...register('state', { onChange: onStateChange })}
             value={state ?? 'DISABLED'}
             className={`${input_tailwind} text-gray-500`}
+            disabled={!country} // sin país, deshabilitado
           >
-            <option value="DISABLED" disabled>
-              Estado
-            </option>
-            {states.map((option) => (
-              <option key={option.value} value={option.value}>
+            <option value="DISABLED" disabled>Estado</option>
+            {statesUI.map((option, idx) => (
+              <option key={`${option.value}-${idx}`} value={option.value}>
                 {option.name}
               </option>
             ))}
           </select>
         </div>
+
+        {/* Ciudad */}
         <div className="flex flex-col w-full gap-2">
           <Animation errors={errors} field="city" />
           <select
             {...register('city', { onChange: onCityChange })}
             value={city ?? 'DISABLED'}
             className={`${input_tailwind} text-gray-500`}
+            // si hay estados disponibles y aún no se seleccionó uno -> deshabilitar
+            disabled={statesUI.length > 0 && !state}
           >
-            <option value="DISABLED" disabled>
-              Ciudad
-            </option>
-            {cities.map((option) => (
-              <option key={option.value} value={option.value}>
+            <option value="DISABLED" disabled>Ciudad</option>
+            {citiesUI.map((option, idx) => (
+              <option key={`${option.value}-${idx}`} value={option.value}>
                 {option.name}
               </option>
             ))}
           </select>
         </div>
       </div>
+
+      {/* Contraseñas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Animation errors={errors} field="password" />
@@ -303,8 +350,8 @@ export default function RegisterForm() {
               className={`${input_tailwind} text-gray-900`}
             />
             <div
-              className="absolute top-3 right-3"
-              onClick={() => setRevealPassword((revealPassword) => !revealPassword)}
+              className="absolute top-3 right-3 cursor-pointer"
+              onClick={() => setRevealPassword(v => !v)}
             >
               {revealPassword ? <EyeIcon width={20} /> : <EyeSlashIcon width={20} />}
             </div>
@@ -320,14 +367,16 @@ export default function RegisterForm() {
               className={input_tailwind}
             />
             <div
-              className="absolute top-3 right-3"
-              onClick={() => setRevealPassword2((revealPassword2) => !revealPassword2)}
+              className="absolute top-3 right-3 cursor-pointer"
+              onClick={() => setRevealPassword2(v => !v)}
             >
               {revealPassword2 ? <EyeIcon width={20} /> : <EyeSlashIcon width={20} />}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Botones */}
       <div className="flex justify-between gap-4 mt-6">
         <button
           type="submit"
@@ -353,10 +402,15 @@ export default function RegisterForm() {
           </div>
         </button>
       </div>
+
       <Toaster />
     </form>
   );
 }
+
+
+
+
 
 
 

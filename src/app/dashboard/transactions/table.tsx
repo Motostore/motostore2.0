@@ -1,3 +1,4 @@
+// src/app/dashboard/transactions/table.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,7 +19,7 @@ export default function Table({
 }) {
   const link = "/dashboard/transactions";
   const [openModal, setOpenModal] = useState(false);
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]); 
   const [totalPages, setTotalPages] = useState(0);
   const [content, setContent] = useState<ContentModal>();
 
@@ -27,9 +28,24 @@ export default function Table({
   }, [query, currentPage]);
 
   async function getItems() {
-    const response = await fetchTransactionManager(query, currentPage);
-    setItems(response.content);
-    setTotalPages(response.totalPages);
+    try {
+      const response = await fetchTransactionManager(query, currentPage);
+      
+      // ✅ Solución: Valida que la respuesta y la propiedad 'content' existan.
+      if (response && response.content) {
+        setItems(response.content);
+        setTotalPages(response.totalPages);
+      } else {
+        // En caso de que la respuesta no sea válida, asegúrate de que 'items' sea un array vacío.
+        setItems([]);
+        setTotalPages(0);
+      }
+    } catch (error) {
+      console.error("Error al obtener transacciones:", error);
+      // En caso de error de la API, reinicia el estado para evitar fallos.
+      setItems([]); 
+      setTotalPages(0);
+    }
   }
 
   return (
@@ -40,7 +56,7 @@ export default function Table({
       <div className="relative overflow-x-auto mt-4">
         <div className="md:hidden">
           {items.length > 0 ? (
-            items?.map((item) => (
+            items.map((item) => ( 
               <div
                 key={item.id}
                 className="mb-2 w-full rounded-md bg-white p-4 shadow-xl border border-gray-300"

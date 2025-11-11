@@ -1,31 +1,18 @@
-'use client'
-import Breadcrumbs from "@/app/ui/transactions/breadcrumbs";
-import HeaderProfile from "@/app/ui/dashboard/header-profile";
-import Form from "../form";
+import Form from '../form';
 
-export default function Page() {
+interface CreateProductPageProps {
+  searchParams?: {
+    productType?: string;
+  };
+}
+
+export default function CreateProductPage({ searchParams }: CreateProductPageProps) {
+  const productType = searchParams?.productType || 'streaming'; // Valor por defecto
 
   return (
-    <main>
-      <div className="flex md:flex-row flex-col justify-between items-center md:items-center">
-        <div className="order-2 md:order-1">
-          <Breadcrumbs
-            breadcrumbs={[
-              { label: 'Proveedor', href: '/dashboard/products' },
-              {
-                label: 'Agregar',
-                href: `/dashboard/products/create`,
-                active: true,
-              },
-            ]}
-          />
-        </div>
-          <div className="flex items-start md:items-end flex-col mt-4 md:mt-0 order-1 md:order-2 mb-4 md:mb-0">
-              <HeaderProfile />
-          </div>
-      </div>
-      <hr className='w-full h-1 bg-gray-200 mx-auto my-5' />
-      <Form provider={null} />
-    </main>
-  )
+    <div>
+      <h1 className="text-2xl font-bold mb-4">Crear Producto</h1>
+      <Form productPath={productType} />
+    </div>
+  );
 }

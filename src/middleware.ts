@@ -1,26 +1,54 @@
-import { withAuth } from "next-auth/middleware";
+// src/middleware.ts
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default withAuth (
-  function middleware(req) {
-    const requestRole = req.nextauth.token?.role;
-    const AUTH_ROLES = process.env.NEXTAUTH_ROLES || ["ADMIN", "CLIENT", "RESELLER", "SUPERUSER"]
-    if(req.nextUrl.pathname.startsWith("/dashboard") && !AUTH_ROLES.includes(requestRole as string))
-    {
-      return NextResponse.rewrite(new URL("/login?message=No estas autorizado para ver esta pagina", req.url));
-    }
-    if(req.nextUrl.pathname.startsWith("/dashboard/users") && !["ADMIN", "RESELLER"].includes(requestRole as string))
-      {
-        return NextResponse.rewrite(new URL("/dashboard?message=No estas autorizado para ver esta pagina", req.url));
-      }
-  },
-  {
-    callbacks: {
-      authorized: ({token}) => !!token,
-    }
-  },
-);
+const ONLY_SUPERUSER = [
+  "/dashboard/admin/products",
+  "/dashboard/admin/payments",
+];
 
-export const config = {
-  matcher:["/dashboard/:path*"]
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  if (!ONLY_SUPERUSER.some(p => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
+  const cookie = req.headers.get("cookie") ?? "";
+  try {
+    const base = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const r = await fetch(`${base}/api/auth/session`, {
+      headers: { cookie },
+      cache: "no-store",
+    });
+
+    const session = r.ok ? await r.json() : null;
+    const role = String(session?.user?.role || "").toUpperCase();
+
+    if (role !== "SUPERUSER") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard"; // o "/login"
+      return NextResponse.redirect(url);
+    }
+  } catch {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
+
+// Protegemos estos paths
+export const config = {
+  matcher: [
+    "/dashboard/admin/products/:path*",
+    "/dashboard/admin/payments/:path*",
+  ],
+};
+
+
+
+
+
+

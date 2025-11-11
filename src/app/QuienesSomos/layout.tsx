@@ -1,10 +1,10 @@
+// src/app/QuienesSomos/layout.tsx
 'use client';
 
-import "@/app/ui/globals.css";
 import Header from '../ui/header';
 import Navigation from '../ui/navigation';
 import Footer from '../ui/footer';
-import { ProfileProvider } from "../Context/profileContext";
+import { ProfileProvider } from '../Context/profileContext'; // Asegúrate de que este Contexto sea necesario aquí
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,10 +14,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Header - Barra superior con el logo, navegación y barra informativa */}
         <Header />
 
-        {/* Barra de navegación (se puede personalizar o modificar según lo necesites) */}
+        {/* Barra de navegación */}
         <div className="w-full">
-          <span className='motostore-advice hidden'>Anuncios aquí</span>
-          <hr className='w-11/12 h-1 bg-gray-400 rounded-full border-none m-auto my-2' />
+          <span className="motostore-advice hidden">Anuncios aquí</span>
+          <hr className="w-11/12 h-1 bg-gray-400 rounded-full border-none m-auto my-2" />
           <Navigation />
         </div>
       </ProfileProvider>
@@ -34,3 +34,4 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     </main>
   );
 }
+

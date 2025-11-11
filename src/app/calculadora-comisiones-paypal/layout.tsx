@@ -1,8 +1,15 @@
+// src/app/calculadora-comisiones-paypal/layout.tsx
 
-import "@/app/ui/globals.css";
-import Header from '../ui/header';
-import Navigation from '../ui/navigation';
-import Footer from '../ui/footer';
+// ¡¡¡IMPORTANTE!!! ELIMINA CUALQUIER LÍNEA QUE IMPORTE 'globals.css' AQUÍ.
+// NO DEBE HABER NINGUNA DE ESTAS LÍNEAS EN ESTE ARCHIVO:
+// import './globals.css';
+// import '@/globals.css';
+// import '../globals.css';
+
+
+import Header from '../ui/header'; // Ruta corregida
+import Navigation from '../ui/navigation'; // Ruta corregida
+import Footer from '../ui/footer'; // Ruta corregida
 
 export default function Layout({ children }: { children: React.ReactNode;}) {
     return (

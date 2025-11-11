@@ -8,19 +8,23 @@ import { useEffect, useState } from 'react';
 import { getCurrentSession } from '../lib/app-session';
 import { Session } from 'next-auth';
 
-export default function Dashboard() {
+// ← desde src/app/components a src/app/lib/roles.ts
+import { ALLOWED_WALLET_ROLES, isOneOf } from '../lib/roles';
 
+export default function Dashboard() {
   const [sess, setSess] = useState<Session>();
   const [canView, setCanView] = useState(false);
 
   useEffect(() => {
-    currentSession()
-  }, [])
+    currentSession();
+  }, []);
 
   async function currentSession() {
     const result = await getCurrentSession();
     setSess(result);
-    setCanView(["CLIENT", "RESELLER"].includes(result.user.role))
+
+    const role = result?.user?.role;
+    setCanView(isOneOf(role, ALLOWED_WALLET_ROLES));
   }
 
   return (
@@ -31,18 +35,18 @@ export default function Dashboard() {
           <HeaderProfile />
         </div>
       </div>
-      <hr className='w-full h-1 bg-gray-400 border-none mx-auto my-5' />
+      <hr className="w-full h-1 bg-gray-400 border-none mx-auto my-5" />
       <div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4">
           <ProductProvider>
-          <MyTabs span={`${ canView ? 'md:col-span-8': 'md:col-span-12'}`} />
+            <MyTabs span={`${canView ? 'md:col-span-8' : 'md:col-span-12'}`} />
           </ProductProvider>
-          {
-            canView ? <Transactions span="col-span-1 md:col-span-4" />
-            : null
-          }
+          {canView ? <Transactions span="col-span-1 md:col-span-4" /> : null}
         </div>
       </div>
     </div>
   );
 }
+
+
+

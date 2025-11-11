@@ -1,25 +1,22 @@
-import { useEffect } from "react"
-import ZelleForm from "../forms/ZelleForm"
+import { useEffect } from "react";
+import ZelleForm from "../forms/ZelleForm";
 
-export default function ZellePayment({service, setPaymentData, setOpenModal}) {
-
+export default function ZellePayment({ service, setPaymentData, setOpenModal }) {
   const payload = {
-    transaction: 'Zelle',
+    transaction: "Zelle",
     zelleName: "William Amaro",
-    zelleEmail: "Amaromelendezw@gmail.com"
-  }
+    zelleEmail: "Amaromelendezw@gmail.com",
+  };
 
   useEffect(() => {
-    setPaymentData(payload)
-  }, [])
+    setPaymentData(payload);
+  }, []);
 
   return (
     <>
       <div className="col-span-2 flex flex-col justify-between border-r-2 border-gray-300 pr-6">
         <div>
-          <h5 className="font-bold text-lg text-gray-600 mb-2">
-              Pago mediante Zelle
-          </h5>
+          <h5 className="font-bold text-lg text-gray-600 mb-2">Pago mediante Zelle</h5>
           <div>
             <p className="flex flex-col py-2 border-b-2 border-gray-700">
               <strong className="inline-block">Nombre:</strong>
@@ -43,5 +40,5 @@ export default function ZellePayment({service, setPaymentData, setOpenModal}) {
         <ZelleForm amount={service?.price} paymentData={payload} setOpenModal={setOpenModal} />
       </div>
     </>
-  )
-};
+  );
+}

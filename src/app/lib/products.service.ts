@@ -1,177 +1,114 @@
-import { unstable_noStore as noStore } from 'next/cache';
-import { getSession } from "next-auth/react";
-import { fetchProvidersForTransaction } from './streaming-provider';
+// src/app/lib/products.service.ts
 
+type Json = Record<string, unknown> | unknown[];
 
-/*
-    Productos:
-    Licencias: license
-    Recargas: recharge
-    Marketing: marketing
-*/
+/**
+ * En SSR (server) construimos URLs absolutas con la URL pública del sitio,
+ * y en el cliente usamos rutas relativas.
+ * NO hay fallback a localhost para evitar confusiones.
+ */
+const BASE =
+  typeof window === "undefined"
+    ? (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || "").replace(/\/$/, "")
+    : "";
 
-const ITEMS_PER_PAGE = 10;
-
-export async function fetchProductsByType( productPath) {
-  const session = await getSession()
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/${productPath}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
-      }
-    });
-    
-    if (response.ok) {
-      const json = await response.json();
-      return json;
-    }
-    return [];
-    
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch streamings data.');
-  }
-
+// Si estamos en SSR y no tenemos BASE, lanzamos error claro de configuración.
+if (typeof window === "undefined" && !BASE) {
+  throw new Error(
+    "Falta configurar NEXT_PUBLIC_SITE_URL (o NEXTAUTH_URL) con la URL pública del sitio."
+  );
 }
-export async function fetchPagedProductsByType(query, page, productPath) {
-  const session = await getSession()
 
-  const params = new URLSearchParams({
-    'query': query,
-    'page': (page - 1).toString(),
-    'elements': ITEMS_PER_PAGE.toString()
+// Helper para fetch sin cache en SSR.
+function api(path: string, init?: RequestInit) {
+  return fetch(`${BASE}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    },
+    cache: "no-store",
   });
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/${productPath}?${params}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
-      }
-    });
-  
-    if (response.ok) {
-      const json = await response.json();
-      return json;
-    }
-    return [];
-    
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch streamings data.');
-  }
-
 }
 
-export async function fetchProductById(id, productPath) {
-  const session = await getSession()
+/* ───── Productos (sub-rubros: accounts, licenses, marketing, recharges, etc.) ───── */
 
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/${productPath}/${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
-      }
-    });
-  
-    return response;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch streamings data.');
-  }
-
+/** Obtiene un producto por id dentro de un sub-rubro */
+export async function fetchProductById(id: string, productPath: string) {
+  return api(`/api/products/${productPath}/${id}`);
 }
 
-export async function fetchCreateProduct(body, productPath) {
-  const session = await getSession();
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/${productPath}`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}` 
-      },
-      body
-    })
-    
-    return response;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch streamings data.');
-  }
-
+/** Lista productos por tipo simple (sin paginar) */
+export async function fetchProductsByType(type: string) {
+  return api(`/api/products?type=${encodeURIComponent(type)}`);
 }
 
-export async function fetchUpdateProduct(id, body, productPath) {
-  const session = await getSession();
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/${productPath}/${id}`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}` 
-      },
-      body
-    })
-    
-    return response;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch streamings data.');
-  }
+/** Lista paginada por tipo */
+export async function fetchPagedProductsByType(
+  type: string,
+  page = 1,
+  pageSize = 10
+) {
+  const qs = new URLSearchParams({
+    type,
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  return api(`/api/products?${qs.toString()}`);
 }
 
-export async function fetchDeleteProduct(id, productPath) {
-  const session = await getSession();
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/${productPath}/${id}`, {
-      method: 'DELETE',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}` 
-      }
-    })
-    
-    return response;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch streamings data.');
-  } 
-
+/** Crea un producto en la colección indicada por productPath */
+export async function fetchCreateProduct(payload: Json, productPath: string) {
+  return api(`/api/products/${productPath}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
-export async function fetchAllProducts() {
-  noStore();
-  try {
-    const data = await Promise.all([
-      fetchProvidersForTransaction(),
-      fetchProductsByType('recharge'),
-      fetchProductsByType('license/provider/available'),
-      fetchProductsByType('marketing'),
-    ]);
-
-    const streamings = data[0] ?? [];
-    const recharges = data[1] ?? [];
-    const licenses = data[2] ?? [];
-    const marketing = data[3] ?? [];
-    
-    return {
-      streamings,
-      recharges,
-      licenses,
-      marketing
-    };
-
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch products data.');
-  }
+/** Actualiza un producto por id en productPath */
+export async function fetchUpdateProduct(
+  id: string,
+  payload: Json,
+  productPath: string
+) {
+  return api(`/api/products/${productPath}/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
+
+/** Elimina un producto por id en productPath */
+export async function fetchDeleteProduct(id: string, productPath: string) {
+  return api(`/api/products/${productPath}/${id}`, { method: "DELETE" });
+}
+
+/* ───── Productos (genéricos) ───── */
+
+/**
+ * Crea un producto "general".
+ * Esta función coincide con lo que importa /dashboard/products/new/page.tsx
+ * y usa la ruta interna /api/products/create.
+ */
+export async function createProduct(payload: Json) {
+  return api(`/api/products/create`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/* ───── Categorías ───── */
+
+/** Obtiene el listado de categorías */
+export async function fetchCategories() {
+  return api(`/api/products/categories`);
+}
+
+/** Crea una nueva categoría */
+export async function createCategory(payload: Json) {
+  return api(`/api/products/categories`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+

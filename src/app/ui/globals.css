@@ -1,70 +1,249 @@
+/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* =========================
+   Variables de color/tema
+   ========================= */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
+  /* ---- Paleta de marca en formato R G B ---- */
+  --brand-50:  253 239 239;   /* muy claro */
+  --brand-100: 253 231 231;   /* #FDE7E7 */
+  --brand-200: 250 210 210;
+  --brand-300: 246 178 178;
+  --brand-400: 240 134 134;
+  --brand-500: 229 57 53;     /* #E53935 (principal) */
+  --brand-600: 198 40 40;     /* #C62828 (hover) */
+  --brand-700: 183 28 28;     /* #B71C1C */
+  --brand-800: 150 24 24;
+  --brand-900: 120 20 20;
+
+  /* Por compatibilidad con clases personalizadas ya usadas */
+  --brand: #E53935;
+  --brand-600-hex: #C62828;
+
+  /* Base (modo claro) */
+  --foreground-rgb: 15, 23, 42;            /* slate-900 */
+  --background-start-rgb: 246, 247, 248;   /* suave */
   --background-end-rgb: 255, 255, 255;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --foreground-rgb: 241, 245, 249; /* slate-100 */
+    --background-start-rgb: 10, 11, 13;
+    --background-end-rgb: 12, 12, 14;
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-}
+/* =========================
+   Base global
+   ========================= */
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
 
-@media only screen and (max-width: 768px) {
-  .each-slide-effect > div {
-    height: 200px !important;
+  body {
+    color: rgb(var(--foreground-rgb));
+    background:
+      radial-gradient(700px 300px at top left, rgba(229, 57, 53, .06), transparent 60%),
+      radial-gradient(500px 250px at bottom right, rgba(2,6,23,.06), transparent 60%),
+      linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb)))
+      rgb(var(--background-start-rgb));
   }
+
+  ::selection { background: var(--brand); color: #fff; }
+  input[type="checkbox"], input[type="radio"] { accent-color: var(--brand); }
+
+  a, button, [role="button"], select, input, textarea {
+    transition:
+      box-shadow .2s ease, border-color .2s ease,
+      background-color .2s ease, color .2s ease, transform .1s ease;
+  }
+  :focus { outline: none; }
+  :focus-visible { box-shadow: 0 0 0 3px rgb(var(--brand-500) / .35); }
 }
 
+/* Slides en móvil (si usas react-slideshow) */
+@media (max-width: 768px) {
+  .each-slide-effect > div { height: 200px !important; }
+}
+
+/* =========================
+   Utilidades
+   ========================= */
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .text-balance { text-wrap: balance; }
+  .brand        { color: var(--brand); }
+  .brand-bg     { background-color: var(--brand); }
+}
+
+/* =========================
+   Animaciones
+   ========================= */
+@keyframes spin-720 { 0% {transform:rotate(0)} 100% {transform:rotate(720deg)} }
+.loading-icon { color: var(--brand); font-size: 2rem; animation: spin-720 2s infinite; }
+
+/* =========================
+   Componentes (helpers)
+   ========================= */
+@layer components {
+  .bg-app {
+    background:
+      radial-gradient(700px 300px at top left, rgba(229, 57, 53, .05), transparent 60%),
+      radial-gradient(500px 250px at bottom right, rgba(2,6,23,.05), transparent 60%),
+      linear-gradient(to bottom, #f8fafc, #ffffff);
+  }
+
+  .glass-card {
+    @apply rounded-2xl ring-1 ring-slate-200 shadow-sm;
+    background-color: rgba(255,255,255,.82);
+    backdrop-filter: blur(6px);
+  }
+
+  .section { @apply glass-card p-6 md:p-7 lg:p-8; }
+  .section-title { @apply text-lg font-semibold text-slate-800 mb-2; }
+
+  .content { display: grid; gap: 18px; }
+  .section img {
+    max-width: 100%;
+    height: auto;
+    max-height: 420px;
+    object-fit: cover;
+    border-radius: 14px;
+    box-shadow: 0 1px 0 rgba(2,6,23,.05) inset;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+           px-4 py-2 text-sm font-medium transition
+           active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary { @apply text-white shadow-sm; background-color: rgb(var(--brand-500)); }
+  .btn-primary:hover { background-color: rgb(var(--brand-600)); }
+  .btn-ghost { @apply border border-slate-200 bg-white/80 text-slate-700 hover:bg-white; }
+  .btn-danger { @apply text-white bg-red-500 hover:bg-red-600 shadow-sm; }
+
+  .input {
+    @apply w-full rounded-xl border border-slate-200 bg-white/90 px-3 py-2
+           text-sm text-slate-800 placeholder-slate-400
+           focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400;
+  }
+  .select { @apply input pr-8; }
+
+  /* Chips con paleta */
+  .chip-brand, .chip-orange {
+    background-color: rgb(var(--brand-100));
+    color: rgb(var(--brand-600));
+    border: 1px solid rgb(var(--brand-500) / .25);
+    border-radius: 9999px;
+    padding: 2px 10px;
+    font-size: 0.875rem;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-sm;
+    background-color: rgb(var(--brand-100));
+    color: rgb(var(--brand-600));
+    border: 1px solid rgb(var(--brand-500) / .25);
+  }
+
+  .card-link { @apply glass-card p-4 hover:shadow md:hover:shadow-md transition cursor-pointer; }
+
+  .topbar { @apply sticky top-0 z-30 bg-white/90 backdrop-blur border-b; }
+  .topbar-inner { @apply mx-auto max-w-screen-2xl px-4 py-3 flex items-center gap-3; }
+  .topbar-title { @apply text-sm font-semibold text-slate-800; }
+
+  .sidebar {
+    @apply hidden md:flex w-64 shrink-0 sticky top-0 h-dvh
+           bg-white/80 backdrop-blur border-r border-slate-200;
+  }
+  .sidebar-inner { @apply flex flex-col w-full h-full p-4 gap-2; }
+  .sidebar-logo { @apply flex items-center gap-2 px-2 py-2; }
+  .sidebar-nav { @apply mt-2 flex flex-col gap-1; }
+  .sidebar-item {
+    @apply flex items-center gap-2 rounded-lg px-3 py-2 text-sm
+           text-slate-700 hover:bg-slate-50 transition;
+  }
+  .sidebar-item.active {
+    @apply bg-red-50 text-red-700 border border-red-200;
+    box-shadow: inset 3px 0 0 0 var(--brand);
+  }
+
+  .table { @apply w-full text-sm; }
+  .table thead th { @apply text-left font-medium text-slate-600 bg-slate-50 p-3 border-b; }
+  .table tbody td { @apply p-3 border-b; }
+  .table tbody tr:hover { @apply bg-slate-50/60; }
+
+  /* ---------- Nav principal estilo "píldora" ---------- */
+  .nav-pill {
+    @apply flex h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold
+           md:justify-start md:px-3;
+    color: var(--brand);
+  }
+  .nav-pill:hover { background-color: #F1F5F9; }         /* slate-100 */
+  .nav-pill svg { width: 1.25rem; height: 1.25rem; color: var(--brand); }
+  .nav-pill--active {
+    background-color: #64748B; /* slate-500 */
+    color: #fff;
+  }
+  .nav-pill--active svg { color: #fff; }
+
+  /* ---------- Títulos y capitular con paleta de marca ---------- */
+  .title-brand { @apply font-bold; color: var(--brand); }
+  .dropcap-brand:first-letter {
+    color: var(--brand);
+    font-weight: 800;
+    float: left;
+    font-size: 3.25rem;   /* ~52px */
+    line-height: 1;
+    padding-right: 0.25rem;
+  }
+
+  /* ---------- Filtros tipo "píldora" (Productos) ---------- */
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm
+           text-slate-600 bg-white hover:bg-slate-50 transition;
+  }
+  .pill-badge {
+    @apply ml-1 rounded-full text-[11px] px-1.5 py-0.5 border;
+    background-color: #fff;
+    border-color: rgb(var(--brand-500) / .35);
+    color: rgb(var(--brand-600));
+  }
+  .pill-active {
+    background-color: rgb(var(--brand-500));
+    color: #fff;
+    border-color: rgb(var(--brand-500));
+  }
+  .pill-active .pill-badge {
+    background: #fff;
+    color: rgb(var(--brand-600));
+    border-color: #fff;
   }
 }
 
-/* .motostore-advice {
-  position: relative;
-  animation: move-words 15s linear infinite;
-  margin: 0;
-  padding: 0;
-} */
+/* === Patch de estilo para el formulario de Métodos de Pago === */
+@layer components {
+  .form-card   { @apply section; }
+  .form-title  { @apply text-2xl md:text-3xl font-bold mb-6; }
+  .form-grid   { @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4; }
+  .form-help   { @apply mt-2 text-xs text-slate-500; }
 
-@keyframes move-words {
-  0% {
-    left: 100%;
-  }
-  100% {
-    left: -10%;
+  /* Mejora visual del <select> manteniendo tu .select existente */
+  .select {
+    @apply appearance-none pr-10 bg-no-repeat bg-[right_0.75rem_center];
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%2364748b' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-size: 18px 18px;
   }
 }
 
-.loading-icon {
-  color: orange;
-  font-size: 2rem;
-  animation: animate 2s infinite;
-}
 
-@keyframes animate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(720deg);
-  }
-}
+
+
+
+
+
+
+
+
+

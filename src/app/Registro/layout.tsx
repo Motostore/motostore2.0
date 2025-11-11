@@ -1,13 +1,14 @@
+// src/app/Registro/layout.tsx
 
-import "@/app/ui/globals.css";
-import Header from '../ui/header';
+// Rutas corregidas (estas sí están bien y se mantienen):
+import Header from '../ui/header'; // <-- ¡Esta es la línea clave!
 import Navigation from '../ui/navigation';
 import Footer from '../ui/footer';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     return (
         <main className="flex min-h-screen flex-col overflow-x-hidden text-gray-700 bg-white">
-            <Header></Header>
+            <Header></Header> {/* <-- Aquí se renderiza el Header */}
             <div className=" w-100 h-100 ">
                 <span className='motostore-advice hidden'>Anuncios aquí</span>
                 <hr className='w-11/12 h-1 bg-gray-400 rounded-full border-none m-auto my-2' />

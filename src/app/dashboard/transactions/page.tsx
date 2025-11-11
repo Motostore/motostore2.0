@@ -1,18 +1,25 @@
-"use client";
+// src/app/dashboard/transactions/page.tsx
+
 import HeaderProfile from "@/app/ui/dashboard/header-profile";
 import { hr_line } from "@/app/utils/tailwindStyles";
 import Table from "./table";
+import React from 'react'; // Importa React para usar React.use()
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams?: {
+// Define el tipo de los parámetros de búsqueda como una Promesa
+interface PageProps {
+  searchParams?: Promise<{
     query?: string;
     page?: string;
-  };
-}) {
-  const query = searchParams?.query || "";
-  const currentPage = Number(searchParams?.page) || 1;
+  }>;
+}
+
+// Convierte el componente en una función asíncrona y usa `await`
+export default async function Page({ searchParams }: PageProps) {
+  // Resuelve la promesa de searchParams antes de acceder a sus propiedades
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  
+  const query = resolvedSearchParams.query || "";
+  const currentPage = Number(resolvedSearchParams.page) || 1;
 
   return (
     <div>

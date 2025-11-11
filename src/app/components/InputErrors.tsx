@@ -1,34 +1,30 @@
-import { AnimatePresence, motion } from "framer-motion"
-import { MdError } from 'react-icons/md'
+'use client';
 
-export const Animation = ({ errors, field }) => {
-return (
+import { AnimatePresence, motion } from 'framer-motion';
+import { MdError } from 'react-icons/md';
+
+type Errors = Record<string, { message?: string } | undefined>;
+
+export function Animation({ errors, field }: { errors?: Errors; field: string }) {
+  const message = errors?.[field]?.message;
+  return (
     <AnimatePresence mode="wait" initial={false}>
-    { errors[field] && (
-        <InputError
-        message={errors[field]?.message}
-        key={errors[field]?.message}
-        />
-    )}
+      {message && <InputError key={message} message={String(message)} />}
     </AnimatePresence>
-)
+  );
 }
-  
-export const InputError = ({ message }) => {
-return (
+
+export function InputError({ message }: { message: string }) {
+  return (
     <motion.p
-    className="flex items-center gap-1 px-2 font-semibold text-red-500 bg-red-100 rounded-md"
-    {...framer_error}
+      className="flex items-center gap-1 px-2 font-semibold text-red-500 bg-red-100 rounded-md"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      transition={{ duration: 0.2 }}
     >
-    <MdError />
-    {message}
+      <MdError />
+      {message}
     </motion.p>
-)
-}
-  
-export const framer_error = {
-initial: { opacity: 0, y: 10 },
-animate: { opacity: 1, y: 0 },
-exit: { opacity: 0, y: 10 },
-transition: { duration: 0.2 },
+  );
 }

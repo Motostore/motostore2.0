@@ -1,11 +1,21 @@
-'use client';
+// Elimina la línea 'use client';
 import { Datepicker } from "flowbite-react";
 import TransactionsList from "./TransactionsList";
 import { DropdownExport } from "./MyDropdowns";
 import Search from "../ui/search";
 import { Suspense } from "react";
 
-export default function Transactions({span}) {
+// Este componente ahora es un Server Component
+interface TransactionsProps {
+  searchParams?: {
+    query?: string;
+  };
+  span?: string;
+}
+
+export default function Transactions({ searchParams, span }: TransactionsProps) {
+  const searchQuery = searchParams?.query || '';
+  
   return (
     <div className={`bg-white text-gray-600 rounded-lg px-2 ${span}`}>
         <div className="flex justify-between items-center py-1.5 flex-col md:flex-row">
@@ -20,7 +30,7 @@ export default function Transactions({span}) {
           <Datepicker className="w-full md:w-36" />
         </div>
         <div className="my-4 py-2 px border-2 border-gray-200 rounded-md px-2">
-        <TransactionsList />
+            <TransactionsList query={searchQuery} />
         </div>
     </div>
   );

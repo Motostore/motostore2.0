@@ -1,35 +1,23 @@
-import { getSession } from "next-auth/react";
+// src/app/lib/payment-methods.ts
+
+export async function fetchPaymentMethods() {
+  return fetch("/api/payment-methods", { cache: "no-store" });
+}
 
 export async function fetchPaymentMethod(type: string) {
-  const session = await getSession()
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/payment/method/type/${type}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.user.token}`
-    }
-  });
-
-  if (response.ok) {
-    const json = await response.json();
-    return json;
-  }
-  return [];
+  return fetch(`/api/payment-methods/${type}`, { cache: "no-store" });
 }
 
-export async function fetchPaymentMethodById(id: number) {
-  const session = await getSession()
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/payment/method/${id}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.user.token}`
-    }
-  });
-
-  if (response.ok) {
-    const json = await response.json();
-    return json;
-  }
-  return null;
+// 👇 Esta faltaba y es la que te piden los componentes:
+export async function fetchPaymentMethodById(id: string) {
+  // Ajusta la ruta si tu API usa otra (por ejemplo /api/transactions/...)
+  return fetch(`/api/payment-methods/${id}`, { cache: "no-store" });
 }
+
+
+
+
+
+
+
+

@@ -1,11 +1,31 @@
+// src/app/dashboard/settings/page.tsx
+import SettingsView from "./SettingsView";
+
+export const metadata = {
+  title: "Perfil | Moto Store LLC",
+  description: "Ajustes de la cuenta del usuario",
+};
+
 export default function Page() {
-    return (
-    <div>
-        <h1 className="mb-4 text-2xl font-bold leading-none tracking-tight text-gray-900 md:text-3xl lg:text-3xl dark:text-white">Configuración</h1>
-        <hr className='w-full h-1 bg-gray-200 mx-auto my-5' />
-        <div>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam neque inventore accusamus hic asperiores, non facere porro iusto voluptatum maxime beatae odio quibusdam fugit ea aliquid itaque est temporibus sapiente.
-        </div>
+  return (
+    <div className="mx-auto max-w-5xl px-4 md:px-6 py-6">
+      <h1 className="text-2xl md:text-3xl font-bold leading-none tracking-tight text-[var(--brand)]">
+        Perfil
+      </h1>
+      <p className="text-sm text-slate-600 mt-1">
+        Gestiona los datos de tu cuenta, seguridad y preferencia de contacto.
+      </p>
+
+      <div className="mt-6">
+        <SettingsView />
+      </div>
     </div>
-    );
+  );
 }
+
+
+
+
+
+
+

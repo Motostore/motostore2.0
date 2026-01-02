@@ -13,6 +13,8 @@ export type Action =
   | "services:write"
   | "payments:methods:write"
   | "payments:verify"
+  // 🔥 NUEVO PERMISO AGREGADO PARA QUE NO FALLE EL BUILD
+  | "payments:approve"
   | "transactions:read:self"
   | "transactions:read:any"
   | "wallet:topup:self"
@@ -26,20 +28,18 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Action[] | readonly ["*"]> 
   ADMIN: [
     "users:create","users:update","users:delete","users:read:any",
     "roles:assign",
-    "products:read",                 // ← solo lectura
+    "products:read",
     "services:read","services:write",
-    // "products:write"               // ← quitado
-    // "payments:methods:write"       // ← quitado
     "payments:verify",
+    "payments:approve", // ← Permiso agregado al Admin
     "transactions:read:any",
     "wallet:topup:any",
   ],
 
+  // Roles operativos (Definidos en roles.ts)
+  RESELLER:      ["products:read","services:read","transactions:read:self","wallet:topup:self"],
   DISTRIBUTOR:   ["products:read","services:read","transactions:read:self","wallet:topup:self"],
-  SUBDISTRIBUTOR:["products:read","services:read","transactions:read:self","wallet:topup:self"],
   TAQUILLA:      ["products:read","services:read","transactions:read:self","wallet:topup:self"],
-  SUBTAQUILLA:   ["products:read","services:read","transactions:read:self","wallet:topup:self"],
-  SUSTAQUILLA:   ["products:read","services:read","transactions:read:self","wallet:topup:self"],
   CLIENT:        ["products:read","services:read","transactions:read:self","wallet:topup:self"],
 };
 
@@ -48,5 +48,3 @@ export function can(roleLike: unknown, action: Action): boolean {
   const perms = ROLE_PERMISSIONS[role];
   return (perms as any[]).includes("*") || (perms as Action[]).includes(action);
 }
-
-

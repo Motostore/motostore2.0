@@ -14,17 +14,25 @@ export default function Table({
   query: string;
   currentPage: number;
 }) {
-  const [items, setItems] = useState([]);
+  // 💎 SOLUCIÓN: Tipamos el estado como <any[]> para evitar el error 'never'
+  const [items, setItems] = useState<any[]>([]);
   const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     getItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, currentPage]);
 
   async function getItems() {
-    const response = await fetchClientLicenses(query, currentPage);
-    setItems(response.content);
-    setTotalPages(response.totalPages);
+    try {
+        const response = await fetchClientLicenses(query, currentPage);
+        // Protección extra por si response.content viene undefined
+        setItems(Array.isArray(response?.content) ? response.content : []);
+        setTotalPages(response?.totalPages || 0);
+    } catch (error) {
+        console.error("Error fetching licenses:", error);
+        setItems([]);
+    }
   }
 
   return (
@@ -33,11 +41,12 @@ export default function Table({
         <Search placeholder="Buscar..." />
       </div>
       <div className="relative overflow-x-auto">
+        {/* VISTA MOVIL */}
         <div className="md:hidden">
-          {items.length > 0 ? (
-            items?.map((item) => (
+          {items && items.length > 0 ? (
+            items.map((item) => (
               <div
-                key={item.id}
+                key={item.id || Math.random()} // Fallback key por seguridad
                 className="mb-2 w-full rounded-md bg-white p-4 shadow-xl border border-gray-300"
               >
                 <div className="flex items-start justify-between border-b pb-2 gap-2">
@@ -48,17 +57,6 @@ export default function Table({
                       </p>
                     </div>
                   </div>
-                  {/* <div className="flex gap-2">
-                    <ButtonView iconSize="w-4" link={`${link}/${item.id}`} />
-                    <ButtonEdit
-                      iconSize="w-4"
-                      link={`${link}/${item.id}/edit`}
-                    />
-                    <ButtonDelete
-                      iconSize="w-4"
-                      trigger={() => openModalTrigger(item)}
-                    />
-                  </div> */}
                 </div>
                 <div className=" w-full pt-4">
                   <div>
@@ -87,7 +85,6 @@ export default function Table({
                       {remainingTime(item.dueDate)}
                     </p>
                     <div className="flex justify-end mt-2">
-                      {/* <StatusBase status={item.status} /> */}
                       {!item.status ? (
                         <label className="inline-flex items-center px-2.5 py-1 text-sm font-medium text-center text-white bg-red-400 rounded-lg focus:ring-4 focus:outline-none">
                           Inactivo
@@ -111,7 +108,9 @@ export default function Table({
             <p>No hay Licencias</p>
           )}
         </div>
-        {items.length > 0 ? (
+
+        {/* VISTA DE ESCRITORIO */}
+        {items && items.length > 0 ? (
           <>
             <table className="hidden md:table w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -139,7 +138,7 @@ export default function Table({
               <tbody>
                 {items.map((item) => (
                   <tr
-                    key={item.id}
+                    key={item.id || Math.random()}
                     className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
                   >
                     <td className="px-6 py-4">{item?.provider || "---"}</td>

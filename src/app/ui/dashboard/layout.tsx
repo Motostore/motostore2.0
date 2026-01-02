@@ -1,40 +1,50 @@
-// src/app/dashboard/layout.tsx
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 
-import TopNav from "../ui/dashboard/topnav";            // <-- SIN guion
-import BrandHeader from "../ui/dashboard/brand-header";
-import AnnouncementBar from "../ui/dashboard/announcement-bar";
+// CORRECCIÓN: Usamos rutas absolutas con '@' para evitar errores de "Module not found"
+import TopNav from "@/app/ui/dashboard/topnav";
+import BrandHeader from "@/app/ui/dashboard/brand-header";
+import NoticeChips from "@/app/ui/dashboard/notice-chips";
 
-export const metadata = {
-  title: "Panel | Moto Store LLC",
+export const metadata: Metadata = {
+  title: "Panel",
   description: "Panel de administración de Motostore",
 };
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh flex flex-col bg-slate-50">
-      {/* 1) Marca (logo + nombre + panel derecho) */}
-      <div className="bg-white border-b">
-        <BrandHeader />
-      </div>
+    // ESTRUCTURA: Columna vertical (flex-col). Sin flex-row, sin sidebar al lado.
+    <div className="min-h-screen flex flex-col bg-slate-50">
 
-      {/* 2) Barra informativa */}
-      <AnnouncementBar />
+      {/* BLOQUE SUPERIOR FIJO (STICKY) */}
+      <header className="sticky top-0 z-50 w-full shadow-md bg-white flex flex-col">
 
-      {/* 3) Menú superior */}
-      <TopNav />
+        {/* 1. Cabecera de Marca (Logo y Usuario) */}
+        <div className="w-full bg-white border-b border-slate-200">
+          {/* Centrado idéntico al del contenido principal */}
+          <div className="mx-auto w-full max-w-7xl px-4">
+            <BrandHeader />
+          </div>
+        </div>
 
-      {/* 4) Contenido */}
-      <main className="flex-1 mx-auto w-full max-w-screen-2xl px-4 md:px-6 py-4 md:py-6">
-        {children}
+        {/* 2. Avisos (Chips) */}
+        <NoticeChips />
+
+        {/* 3. Menú Rojo (TopNav) */}
+        {/* Renderizamos el componente. Él se encargará de su propio color y centrado. */}
+        <TopNav />
+      </header>
+
+      {/* CONTENIDO PRINCIPAL */}
+      <main className="flex-1 w-full">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6">
+          {children}
+        </div>
       </main>
+
     </div>
   );
 }
-
-
-
-
 
 
 

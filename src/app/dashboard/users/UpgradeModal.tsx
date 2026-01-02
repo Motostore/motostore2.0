@@ -1,4 +1,3 @@
-
 "use client";
 
 import { UserContext } from "@/app/Context/usersContext";
@@ -6,17 +5,24 @@ import { Button, Modal } from "flowbite-react";
 import { useSession } from "next-auth/react";
 import { useContext } from "react";
 
-export default function UpgradeModal({user, openModal, setOpenModal}) {
+// 💎 FIX 1: Tipamos props con 'any'
+export default function UpgradeModal({user, openModal, setOpenModal}: {user: any, openModal: any, setOpenModal: any}) {
 
-  const { getUsers } = useContext(UserContext);
+  // 💎 FIX 2: Casteo de contexto y truco para Modal
+  const { getUsers } = useContext(UserContext) as any;
   const {data: session} = useSession();
+  const ModalAny = Modal as any;
   
-  async function upgradeUser(user) {
+  // 💎 FIX 3: Tipamos parámetro user
+  async function upgradeUser(user: any) {
+    // 💎 FIX 4: Acceso seguro al token
+    const token = (session?.user as any)?.token;
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/users/upgrade/${user?.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
+        'Authorization': `Bearer ${token}`
       }
     });
 
@@ -28,9 +34,9 @@ export default function UpgradeModal({user, openModal, setOpenModal}) {
 
   return (
     <>
-      <Modal show={openModal} onClose={() => setOpenModal(false)}>
-        <Modal.Header>Ascender usuario</Modal.Header>
-        <Modal.Body>
+      <ModalAny show={openModal} onClose={() => setOpenModal(false)}>
+        <ModalAny.Header>Ascender usuario</ModalAny.Header>
+        <ModalAny.Body>
             {
               user ? 
               (
@@ -47,14 +53,14 @@ export default function UpgradeModal({user, openModal, setOpenModal}) {
                 </p>
               </div>
             }
-        </Modal.Body>
-        <Modal.Footer className="justify-end">
+        </ModalAny.Body>
+        <ModalAny.Footer className="justify-end">
           <Button className="bg-orange-500 hover:bg-orange-500 enabled:hover:bg-orange-600" onClick={() => upgradeUser(user)}>Ascender</Button>
           <Button color="red" onClick={() => setOpenModal(false)}>
             Cancelar
           </Button>
-        </Modal.Footer>
-      </Modal>
+        </ModalAny.Footer>
+      </ModalAny>
     </>
   );
 }

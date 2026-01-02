@@ -1,49 +1,101 @@
-// src/app/ui/header.tsx
-'use client';
+// src/app/ui/header.tsx (FECHA EN NEGRITA - DISEÑO FINAL)
+
+"use client";
 
 import Link from "next/link";
-import MotostoreLogo from "./motostore-logo";
-import { partsOfTheDay, currentDate } from "../common";
-import HeaderProfile from "./dashboard/header-profile";
+import Image from "next/image"; 
+import { partsOfTheDay, currentDate } from "../common"; 
+import React from "react";
 
 export default function Header() {
   const saludo = partsOfTheDay();
   const fecha = currentDate();
 
+  // Colores Premium
+  const TEXT_DARK = 'text-slate-900'; // Color oscuro para textos principales
+  const TEXT_GRAY = 'text-slate-600'; // Gris un poco más oscuro para que la negrita se note bien
+  const BRAND_HOVER = 'text-[#E33127]';
+
   return (
-    <div className="w-full md:px-16 md:h-100">
-      <div className="flex flex-col sm:flex-row justify-between items-center w-full">
-        {/* Logo + Nombre + Eslogan fijo */}
-        <Link href="/" className="flex items-center justify-start px-4 w-full sm:w-auto">
-          <div className="p-4 flex items-center gap-3">
-            <MotostoreLogo className="w-6 h-6 sm:w-7 sm:h-7" />
-            <div className="flex items-center flex-wrap gap-x-2 text-sm sm:text-base">
-              <span className="font-semibold text-gray-900">Moto Store LLC</span>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-500">Soluciones Digitales 24/7</span>
+    <header className="w-full bg-white relative font-sans z-40">
+      
+      <div className="container mx-auto px-4 py-4 md:py-5 md:px-8 max-w-7xl">
+        
+        {/* Alineación Horizontal Perfecta */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4"> 
+          
+          {/* ================= IZQUIERDA: DISEÑO LINEAL (Intacto) ================= */}
+          <Link 
+            href="/" 
+            className="flex items-center gap-4 group md:w-auto justify-center md:justify-start"
+          >
+            
+            {/* 1. LOGO */}
+            <div className="relative h-14 w-14 md:h-16 md:w-16 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
+               <Image 
+                 src="/motostore-logo.png" 
+                 alt="Moto Store LLC" 
+                 fill
+                 className="object-contain"
+                 priority
+               />
             </div>
-          </div>
-        </Link>
 
-        {/* Perfil + saludo/fecha */}
-        <div className="flex flex-col items-center px-4 pb-2 sm:pb-0">
-          <HeaderProfile />
-          <div className="text-sm md:text-base text-black font-semibold mt-2 text-right">
-            {saludo}<br />
-            {fecha}
+            {/* 2. TEXTO EN LÍNEA */}
+            <div className="flex items-center text-center md:text-left leading-none">
+              
+              {/* NOMBRE */}
+              <span className={`font-black text-xl md:text-2xl ${TEXT_DARK} group-hover:${BRAND_HOVER} transition-colors tracking-tight`}>
+                Moto Store LLC
+              </span>
+              
+              {/* SEPARADOR VERTICAL */}
+              <div className="h-6 w-px bg-gray-300 mx-3 hidden sm:block"></div>
+
+              {/* SLOGAN */}
+              <span className={`hidden sm:inline text-sm md:text-base text-slate-500 font-medium tracking-wide`}>
+                Soluciones Digitales 24/7
+              </span>
+            </div>
+          
+          </Link>
+
+
+          {/* ================= DERECHA: WIDGET (FECHA EN NEGRITA) ================= */}
+          <div className="hidden lg:flex items-center">
+            
+            {/* Cápsula elegante sin icono */}
+            <div className="flex items-center justify-center bg-gray-50 px-6 py-2 rounded-full border border-gray-100 transition-shadow hover:shadow-sm">
+              
+              <div className="text-right flex flex-col">
+                
+                {/* SALUDO (Negrita) */}
+                <span className={`text-sm font-bold ${TEXT_DARK} leading-none`}>
+                  {saludo}
+                </span>
+                
+                {/* FECHA (AHORA EN NEGRITA TAMBIÉN) 
+                    - Cambié font-semibold por font-bold.
+                    - Usé TEXT_GRAY (slate-600) para que se lea nítido.
+                */}
+                <span className={`text-[11px] font-bold ${TEXT_GRAY} uppercase tracking-wide mt-0.5`}>
+                  {fecha}
+                </span>
+              </div>
+
+            </div>
+
           </div>
+
         </div>
       </div>
-
-      {/* Marquee informativo (igual que antes) */}
-      <div className="overflow-hidden bg-transparent py-2">
-        <div className="whitespace-nowrap animate-marquee text-center text-black font-medium">
-          🚀 ¡Bienvenido a Moto Store LLC 2.2! Renovamos nuestra plataforma para ofrecerte soluciones digitales más rápidas, seguras y automatizadas.
-        </div>
-      </div>
-    </div>
+      
+    </header>
   );
 }
+
+
+
 
 
 

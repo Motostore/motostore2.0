@@ -8,10 +8,9 @@
 
 import cn from 'classnames'
 import { findInputError, isFormInvalid } from '../utils'
-import { FieldValues, RegisterOptions, useFormContext } from 'react-hook-form'
+import { useFormContext } from 'react-hook-form'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MdError } from 'react-icons/md'
-import { InputProps } from '../types/input-props.interface'
 import { SelectProps } from '../types/select-props.interface'
 
 export const Select = ({ title, name, label, id, validation, className, options, onSelectChange, value }: SelectProps) => {
@@ -21,10 +20,10 @@ export const Select = ({ title, name, label, id, validation, className, options,
     formState: { errors },
   } = useFormContext()
 
-  const inputError = findInputError(errors, name)
+  const inputError = findInputError(errors, name || '')
   const isInvalid = isFormInvalid(inputError)
 
-  setValue(name, value || 'DISABLED')
+  setValue(name || '', value || 'DISABLED')
 
   const input_tailwind =
   'bg-white border border-gray-300 text-gray-500 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-orange-500 dark:focus:border-orange-500'
@@ -38,8 +37,10 @@ export const Select = ({ title, name, label, id, validation, className, options,
         <AnimatePresence mode="wait" initial={false}>
           {isInvalid && (
             <InputError
-              message={inputError.error.message}
-              key={inputError.error.message}
+              // 👇 SOLUCIÓN FINAL: Agregamos '?' después de 'error'
+              // inputError.error?.message
+              message={inputError.error?.message?.toString() || 'Error de validación'}
+              key={inputError.error?.message?.toString() || 'error-key'}
             />
           )}
         </AnimatePresence>
@@ -48,8 +49,7 @@ export const Select = ({ title, name, label, id, validation, className, options,
         id={name} 
         className={cn(input_tailwind)}
         {...register(
-          name, 
-          //validation as RegisterOptions<FieldValues, string>,
+          name || 'select-default', 
           {
             required: {
               value: true,
@@ -70,7 +70,7 @@ export const Select = ({ title, name, label, id, validation, className, options,
   )
 }
 
-const InputError = ({ message }) => {
+const InputError = ({ message }: { message: string }) => {
   return (
     <motion.p
       className="flex items-center gap-1 px-2 font-semibold text-red-500 bg-red-100 rounded-md"

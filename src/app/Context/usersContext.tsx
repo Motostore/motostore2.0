@@ -1,14 +1,23 @@
 'use client';
-import { createContext, useEffect, useState } from "react";
+
+import { createContext, useEffect, useState, ReactNode } from "react";
 import { useSession } from "next-auth/react";
 
-export const UserContext = createContext(null);
+// 💎 CORRECCIÓN 1: Inicializamos el contexto con 'any' para evitar quejas de TS
+export const UserContext = createContext<any>(null);
 
-export const UserProvider = ({children}) => {
+// 💎 CORRECCIÓN 2: Definimos la interfaz para las props
+interface UserProviderProps {
+  children: ReactNode;
+}
 
-  const {data: session} = useSession();
+// Aplicamos la interfaz a las props
+export const UserProvider = ({ children }: UserProviderProps) => {
 
-  const [users, setUsers] = useState([]);
+  const { data: session } = useSession();
+
+  // 💎 CORRECCIÓN 3: Tipamos el estado como array de objetos (any[])
+  const [users, setUsers] = useState<any[]>([]);
 
   const trackSession = session;
 
@@ -16,6 +25,7 @@ export const UserProvider = ({children}) => {
     if (trackSession) {
       fetchUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackSession]);
 
   function getUsers() {
@@ -25,17 +35,25 @@ export const UserProvider = ({children}) => {
   }
 
   async function fetchUsers() {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/users`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
-      }
-    });
+    // 💎 CORRECCIÓN 4: Protección extra para el token
+    if (!session?.user?.token) return;
 
-    if (response.ok) {
-      const json = await response.json();
-      setUsers(json);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.user.token}`
+        }
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        // Aseguramos que sea un array
+        setUsers(Array.isArray(json) ? json : []);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
     }
   }
 

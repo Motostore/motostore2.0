@@ -25,12 +25,17 @@ export default function ZinliForm({service, payload, setOpenModal}: { service: S
   });
 
   const onSubmit = handleSubmit( async (data) => {
-    const serviceId = service.id;
+    // CORRECCIÓN: Agregamos fallback '|| 0' para asegurar que sea un número
+    const serviceId = service.id || 0;
+    
     const paymentMethodId = parseInt(payload.id);
     const amount = service.price;
-    const name = data['name']
-    const reference = data['reference']
-    const email = data['email']
+    const name = data['name'];
+    const reference = data['reference'];
+    
+    // CORRECCIÓN: Agregamos fallback '|| ""' para asegurar que sea un string
+    const email = data['email'] || "";
+    
     const serviceType = service.serviceType;
     const message = `Se ha registrado un pago para el servicio ${service.name}, mediante el método de pago Zinli.`;
     const url = "/dashboard/transactions"

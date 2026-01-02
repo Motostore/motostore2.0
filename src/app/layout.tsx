@@ -1,58 +1,89 @@
-// src/app/layout.tsx
-import "./ui/globals.css";
-import Providers from "./providers";
+// src/app/layout.tsx (EDICIÓN FINAL: ULTRA PREMIUM MAESTRO)
+
 import type { Metadata, Viewport } from "next";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Inter } from "next/font/google";
 
-export const metadata: Metadata = {
-  title: {
-    default: "Moto Store LLC | Soluciones Digitales 24/7",
-    template: "%s | Moto Store LLC",
-  },
-  description: "Plataforma Moto Store LLC",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1220" },
-  ],
-  icons: {},
-};
+// Estilos Globales
+import "./ui/globals.css";
 
+// 1. INTEGRACIÓN DE FONT AWESOME (Iconos)
+import '@fortawesome/fontawesome-svg-core/styles.css';
+import { config } from '@fortawesome/fontawesome-svg-core';
+config.autoAddCss = false; 
+
+// 2. INTEGRACIÓN DE ANALYTICS (Vercel)
+import { Analytics } from '@vercel/analytics/react'; 
+
+// 3. PROVEEDOR DE SESIÓN (Auth)
+import { AuthProvider } from "./providers"; 
+
+// Fuente optimizada por Google
+const inter = Inter({ subsets: ["latin"] });
+
+// 🚀 VIEWPORT PRO: Configuración técnica para móviles
 export const viewport: Viewport = {
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  viewportFit: "cover",
+  themeColor: '#ffffff', // La barra del navegador en iPhone/Android será blanca
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="es" className="h-full scroll-smooth" suppressHydrationWarning>
-      <body
-        className="
-          min-h-[100dvh] bg-slate-50 text-slate-900
-          antialiased overflow-x-hidden touch-manipulation
-          selection:bg-slate-200 selection:text-slate-900
-        "
-        style={{
-          paddingTop: "env(safe-area-inset-top)",
-          paddingBottom: "env(safe-area-inset-bottom)",
-          paddingLeft: "env(safe-area-inset-left)",
-          paddingRight: "env(safe-area-inset-right)",
-        }}
-      >
-        <Providers>
-          <div className="isolate flex min-h-[100dvh] flex-col">
-            {children}
-          </div>
+// 🏆 METADATA MAESTRA (SEO GLOBAL)
+export const metadata: Metadata = {
+  metadataBase: new URL('https://motostorellc.com'), // URL base para resolver imágenes OG
+  title: {
+    template: '%s | Moto Store LLC', 
+    default: 'Moto Store LLC | Soluciones Digitales 24/7',
+  },
+  description: "Plataforma líder en servicios digitales, recargas móviles internacionales y licencias de software seguras.",
+  keywords: ["recargas venezuela", "starlink", "netflix", "servicios digitales", "moto store"],
+  authors: [{ name: "Moto Store LLC Team" }],
+  icons: {
+    icon: '/favicon.ico', // Asegúrate de tener este archivo
+  },
+  openGraph: {
+    title: 'Moto Store LLC',
+    description: 'Soluciones Digitales Rápidas y Seguras.',
+    url: 'https://motostorellc.com',
+    siteName: 'Moto Store LLC',
+    locale: 'es_ES',
+    type: 'website',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
-          <Analytics />
-          <SpeedInsights />
-        </Providers>
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    // 'scroll-smooth': Desplazamiento elegante
+    <html lang="es" className="scroll-smooth">
+      <body 
+        className={`
+          ${inter.className} 
+          antialiased 
+          bg-white text-slate-900 
+          selection:bg-[#E33127] selection:text-white
+        `}
+      >
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+
+        {/* Analytics se ejecuta silenciosamente */}
+        <Analytics /> 
+        
       </body>
     </html>
   );
 }
+
+
 
 
 

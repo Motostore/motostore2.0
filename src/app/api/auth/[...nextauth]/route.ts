@@ -1,155 +1,97 @@
 // src/app/api/auth/[...nextauth]/route.ts
+
 import NextAuth, { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import AppleProvider from "next-auth/providers/apple";
+
 import { normalizeRole } from "../../../lib/roles";
+import { User } from "../../../types/user.interface";
 
-/* ─── Helpers ─── */
-function pick<T = any>(obj: any, keys: string[]): T | null {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (v !== undefined && v !== null) return v as T;
-  }
-  return null;
+/* ----------------------------------------------
+   1. CONFIGURACIÓN DEL BACKEND (RENDER)
+---------------------------------------------- */
+function getBaseApi(): string {
+  // 🟢 CORRECCIÓN CRÍTICA: Apuntamos directo a RENDER
+  return "https://motostore-api.onrender.com/api/v1";
 }
 
-function base64UrlToString(input: string) {
-  const pad = input.length % 4 === 0 ? "" : "=".repeat(4 - (input.length % 4));
-  const b64 = (input + pad).replace(/-/g, "+").replace(/_/g, "/");
-  return Buffer.from(b64, "base64").toString("utf8");
+/* ----------------------------------------------
+   2. HELPERS PARA SALDO Y WALLET
+---------------------------------------------- */
+
+// Extrae el token de la respuesta del backend
+function extractToken(data: any): string | null {
+  return data?.access_token || data?.token || null;
 }
 
-function parseJwtClaims(token: string | null): any | null {
-  if (!token) return null;
+// Consulta el saldo real en la Wallet
+async function fetchWalletMe(baseApi: string, token: string) {
   try {
-    const t = token.startsWith("Bearer ") ? token.slice(7) : token;
-    const parts = t.split(".");
-    if (parts.length < 2) return null;
-    const payload = JSON.parse(base64UrlToString(parts[1]));
-    return payload || null;
-  } catch {
+    const res = await fetch(`${baseApi}/wallet/me`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("[NextAuth] Wallet fetch error:", err);
     return null;
   }
 }
 
-function extractRole(rawUser: any, data: any): string | null {
-  const direct =
-    pick(rawUser, ["role", "rol", "type", "perfil", "userRole", "user_type"]) ??
-    pick(data, ["role", "rol"]);
-  if (typeof direct === "string") return direct;
+// Busca el número del saldo dentro de la respuesta
+function extractWalletBalance(payload: any): number | null {
+  if (!payload) return null;
+  const candidates = [
+    payload?.balance,
+    payload?.wallet?.balance,
+    payload?.data?.balance,
+    payload?.data?.wallet?.balance,
+  ];
 
-  if (rawUser?.role) {
-    if (typeof rawUser.role === "string") return rawUser.role;
-    if (typeof rawUser.role?.name === "string") return rawUser.role.name;
-    if (typeof rawUser.role?.code === "string") return rawUser.role.code;
-  }
-
-  const arrs = [rawUser?.roles, rawUser?.authorities];
-  for (const arr of arrs) {
-    if (Array.isArray(arr) && arr.length > 0) {
-      const first = arr[0];
-      if (typeof first === "string") return first;
-      if (typeof first?.name === "string") return first.name;
-      if (typeof first?.code === "string") return first.code;
-      if (typeof first?.authority === "string") return first.authority;
-    }
-  }
-
-  if (rawUser?.perfil?.name) return rawUser.perfil.name;
-  if (rawUser?.perfil?.code) return rawUser.perfil.code;
-
-  return null;
-}
-
-function roleFromUsername(username: string | null | undefined): string | null {
-  if (!username) return null;
-  const u = username.toLowerCase();
-  if (u.startsWith("super")) return "SUPERUSER";
-  if (u.startsWith("admin")) return "ADMIN";
-  if (u.startsWith("distri") || u.startsWith("distrib")) return "DISTRIBUTOR";
-  if (u.startsWith("subdistrib")) return "SUBDISTRIBUTOR";
-  if (u.includes("sustaquilla")) return "SUSTAQUILLA";
-  if (u.includes("subtaquilla")) return "SUBTAQUILLA";
-  if (u.includes("taquilla")) return "TAQUILLA";
-  if (u.startsWith("client")) return "CLIENT";
-  return null;
-}
-
-/** Devuelve la base del API sin lanzar errores al importar */
-function getBaseApi(): string {
-  const raw = (process.env.NEXT_PUBLIC_API_FULL || process.env.API_BASE || "").trim();
-  return raw.replace(/\/$/, "");
-}
-
-async function tryLogin(base: string, payload: any) {
-  if (!base) return null;
-  const endpoints = ["/auth/login", "/login", "/auth/sign-in"];
-  for (const ep of endpoints) {
-    try {
-      const res = await fetch(`${base}${ep}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) continue;
-
-      const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch {
-        // Si no es JSON, asumimos que es un token plano
-        return { token: text };
-      }
-    } catch {
-      // siguiente endpoint
-    }
+  for (const c of candidates) {
+    if (typeof c === "number" && Number.isFinite(c)) return c;
+    if (typeof c === "string" && !isNaN(Number(c))) return Number(c);
   }
   return null;
 }
 
-async function fetchProfile(base: string, accessToken: string, username?: string | null) {
-  if (!base) return null;
-  const b = base.replace(/\/$/, "");
-  const headers = {
-    Accept: "application/json",
-    Authorization: accessToken?.startsWith("Bearer ")
-      ? accessToken
-      : `Bearer ${accessToken}`,
-  };
+// Crea el objeto de usuario para la sesión
+function createAuthUser(rawUser: any, token: string, username: string): User {
+  const initialBalance = rawUser?.balance ?? 0;
 
-  const urls: string[] = [
-    `${b}/auth/me`,
-    `${b}/users/me`,
-    `${b}/user/me`,
-    `${b}/account/me`,
-    `${b}/profile/me`,
-    username ? `${b}/users/username/${encodeURIComponent(username)}` : "",
-    username ? `${b}/users/find-by-username?username=${encodeURIComponent(username)}` : "",
-  ].filter(Boolean);
-
-  for (const url of urls) {
-    try {
-      const r = await fetch(url, { headers });
-      if (!r.ok) continue;
-      const txt = await r.text();
-      try {
-        return JSON.parse(txt);
-      } catch {
-        // si devuelve HTML/otro, seguimos
-      }
-    } catch {
-      // siguiente URL
-    }
-  }
-  return null;
+  return {
+    id: String(rawUser?.id || rawUser?._id || "1"),
+    username: rawUser?.username || username,
+    email: rawUser?.email || "",
+    name: rawUser?.name || rawUser?.full_name || username,
+    image: rawUser?.avatar || null,
+    role: normalizeRole(rawUser?.role ?? "CLIENT"),
+    token,
+    accessToken: token,
+    balance: Number(initialBalance) || 0,
+    balanceText: String(Number(initialBalance) || 0),
+    cedula: rawUser?.cedula ?? null,
+    telefono: rawUser?.telefono ?? null,
+    backendData: rawUser,
+  } as any;
 }
-/* ─── /Helpers ─── */
 
-const isProd = process.env.NODE_ENV === "production";
+/* ----------------------------------------------
+   3. OPCIONES DE NEXTAUTH
+---------------------------------------------- */
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
-  secret: process.env.NEXTAUTH_SECRET || (isProd ? undefined : "dev-secret-1234567890"),
+  session: { strategy: "jwt", maxAge: 300 * 60 }, // 5 horas
+  pages: { signIn: "/login", error: "/login" },
+  secret: process.env.NEXTAUTH_SECRET || "secreto_super_seguro_cambiar_en_vercel",
+  
   providers: [
     Credentials({
       name: "Credenciales",
@@ -158,94 +100,84 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
-        const baseApi = getBaseApi();
-        const username = credentials?.username?.toString().trim();
-        const password = credentials?.password?.toString();
+        try {
+          const baseApi = getBaseApi();
+          const username = credentials?.username?.trim();
+          const password = credentials?.password;
 
-        // Si falta backend o credenciales → no autenticamos (pero no rompemos /session)
-        if (!username || !password || !baseApi) return null;
+          if (!username || !password) return null;
 
-        // 1) Login
-        const data =
-          (await tryLogin(baseApi, { username, password })) ??
-          (await tryLogin(baseApi, { email: username, password }));
-        if (!data) return null;
+          // 🟢 PETICIÓN AL BACKEND (CORREGIDA)
+          // Usamos x-www-form-urlencoded porque FastAPI lo exige para OAuth2
+          const loginUrl = `${baseApi}/auth/login/access-token`;
+          
+          const res = await fetch(loginUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Accept": "application/json",
+            },
+            body: new URLSearchParams({
+              username: username,
+              password: password,
+            }),
+          });
 
-        // 2) Token + usuario parcial
-        const rawUser =
-          pick<any>(data, ["user", "usuario", "data", "account", "profile"]) ?? data;
-        const id =
-          pick<any>(rawUser, ["id", "userId", "uid", "_id", "uuid"]) ?? username;
+          const data = await res.json();
 
-        let accessToken =
-          pick<string>(data, ["token", "accessToken", "jwt", "access_token"]) ??
-          pick<string>(rawUser, ["token", "accessToken"]) ??
-          null;
-        if (!accessToken) {
-          const t2 = pick<any>(data, ["token"]) ?? pick<any>(rawUser, ["token"]);
-          if (t2?.access_token) accessToken = t2.access_token;
-        }
-
-        // 3) Detectar rol
-        let roleDetected: string | null = extractRole(rawUser, data) ?? null;
-
-        // 4) Claims del JWT
-        if (!roleDetected && accessToken) {
-          const claims = parseJwtClaims(accessToken);
-          if (claims) {
-            roleDetected =
-              (typeof claims.role === "string" && claims.role) ||
-              (Array.isArray(claims.authorities) && claims.authorities[0]) ||
-              (Array.isArray(claims.roles) && claims.roles[0]) ||
-              (typeof claims.rol === "string" && claims.rol) ||
-              null;
+          if (!res.ok || !data) {
+            console.error("❌ Error Login Backend:", data);
+            return null;
           }
+
+          const token = extractToken(data);
+          if (!token) return null;
+
+          // Ya tenemos token, ahora obtenemos datos del usuario y wallet
+          // (A veces el endpoint de login no devuelve el usuario completo, solo el token)
+          // Si tu endpoint devuelve usuario, úsalo. Si no, consultamos /users/me o /wallet/me
+          
+          // Paso extra: Intentamos obtener info del usuario usando el token nuevo
+          let userData = data.user || {}; // Si el login devolvió usuario
+          
+          // Consultamos Wallet para asegurar saldo y datos frescos
+          const walletData = await fetchWalletMe(baseApi, token);
+          
+          // Si walletData trae info de usuario, la mezclamos
+          if (walletData) {
+              const walletBalance = extractWalletBalance(walletData);
+              userData = { ...userData, ...walletData, balance: walletBalance ?? userData.balance };
+          }
+
+          return createAuthUser(userData, token, username);
+
+        } catch (err) {
+          console.error("🔥 [NextAuth] Error CRÍTICO en authorize:", err);
+          return null;
         }
-
-        // 5) /me
-        if (!roleDetected && accessToken) {
-          const profile = await fetchProfile(baseApi, accessToken, username);
-          if (profile) roleDetected = extractRole(profile, {});
-        }
-
-        // 6) Fallback username (dev)
-        if (!roleDetected) roleDetected = roleFromUsername(username);
-
-        const role = normalizeRole(roleDetected);
-        if (!id) return null;
-
-        return {
-          id: String(id),
-          username,
-          role,
-          accessToken,
-          token: accessToken,
-          email: pick(rawUser, ["email"]) ?? null,
-          name: pick(rawUser, ["name"]) ?? username,
-        } as any;
       },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    }),
+    AppleProvider({
+      clientId: process.env.APPLE_CLIENT_ID || "",
+      clientSecret: process.env.APPLE_CLIENT_SECRET || "",
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.userId = (user as any).id;
-        token.username = (user as any).username;
-        token.role = (user as any).role ?? token.role ?? "CLIENT";
-        token.accessToken =
-          (user as any).accessToken ?? (user as any).token ?? token.accessToken ?? null;
+        token.user = user as any;
+        token.accessToken = (user as any).accessToken;
+        (token as any).walletSyncAt = Date.now();
       }
       return token;
     },
     async session({ session, token }) {
-      session.user = {
-        ...(session.user || {}),
-        id: (token as any).userId ?? "",
-        username: (token as any).username ?? "",
-        role: (token as any).role ?? "CLIENT",
-        token: (token as any).accessToken ?? "",
-        accessToken: (token as any).accessToken ?? "",
-      } as any;
+      session.user = token.user as any;
+      (session as any).accessToken = token.accessToken;
       return session;
     },
   },

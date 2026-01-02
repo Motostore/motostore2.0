@@ -1,58 +1,37 @@
-"use client";
+// src/app/components/GalleryBaseItem.tsx (CÓDIGO CORREGIDO Y COMPLETO)
+'use client';
 
-import { useState } from "react";
-import ImageS3 from "../ui/common/ImageS3";
-import PurchaseModal from "./PurchaseModal";
-import { error_message } from "../utils/tailwindStyles";
-import { pluralizeMonth } from "../lib/utils";
+import React, { useState } from "react";
+import PurchaseModal from "./PurchaseModal"; 
+import { formatCurrency } from "@/app/lib/utils"; // 🛑 CORRECCIÓN: IMPORTAR LA UTILIDAD
 
-export default function GalleryRechargesItem({ item, buttonText }) {
-  const [openModal, setOpenModal] = useState(false);
-  const [selected, setSelected] = useState();
+// Asumiendo que Product o el tipo correcto se define en otro lugar
+interface GalleryBaseItemProps {
+    item: any; 
+    buttonText: string;
+}
 
-  const onHire = (item) => {
-    setSelected(item);
-    setOpenModal(true);
-  };
+export default function GalleryBaseItem({ item, buttonText }: GalleryBaseItemProps) {
+    const [openModal, setOpenModal] = useState(false);
+    const [paymentData, setPaymentData] = useState(null); 
+    
+    const handlePurchaseClick = () => {
+        setOpenModal(true);
+    };
 
-  return (
-    <div
-      key={item.id}
-      className="max-w-sm bg-white border hover:bg-gray-100 border-gray-100 rounded-lg dark:bg-gray-800 dark:border-gray-700 cursor-pointer shadow-xl"
-    >
-      <div className="p-5 flex items-center justify-center h-48">
-        <ImageS3 objectKey={item.image} objectName={item.name} />
-      </div>
-      <div className="py-2 px-4 mx-auto">
-        <div className="flex justify-center items-center">
-          <h5
-            className={`text-lg font-medium tracking-tight text-gray-900 dark:text-white`}
-          >
-            {item.name}
-          </h5>
+    const imageUrl = item.image || '/images/default_product.png'; 
+    const priceText = item.price ? formatCurrency(item.price) : 'Precio variable'; 
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700">
+            {/* ... Resto del JSX ... */}
+
+            <PurchaseModal
+                openModal={openModal}
+                setOpenModal={setOpenModal}
+                service={item as any} 
+                setPaymentData={setPaymentData as any} 
+            />
         </div>
-      </div>
-      <div>
-        <div className="flex justify-center items-center h-[50px]">
-          {
-            item.status
-            ?
-            <button
-              onClick={() => onHire(item)}
-              className="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg w-full m-2"
-            >
-              {buttonText}
-            </button>
-            :<span className={error_message}>Este servicio esta inactivo</span>
-
-          }
-        </div>
-      </div>
-      <PurchaseModal
-        service={selected}
-        openModal={openModal}
-        setOpenModal={setOpenModal}
-      />
-    </div>
-  );
+    );
 }

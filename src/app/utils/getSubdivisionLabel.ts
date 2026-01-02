@@ -1,54 +1,35 @@
-// src/app/utils/getSubdivisionLabel.ts
-
-/**
- * Devuelve la etiqueta para la segunda división administrativa
- * según el país seleccionado.
- *
- * - "Departamento": CO, BO, PY, UY, PE
- * - "Condado": GB (Reino Unido), IE (Irlanda)
- * - En el resto: "Estado"
- *
- * Acepta código ISO2 (p.ej. "CO") o nombre del país ("Colombia").
- */
+// src/app/utils/getSubdivisionLabel.ts (Versión Alternativa con Mapa Único)
 
 export type SubdivisionLabel = "Departamento" | "Estado" | "Condado";
 
-/** Quita tildes y normaliza para comparar nombres. */
 function normalize(s: string): string {
   return s
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // quita acentos
+    .replace(/[\u0300-\u036f]/g, "") 
     .toUpperCase()
     .trim();
 }
 
-// Países que usan "Departamento"
-const DEPARTAMENTO_SET = new Set<string>([
-  "CO", "COLOMBIA",
-  "BO", "BOLIVIA",
-  "PY", "PARAGUAY",
-  "UY", "URUGUAY",
-  "PE", "PERU", "PERÚ",
+// Mapa de país/código -> Etiqueta de subdivisión
+const SUBDIVISION_MAP = new Map<string, SubdivisionLabel>([
+  // Departamento
+  ["CO", "Departamento"], ["COLOMBIA", "Departamento"],
+  ["BO", "Departamento"], ["BOLIVIA", "Departamento"],
+  ["PY", "Departamento"], ["PARAGUAY", "Departamento"],
+  ["UY", "Departamento"], ["URUGUAY", "Departamento"],
+  ["PE", "Departamento"], ["PERU", "Departamento"], ["PERÚ", "Departamento"],
+  
+  // Condado
+  ["GB", "Condado"], ["UK", "Condado"], ["UNITED KINGDOM", "Condado"], ["REINO UNIDO", "Condado"],
+  ["IE", "Condado"], ["IRELAND", "Condado"], ["IRLANDA", "Condado"],
 ]);
 
-// Países que usan "Condado"
-const CONDADO_SET = new Set<string>([
-  "GB", "UK", "UNITED KINGDOM", "REINO UNIDO",
-  "IE", "IRELAND", "IRLANDA",
-]);
 
-/**
- * Obtiene la etiqueta de subdivisión según país (ISO2 o nombre).
- */
 export function getSubdivisionLabel(country: string | null | undefined): SubdivisionLabel {
   if (!country) return "Estado";
 
   const norm = normalize(country);
 
-  if (DEPARTAMENTO_SET.has(norm)) return "Departamento";
-  if (CONDADO_SET.has(norm)) return "Condado";
-
-  // Por defecto en el resto del mundo
-  return "Estado";
+  // Busca en el mapa. Si lo encuentra, devuelve la etiqueta; si no, devuelve "Estado".
+  return SUBDIVISION_MAP.get(norm) ?? "Estado";
 }
-

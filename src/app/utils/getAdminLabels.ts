@@ -1,9 +1,9 @@
-// src/app/utils/getAdminLabels.ts
+// src/app/utils/getAdminLabels.ts (CÓDIGO FINAL Y CORREGIDO - SINTAXIS ESTABLE DEFINITIVA)
 
 /**
  * Devuelve etiquetas para:
- *  - level1: nombre de la 1ª subdivisión (Estado / Provincia / Departamento / Condado / Región / Prefectura...)
- *  - level2: nombre de la 2ª subdivisión (Municipio / Ciudad / Comuna / Cantón / Distrito / Condado...)
+ * - level1: nombre de la 1ª subdivisión (Estado / Provincia / Departamento / Condado / Región / Prefectura...)
+ * - level2: nombre de la 2ª subdivisión (Municipio / Ciudad / Comuna / Cantón / Distrito / Condado...)
  *
  * Entrada recomendada: código ISO2 del país (CO, MX, VE, US, ES, BR, AR, CL, PE, ...).
  * Si envías nombre de país, también intentará resolverlo.
@@ -117,7 +117,8 @@ const NAME_TO_ISO2: Record<string, string> = {
   FRANCIA: "FR",
   ALEMANIA: "DE",
   ITALIA: "IT",
-  PAÍSES BAJOS: "NL",
+  // Esta entrada de Holanda/Países Bajos es donde reside el conflicto:
+  "PAÍSES BAJOS": "NL",  // Asegúrate de que esté entre comillas.
   HOLANDA: "NL",
   BÉLGICA: "BE",
   BELGICA: "BE",
@@ -167,3 +168,4 @@ export function getAdminLabels(countryCodeOrName?: string | null): AdminLabels {
 
   return DEFAULT;
 }
+

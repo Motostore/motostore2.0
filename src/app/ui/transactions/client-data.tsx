@@ -7,13 +7,15 @@ import ZinliVerify from "./payment/verification/zinly-verify";
 
 export default function ClientData({ paymentId, verification }: { paymentId: any, verification: any }) {
 
-  const [payment, setPayment] = useState(null);
+  // CORRECCIÓN: Tipamos el estado como 'any' para que pueda recibir el objeto de pago
+  const [payment, setPayment] = useState<any>(null);
 
   useEffect(() => {
     getPayment(paymentId)
   }, [])
 
-  async function getPayment(id) {
+  // CORRECCIÓN: Tipamos el parámetro id como 'any'
+  async function getPayment(id: any) {
     const response = await fetchPaymentMethodById(id);
     setPayment(response)
   }

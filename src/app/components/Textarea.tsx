@@ -1,9 +1,7 @@
 /*-------------------------------------------------------------------
-|  🐼 React FC Input
+|  🐼 React FC Textarea
 |
-|  🦝 Todo: CREATE RE-USEABLE INPUT COMPOENT
-|
-|  🐸 Returns:  JSX
+|  🦝 Fixed for TypeScript Strict Mode & Correct HTML Tag
 *-------------------------------------------------------------------*/
 
 import cn from 'classnames'
@@ -20,7 +18,8 @@ export const Textarea = ({ name, label, type, id, placeholder, validation, class
     formState: { errors },
   } = useFormContext()
 
-  const inputError = findInputError(errors, name)
+  // CORRECCIÓN 1: Fallback para name si es undefined
+  const inputError = findInputError(errors, name || '')
   const isInvalid = isFormInvalid(inputError)
 
   const input_tailwind =
@@ -35,24 +34,32 @@ export const Textarea = ({ name, label, type, id, placeholder, validation, class
         <AnimatePresence mode="wait" initial={false}>
           {isInvalid && (
             <InputError
-              message={inputError.error.message}
-              key={inputError.error.message}
+              // CORRECCIÓN 2: Manejo seguro de errores con optional chaining
+              message={inputError.error?.message?.toString() || 'Error'}
+              key={inputError.error?.message?.toString() || 'error-key'}
             />
           )}
         </AnimatePresence>
       </div>
-        <input
+        {/* CORRECCIÓN 3: Cambiado de <input> a <textarea> y añadida prop rows */}
+        <textarea
           id={id}
-          type={type}
+          // type={type} // Textarea no lleva atributo type
+          rows={4} // Altura por defecto
           className={cn(input_tailwind)}
           placeholder={placeholder}
-          {...register(name, validation as RegisterOptions<FieldValues, string>)}
+          {...register(
+            // CORRECCIÓN 4: name obligatorio
+            name || '', 
+            validation as RegisterOptions<FieldValues, string>
+          )}
         />
     </div>
   )
 }
 
-const InputError = ({ message }) => {
+// CORRECCIÓN 5: Tipado explícito de message
+const InputError = ({ message }: { message: string }) => {
   return (
     <motion.p
       className="flex items-center gap-1 px-2 font-semibold text-red-500 bg-red-100 rounded-md"

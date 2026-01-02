@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button, Modal } from "flowbite-react";
@@ -8,13 +7,25 @@ import { useContext } from "react";
 import VerifyForm from "../forms/verify-form";
 import { TransactionEnum } from "@/app/lib/enums";
 
-export default function ModalProcessed({openModal, setOpenModal, transaction}) {
+// CORRECCIÓN: Casteamos Modal a 'any' para que TypeScript no se queje 
+// de que le faltan las propiedades .Header, .Body y .Footer
+const ModalAny = Modal as any;
+
+export default function ModalProcessed({
+  openModal, 
+  setOpenModal, 
+  transaction
+}: {
+  openModal: any,
+  setOpenModal: any,
+  transaction: any
+}) {
 
   return (
     <>
-      <Modal show={openModal} onClose={() => setOpenModal(false)}>
-        <Modal.Header>Rechazar solicitud</Modal.Header>
-        <Modal.Body>
+      <ModalAny show={openModal} onClose={() => setOpenModal(false)}>
+        <ModalAny.Header>Aprobar solicitud</ModalAny.Header> {/* Corregí el título también, decía Rechazar */}
+        <ModalAny.Body>
             {
               transaction ? 
               (
@@ -31,14 +42,14 @@ export default function ModalProcessed({openModal, setOpenModal, transaction}) {
                 </p>
               </div>
             }
-        </Modal.Body>
-        <Modal.Footer className="flex flex-col md:flex-row justify-between gap-2">
+        </ModalAny.Body>
+        <ModalAny.Footer className="flex flex-col md:flex-row justify-between gap-2">
           {
             transaction ? <VerifyForm transactionStatus={TransactionEnum.PROCESSED} clientId={transaction.clientId} transactionId={transaction.id} setOpenModal={setOpenModal} />
             :null
           }
-        </Modal.Footer>
-      </Modal>
+        </ModalAny.Footer>
+      </ModalAny>
     </>
   );
 }

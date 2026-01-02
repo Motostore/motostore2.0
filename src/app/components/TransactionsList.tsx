@@ -6,11 +6,8 @@ import { formatCurrency, formatDateToLocal, setPad } from "../lib/utils";
 import { ServiceEnum } from "../lib/enums";
 import TransactionStatus from "../ui/transactions/status";
 import { useSession } from "next-auth/react";
-
-// ✅ usa el RBAC
 import { can } from "../rbac/permissions";
 
-// Recibe la prop `query` directamente del componente padre
 export default function TransactionsList({ query }: { query: string }) {
   const { data: session } = useSession();
 
@@ -28,16 +25,16 @@ export default function TransactionsList({ query }: { query: string }) {
       setError(null);
       setTransactions(null);
 
-      // 🟢 ahora decide con RBAC: SUPERUSER/ADMIN (y cualquiera con permiso) verá global
+      // Mantenemos la corrección anterior (sin argumentos en fetchTransactionClient)
       const response = can(session?.user?.role, "transactions:read:any")
         ? await fetchTransactionManager(query, 1)
-        : await fetchTransactionClient(query);
+        : await fetchTransactionClient();
 
       setTransactions(Array.isArray(response) ? response : []);
     } catch (err) {
       console.error("Error cargando transacciones:", err);
       setError("No pudimos cargar tus transacciones. Intenta de nuevo.");
-      setTransactions([]); // evita null en el render
+      setTransactions([]); 
     }
   }
 
@@ -47,8 +44,8 @@ export default function TransactionsList({ query }: { query: string }) {
         <p>Cargando transacciones…</p>
       ) : error ? (
         <p>{error}</p>
-      ) : transactions.length > 0 ? (
-        transactions.map((t) => (
+      ) : (transactions?.length || 0) > 0 ? ( // 👈 CORRECCIÓN 1: '?.length || 0' para seguridad total
+        transactions!.map((t) => (           // 👈 CORRECCIÓN 2: '!' para asegurar que no es nulo
           <div key={t.id} className="flex flex-col p-2.5 w-full">
             <dt className="mb-1 text-gray-500 md:text-lg dark:text-gray-400">
               <div className="flex justify-between items-center gap-1 md:gap-4 flex-col md:flex-row mb-2 md:mb-0">

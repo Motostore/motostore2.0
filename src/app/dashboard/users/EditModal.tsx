@@ -1,21 +1,24 @@
-
 "use client";
 import { Modal } from "flowbite-react";
 import CreateForm from "./CreateForm";
 import { LocationSelectProvider } from "@/app/Context/locationSelectContext";
 
-export default function EditModal({openModal, setOpenModal, user}) {
+// 💎 FIX 1: Tipamos las props con 'any'
+export default function EditModal({openModal, setOpenModal, user}: {openModal: any, setOpenModal: any, user: any}) {
+
+  // 💎 FIX 2: Truco para evitar error de tipos en Modal.Header/Body
+  const ModalAny = Modal as any;
 
   return (
     <>
-      <Modal show={openModal} onClose={() => setOpenModal(false)}>
-        <Modal.Header>Editar usuario</Modal.Header>
-        <Modal.Body>
+      <ModalAny show={openModal} onClose={() => setOpenModal(false)}>
+        <ModalAny.Header>Editar usuario</ModalAny.Header>
+        <ModalAny.Body>
           <LocationSelectProvider>
             <CreateForm setOpenModal={setOpenModal} user={user} textButton={'Editar'} />
           </LocationSelectProvider>
-        </Modal.Body>
-      </Modal>
+        </ModalAny.Body>
+      </ModalAny>
     </>
   );
 }

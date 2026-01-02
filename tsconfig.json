@@ -1,26 +1,47 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] },
-
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ES2020", // Actualizado para mejor soporte moderno
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
+    // IMPORTANTE: En Next.js, noEmit suele ser true.
+    // Next.js se encarga de la compilación, tsc solo verifica tipos.
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    // 'preserve' es lo recomendado para que Next.js/SWC maneje el JSX.
+    // Si usas 'react-jsx', asegúrate de que no cause conflictos de hidratación.
+    "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [{ "name": "next" }],
-    "target": "ES2017"
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    // Configuración de alias más estándar
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
-
-
-

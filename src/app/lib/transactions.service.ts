@@ -3,14 +3,21 @@ import { getSession } from "next-auth/react";
 
 const ITEMS_PER_PAGE = 10;
 
+// Tipo auxiliar para asegurar que TypeScript reconozca el token en la sesión
+type SessionWithToken = {
+  user: {
+    token?: string;
+  }
+} | null;
+
 export async function fetchTransaction(body: ZinliTransaction) {
   try {
-    const session = await getSession()
+    const session = await getSession() as SessionWithToken;
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/transaction`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
+        'Authorization': `Bearer ${session?.user?.token || ''}`
       },
       body: JSON.stringify(body),
     });
@@ -27,12 +34,13 @@ export async function fetchTransaction(body: ZinliTransaction) {
   }
   }
 
-export async function fetchTransactionManager(query, page) {
+// CORRECCIÓN: Agregados tipos para query (string) y page (number)
+export async function fetchTransactionManager(query: string, page: number) {
   try {
-    const session = await getSession()
+    const session = await getSession() as SessionWithToken;
     
     const params = new URLSearchParams({
-      'query': query,
+      'query': query || '',
       'page': (page - 1).toString(),
       'elements': ITEMS_PER_PAGE.toString()
     });
@@ -41,7 +49,7 @@ export async function fetchTransactionManager(query, page) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
+        'Authorization': `Bearer ${session?.user?.token || ''}`
       }
     });
 
@@ -59,12 +67,12 @@ export async function fetchTransactionManager(query, page) {
 
 export async function fetchTransactionClient() {
   try {
-    const session = await getSession()
+    const session = await getSession() as SessionWithToken;
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/transaction/client`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
+        'Authorization': `Bearer ${session?.user?.token || ''}`
       }
     });
 
@@ -80,14 +88,15 @@ export async function fetchTransactionClient() {
   }
 }
 
-export async function fetchTransactionById(id) {
+// CORRECCIÓN: Agregado tipo para id
+export async function fetchTransactionById(id: string | number) {
   try {
-    const session = await getSession()
+    const session = await getSession() as SessionWithToken;
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/transaction/manager/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
+        'Authorization': `Bearer ${session?.user?.token || ''}`
       }
     });
 
@@ -105,12 +114,12 @@ export async function fetchTransactionById(id) {
 
 export async function fetchVerifyTransaction(id: number, body: TransactionVerify) {
   try {
-    const session = await getSession()
+    const session = await getSession() as SessionWithToken;
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/transaction/verify/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
+        'Authorization': `Bearer ${session?.user?.token || ''}`
       },
       body: JSON.stringify(body),
     });

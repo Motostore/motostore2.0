@@ -1,7 +1,16 @@
 import { useEffect } from "react";
 import ZelleForm from "../forms/ZelleForm";
 
-export default function ZellePayment({ service, setPaymentData, setOpenModal }) {
+// CORRECCIÓN: Agregamos los tipos ': any' para que pase el build
+export default function ZellePayment({ 
+  service, 
+  setPaymentData, 
+  setOpenModal 
+}: { 
+  service: any, 
+  setPaymentData: any, 
+  setOpenModal: any 
+}) {
   const payload = {
     transaction: "Zelle",
     zelleName: "William Amaro",

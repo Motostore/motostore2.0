@@ -1,29 +1,39 @@
 'use client';
-import { createContext, useEffect, useState } from "react";
+
+import { createContext, useEffect, useState, ReactNode } from "react";
 import { useSession } from "next-auth/react";
-import { fetchProfiles } from "../lib/streaming-profile";
+// import { fetchProfiles } from "../lib/streaming-profile"; // Lo mantengo comentado como en tu original
 import { fetchProvidersForTransaction } from "../lib/streaming-provider";
 
-export const ProductContext = createContext(null);
+// 💎 CORRECCIÓN 1: Inicializamos el contexto con 'any' para evitar conflictos de tipado estricto
+export const ProductContext = createContext<any>(null);
 
-export const ProductProvider = ({children}) => {
+// 💎 CORRECCIÓN 2: Definimos el tipo para las props (children)
+interface ProductProviderProps {
+  children: ReactNode;
+}
 
-  const {data: session} = useSession();
+export const ProductProvider = ({ children }: ProductProviderProps) => {
 
-  const [providers, setProviders] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [profiles, setProfiles] = useState([]);
+  const { data: session } = useSession();
 
-  
+  // 💎 CORRECCIÓN 3: Tipamos los estados como array de any (<any[]>)
+  // Si no haces esto, TypeScript pensará que siempre deben estar vacíos.
+  const [providers, setProviders] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
+
   const trackSession = session;
 
   useEffect(() => {
     getProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackSession]);
 
   async function getProviders() {
       const result = await fetchProvidersForTransaction();
-      setProviders(result);
+      // Aseguramos que sea un array
+      setProviders(Array.isArray(result) ? result : []);
   }
 
   function getAccounts() {
@@ -38,11 +48,14 @@ export const ProductProvider = ({children}) => {
   // }
 
   async function fetchProviders() {
+    // Protección por si no hay sesión
+    if (!session?.user?.token) return;
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/streaming`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
+        'Authorization': `Bearer ${session.user.token}`
       }
     });
 
@@ -53,11 +66,14 @@ export const ProductProvider = ({children}) => {
   }
 
   async function fetchAccounts() {
+    // Protección por si no hay sesión
+    if (!session?.user?.token) return;
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_FULL}/streaming/account`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.user.token}`
+        'Authorization': `Bearer ${session.user.token}`
       }
     });
 

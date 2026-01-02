@@ -1,52 +1,87 @@
-'use client';
-import './css/motodropdown.css';
-import HeaderProfile from '../ui/dashboard/header-profile';
-import MyTabs from './MyTabs';
-import Transactions from './Transactions';
-import { ProductProvider } from '../Context/productsContext';
-import { useEffect, useState } from 'react';
-import { getCurrentSession } from '../lib/app-session';
-import { Session } from 'next-auth';
+// src/app/components/Dashboard.tsx (VERSIÓN COMPATIBLE CON TU LOGIN ACTUAL)
+"use client";
 
-// ← desde src/app/components a src/app/lib/roles.ts
-import { ALLOWED_WALLET_ROLES, isOneOf } from '../lib/roles';
+import { useSession } from "next-auth/react"; // USAMOS LA LIBRERÍA ESTÁNDAR
+import Link from 'next/link'; 
+import { useMemo } from "react";
+
+// Definimos los roles aquí para no depender de archivos externos si no existen
+const ALLOWED_WALLET_ROLES = [
+  'SUPERUSER', 'ADMIN', 'DISTRIBUTOR', 'RESELLER', 
+  'TAQUILLA', 'SUBTAQUILLA', 'SUSTAQUILLA', 'CLIENT'
+];
 
 export default function Dashboard() {
-  const [sess, setSess] = useState<Session>();
-  const [canView, setCanView] = useState(false);
+  // 1. Usamos el hook oficial que ya sabemos que funciona
+  const { data: session, status } = useSession();
+  
+  // 2. Calculamos permisos
+  const role = (session?.user as any)?.role?.toUpperCase();
+  
+  const canView = useMemo(() => {
+    return ALLOWED_WALLET_ROLES.includes(role || '');
+  }, [role]);
 
-  useEffect(() => {
-    currentSession();
-  }, []);
-
-  async function currentSession() {
-    const result = await getCurrentSession();
-    setSess(result);
-
-    const role = result?.user?.role;
-    setCanView(isOneOf(role, ALLOWED_WALLET_ROLES));
+  // 3. Estado de Carga
+  if (status === 'loading') {
+    return (
+      <div className="flex justify-center items-center h-screen bg-slate-50">
+        <p className="text-xl font-bold text-slate-400 animate-pulse">Cargando Dashboard...</p>
+      </div>
+    );
+  }
+  
+  // 4. No hay sesión (No logueado)
+  if (!session) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] p-10">
+        <h2 className="text-3xl font-bold text-red-600 mb-4">Acceso Denegado</h2>
+        <p className="text-slate-600">Por favor, inicia sesión para acceder a este panel.</p>
+        <Link href="/login" className="mt-6 bg-[#E33127] text-white py-3 px-6 rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200">
+          Iniciar Sesión
+        </Link>
+      </div>
+    );
   }
 
+  // 5. Usuario Autenticado
   return (
-    <div>
-      <div className="flex flex-col md:flex-row items-center md:justify-between md:items-end">
-        <h1 className="text-2xl font-bold leading-none tracking-tight md:text-3xl lg:text-3xl dark:text-white">Tablero</h1>
-        <div className="flex items-end flex-col">
-          <HeaderProfile />
+    <div className="container mx-auto p-4 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-black text-slate-900">Bienvenido, <span className="text-[#E33127]">{session.user?.name}</span></h1>
+        <p className="text-slate-500">Gestión general de tu cuenta.</p>
+      </div>
+      
+      {/* Información del Perfil */}
+      <div className="bg-white shadow-sm border border-slate-200 rounded-2xl p-6 mb-8">
+        <div className="flex flex-col md:flex-row gap-6">
+            <div>
+                <p className="text-sm text-slate-400 font-bold uppercase tracking-wider">Tu Rol Actual</p>
+                <p className="text-lg font-bold text-[#E33127]">{role || 'INVITADO'}</p>
+            </div>
+            <div>
+                <p className="text-sm text-slate-400 font-bold uppercase tracking-wider">Correo Registrado</p>
+                <p className="text-lg font-medium text-slate-800">{session.user?.email}</p>
+            </div>
         </div>
       </div>
-      <hr className="w-full h-1 bg-gray-400 border-none mx-auto my-5" />
-      <div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4">
-          <ProductProvider>
-            <MyTabs span={`${canView ? 'md:col-span-8' : 'md:col-span-12'}`} />
-          </ProductProvider>
-          {canView ? <Transactions span="col-span-1 md:col-span-4" /> : null}
+      
+      {/* Contenido de Billetera (Condicional) */}
+      {canView ? (
+        <div className="bg-green-50 border border-green-200 shadow-sm rounded-2xl p-8">
+          <h2 className="text-2xl font-bold text-green-800 mb-2">Panel de Billetera y Saldo</h2>
+          <p className="text-green-700 mb-4">Tienes permisos completos para gestionar finanzas.</p>
+          {/* Aquí podrías importar el <SummaryWidget /> que hicimos antes si quisieras */}
         </div>
-      </div>
+      ) : (
+        <div className="bg-yellow-50 border border-yellow-200 shadow-sm rounded-2xl p-8 flex items-start gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-yellow-800 mb-1">Acceso Limitado</h2>
+            <p className="text-yellow-700">Tu rol ({role}) no tiene permisos para ver la sección financiera.</p>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 }
-
-
-

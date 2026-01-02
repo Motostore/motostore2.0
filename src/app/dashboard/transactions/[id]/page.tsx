@@ -10,24 +10,44 @@ import { TransactionEnum } from "@/app/lib/enums";
 import ModalRejected from "@/app/ui/transactions/modal/modalRejected";
 import ModalProcessed from "@/app/ui/transactions/modal/modalProcessed ";
 import HeaderProfile from "@/app/ui/dashboard/header-profile";
-import { currentDate } from "@/app/common";
 
 export default function Page({ params }: { params: { id: string } }) {
   const id = params.id;
 
-  const [transaction, setTransaction] = useState(null);
-  const [verification, setVerification] = useState(null);
+  // 💎 FIX 1: Usamos <any> para evitar conflictos de tipos con null
+  const [transaction, setTransaction] = useState<any>(null);
+  const [verification, setVerification] = useState<any>(null);
   const [openRejectModal, setOpenRejectModal] = useState(false);
   const [openProcessedModal, setOpenProcessedModal] = useState(false);
 
   useEffect(() => {
     getTransaction(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function getTransaction(id) {
-    const response = await fetchTransactionById(id);
-    setTransaction(response);
-    setVerification(JSON.parse(response.verification));
+  // 💎 FIX 2: Tipamos el argumento 'id' como 'any' (o string)
+  async function getTransaction(id: any) {
+    try {
+      const response = await fetchTransactionById(id);
+      if (response) {
+        setTransaction(response);
+        // 💎 FIX 3: Protección para JSON.parse por si verification es null/undefined
+        if (response.verification) {
+            try {
+                // Si ya es objeto, lo usamos, si es string, lo parseamos
+                const parsed = typeof response.verification === 'string' 
+                    ? JSON.parse(response.verification) 
+                    : response.verification;
+                setVerification(parsed);
+            } catch (e) {
+                console.error("Error parsing verification JSON", e);
+                setVerification(null);
+            }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching transaction", error);
+    }
   }
 
   return (
@@ -55,7 +75,8 @@ export default function Page({ params }: { params: { id: string } }) {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <TransactionData transaction={transaction} />
-            <PaymentData id={transaction.paymentId} />
+            {/* Protección extra por si paymentId no existe */}
+            {transaction.paymentId && <PaymentData id={transaction.paymentId} />}
             <ClientData
               paymentId={transaction.paymentId}
               verification={verification}

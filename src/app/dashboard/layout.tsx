@@ -1,35 +1,50 @@
 // src/app/dashboard/layout.tsx
-import type { ReactNode } from "react";
-import type { Metadata } from "next";
 
-import TopNav from "../ui/dashboard/topnav";
+// 🔥 SOLUCIÓN FINAL: USANDO CARPETA 'ui' (minúsculas)
+import TopNav from "../ui/dashboard/topnav"; 
 import BrandHeader from "../ui/dashboard/brand-header";
-import NoticeChips from "../ui/dashboard/notice-chips";
+import DashboardMarquee from "../ui/dashboard/dashboard-marquee";
 
-export const metadata: Metadata = {
-  title: "Panel",
-  description: "Panel de administración de Motostore",
-};
+// 💎 CORRECCIÓN: Quitamos la extensión ".tsx" del import. TypeScript lo resuelve solo.
+import IAMotoMotoAssistant from "../ui/dashboard/IAMotoMotoAssistant"; 
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh flex flex-col bg-slate-50">
-      <div className="bg-white border-b">
-        <BrandHeader />
-      </div>
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+      
+      {/* --- CABECERA FIJA (Sticky) --- */}
+      <header className="sticky top-0 z-[50] w-full shadow-lg shadow-slate-200/50 bg-white transition-all">
+        
+        {/* 1. ZONA BLANCA: Logo y Fecha */}
+        <div className="w-full bg-white border-b border-slate-100 relative z-30">
+           <div className="mx-auto w-full max-w-7xl px-4">
+             <BrandHeader />
+           </div>
+        </div>
 
-      <NoticeChips />
+        {/* 2. BARRA INFORMATIVA */}
+        <div className="relative z-20">
+          <DashboardMarquee />
+        </div>
 
-      <TopNav />
+        {/* 3. NAVEGACIÓN ROJA */}
+        <div className="relative z-10">
+          <TopNav />
+        </div>
+        
+      </header>
 
-      <main className="flex-1 mx-auto w-full max-w-screen-2xl px-4 md:px-6 py-4 md:py-6">
+      {/* --- CONTENIDO DE LA PÁGINA --- */}
+      <main className="flex-1 w-full mx-auto max-w-7xl px-4 py-8 animate-in fade-in duration-500">
         {children}
       </main>
+      
+      {/* ASISTENTE FLOTANTE */}
+      <IAMotoMotoAssistant /> 
+
     </div>
   );
 }
-
-
 
 
 

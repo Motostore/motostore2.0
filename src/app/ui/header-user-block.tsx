@@ -1,58 +1,73 @@
-// src/app/ui/header-user-block.tsx
-'use client';
+"use client";
 
-import useSWR from 'swr';
+import { useSession } from "next-auth/react";
 
-type Metrics = {
-  balance?: number | null;
-  profits?: number | null;
-};
+function formatMoney(value: string | number | null | undefined) {
+  if (value === null || value === undefined) return "$0.00";
 
-const fetcher = (url: string) =>
-  fetch(url, { cache: 'no-store' }).then((r) => {
-    if (!r.ok) throw new Error('Error al cargar');
-    return r.json();
-  });
+  const raw = String(value).trim();
 
-function formatMoney(v?: number | null) {
-  if (v === null || v === undefined || Number.isNaN(v)) return '—';
-  try {
-    return new Intl.NumberFormat('es-VE', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 2,
-    }).format(v);
-  } catch {
-    return `$${v.toFixed(2)}`;
+  if (/^\$?\d{1,3}(\.\d{3})*(,\d+)?$/.test(raw)) {
+    return raw.startsWith("$") ? raw : `$${raw}`;
   }
+
+  const clean = raw.replace(/[^\d.,-]/g, "").replace(",", ".");
+  const num = Number(clean);
+  if (Number.isNaN(num)) {
+    return raw.startsWith("$") ? raw : `$${raw}`;
+  }
+
+  return (
+    "$" +
+    num.toLocaleString("es-CO", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })
+  );
 }
 
 export default function HeaderUserBlock() {
-  const { data, error, isLoading } = useSWR<Metrics>('/api/me/metrics', fetcher, {
-    refreshInterval: 30_000, // refresca cada 30s
-  });
+  const { data: session, status } = useSession();
+  const u: any = session?.user;
 
-  const saldo = formatMoney(data?.balance);
-  const util = formatMoney(data?.profits);
+  const username =
+    u?.username ?? u?.name ?? u?.email?.split("@")[0] ?? "invitado";
+
+  const saldoRaw = u?.balanceText ?? 0;
+  const utilRaw = u?.utilityText ?? 0;
+
+  const saldo = status === "loading" ? "—" : formatMoney(saldoRaw);
+  const utilidades = status === "loading" ? "—" : formatMoney(utilRaw);
 
   return (
-    <div className="flex items-center gap-5 text-sm">
-      <span className="inline-flex items-center gap-1 text-slate-700">
-        <span role="img" aria-label="saldo">💵</span>
-        <span className="hidden sm:inline">Saldo:</span>
-        <strong className="tabular-nums">{isLoading ? '…' : saldo}</strong>
-      </span>
-
-      <span className="inline-flex items-center gap-1 text-slate-700">
-        <span role="img" aria-label="utilidades">🚀</span>
-        <span className="hidden sm:inline">Utilidades:</span>
-        <strong className="tabular-nums">{isLoading ? '…' : util}</strong>
-      </span>
-
-      {error ? (
-        <span className="text-xs text-red-600">Sin datos</span>
-      ) : null}
+    <div className="flex flex-col items-end gap-1 text-sm text-slate-700">
+      <div>
+        Bienvenido,{" "}
+        <span className="font-semibold text-slate-900">{username}</span>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <span>
+          <span className="hidden sm:inline">💵</span>{" "}
+          <span className="font-medium text-slate-800">
+            Saldo: {saldo}
+          </span>
+        </span>
+        <span>
+          <span className="hidden sm:inline">🚀</span>{" "}
+          <span className="font-medium text-slate-800">
+            Utilidades: {utilidades}
+          </span>
+        </span>
+      </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
 

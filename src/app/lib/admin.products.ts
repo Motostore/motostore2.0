@@ -1,15 +1,22 @@
 // src/app/lib/admin.products.ts
+// Asegúrate de que TODAS las funciones que usas en page.tsx estén aquí y sean exportables.
+
 export type AdminProduct = {
   id?: number | string;
   name: string;
   price: number;
   active: boolean;
+  source?: string; // Agregado para identificar Marketing, Recargas, etc.
+  category?: string;
+  externalId?: string | number; // Para guardar el ID de LegionSMM
+  min?: number;
+  max?: number;
+  rate?: number; // Costo original
 };
 
 function apiBase() {
-  // Asegúrate que .env.local tenga NEXT_PUBLIC_API_FULL, por ejemplo:
-  // NEXT_PUBLIC_API_FULL=http://localhost:8080/api/v1
-  return (process.env.NEXT_PUBLIC_API_FULL ?? "http://localhost:8080/api/v1").replace(/\/$/, "");
+  const base = process.env.NEXT_PUBLIC_API_FULL ?? "http://localhost:8080/api/v1";
+  return base.replace(/\/$/, "");
 }
 
 function authHeaders(token?: string): HeadersInit {
@@ -27,10 +34,10 @@ export function getLastProductsFetchInfo() {
 // Intenta distintas rutas comunes para listar productos
 function productListUrls(base: string) {
   return [
-    `${base}/products`,           // típico REST
-    `${base}/products/all`,       // algunos backends
-    `${base}/admin/products`,     // variante admin
-    `${base}/product`,            // singular (por si acaso)
+    `${base}/products`,           
+    `${base}/products/all`,       
+    `${base}/admin/products`,     
+    `${base}/product`,            
   ];
 }
 
@@ -50,6 +57,11 @@ function coerceProducts(raw: any): AdminProduct[] | null {
   return null;
 }
 
+// -----------------------------------------------------------
+// 🔥 FUNCIONES REQUERIDAS POR EL FRONTEND (TODAS CON EXPORT)
+// -----------------------------------------------------------
+
+// 1. LISTAR (Usada por listFullCatalog en el front)
 export async function adminListProducts(token?: string): Promise<AdminProduct[]> {
   const base = apiBase();
   const urls = productListUrls(base);
@@ -66,7 +78,6 @@ export async function adminListProducts(token?: string): Promise<AdminProduct[]>
       lastInfo = { url, status: r.status, error: "" };
 
       if (!r.ok) {
-        // si 401 con token, quizá la API de lista no requiere auth; probemos sin Authorization una vez
         if ((r.status === 401 || r.status === 403) && token) {
           const r2 = await fetch(url, {
             method: "GET",
@@ -94,22 +105,26 @@ export async function adminListProducts(token?: string): Promise<AdminProduct[]>
       if (arr) return arr;
     } catch (e: any) {
       lastInfo = { url, status: 0, error: e?.message ?? "fetch error" };
-      // sigue con la siguiente URL
     }
   }
 
   return [];
 }
 
+// 2. CREAR (Usada en el formulario de "Crear Nuevo")
 export async function adminCreateProduct(input: AdminProduct, token?: string): Promise<AdminProduct> {
   const r = await fetch(`${apiBase()}/products`, {
     method: "POST", headers: authHeaders(token), body: JSON.stringify(input),
     cache: "no-store", credentials: "include",
   });
-  if (!r.ok) throw new Error(`POST /products ${r.status}`);
+  if (!r.ok) {
+     const errorText = await r.text();
+     throw new Error(`POST /products falló (Status: ${r.status}, Error: ${errorText.substring(0, 50)})`);
+  }
   return r.json();
 }
 
+// 3. ACTUALIZAR (Si lo usas en otro lado)
 export async function adminUpdateProduct(id: number | string, input: Partial<AdminProduct>, token?: string): Promise<AdminProduct> {
   const r = await fetch(`${apiBase()}/products/${encodeURIComponent(String(id))}`, {
     method: "PUT", headers: authHeaders(token), body: JSON.stringify(input),
@@ -119,12 +134,46 @@ export async function adminUpdateProduct(id: number | string, input: Partial<Adm
   return r.json();
 }
 
+// 4. ELIMINAR (Usada en el botón de la tarjeta)
 export async function adminDeleteProduct(id: number | string, token?: string): Promise<void> {
   const r = await fetch(`${apiBase()}/products/${encodeURIComponent(String(id))}`, {
     method: "DELETE", headers: authHeaders(token),
     cache: "no-store", credentials: "include",
   });
   if (!r.ok) throw new Error(`DELETE /products/${id} ${r.status}`);
+}
+
+/* ==============================================
+   🔥 FUNCIONES PARA SINCRONIZACIÓN (NECESARIAS EN FRONTEND) 🔥
+   ============================================== */
+
+export async function adminImportBatch(products: AdminProduct[], token?: string) {
+  const results = { success: 0, failed: 0 };
+  for (const p of products) {
+    try {
+      await adminCreateProduct(p, token);
+      results.success++;
+    } catch (error) {
+      console.error("Error importando:", p.name, error);
+      results.failed++;
+    }
+  }
+  return results;
+}
+
+// 5. DISPARADOR DE SINCRONIZACIÓN
+export async function adminTriggerLegionSync(token?: string) {
+  const r = await fetch('/api/admin/marketing/sync', {
+    method: 'POST',
+    headers: authHeaders(token)
+  });
+  
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.error || `Error ${r.status} al sincronizar`);
+  }
+  
+  return r.json();
 }
 
 

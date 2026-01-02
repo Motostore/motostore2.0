@@ -89,13 +89,15 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
   ];
 };
 
-export const setPad = (num, size = 10) => {
-  num = num.toString();
-  while (num.length < size) num = "0" + num;
-  return num;
+// CORRECCIÓN: Tipado explícito para 'num'
+export const setPad = (num: number | string, size = 10) => {
+  let str = num.toString();
+  while (str.length < size) str = "0" + str;
+  return str;
 }
 
-export const pluralizeMonth = (number) => {
+// CORRECCIÓN: Tipado explícito para 'number'
+export const pluralizeMonth = (number: number) => {
   let result = '1';
   if (number === 1) {
     result = `${number} mes`;

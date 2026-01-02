@@ -1,4 +1,5 @@
-export default function ZinliData({payment}) {
+// CORRECCIÓN: Tipamos 'payment' como 'any'
+export default function ZinliData({ payment }: { payment: any }) {
   
   return (
     <>

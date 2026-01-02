@@ -1,14 +1,19 @@
 import HeaderProfile from "@/app/ui/dashboard/header-profile";
 import Table from "./table";
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams?: {
+// En Next.js 16, definimos searchParams como una Promesa
+interface PageProps {
+  searchParams: Promise<{
     query?: string;
     page?: string;
-  };
-}) {
+  }>;
+}
+
+export default async function Page(props: PageProps) {
+  // PASO CRÍTICO PARA NEXT.JS 16:
+  // Debemos usar 'await' antes de acceder a los datos de la URL.
+  const searchParams = await props.searchParams;
+
   const query = searchParams?.query || "";
   const currentPage = Number(searchParams?.page) || 1;
 

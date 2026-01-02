@@ -1,23 +1,94 @@
-// src/app/dashboard/settings/page.tsx
-import SettingsView from "./SettingsView";
+"use client";
 
-export const metadata = {
-  title: "Perfil | Moto Store LLC",
-  description: "Ajustes de la cuenta del usuario",
-};
+import Link from "next/link";
+import { 
+  UserCircleIcon, 
+  KeyIcon, 
+  ShieldCheckIcon, 
+  ChevronRightIcon 
+} from "@heroicons/react/24/outline";
 
-export default function Page() {
+export default function SettingsHubPage() {
+  
+  // Opciones del menú de configuración
+  const settingsOptions = [
+    {
+      title: "Mi Perfil",
+      description: "Visualiza tu información personal, ID de cliente y estado.",
+      href: "/dashboard/profile",
+      icon: UserCircleIcon,
+      color: "text-blue-600 bg-blue-50 border-blue-100"
+    },
+    {
+      title: "Seguridad y Contraseña",
+      description: "Actualiza tu clave de acceso y protege tu cuenta.",
+      href: "/dashboard/settings/password",
+      icon: KeyIcon,
+      color: "text-[#E33127] bg-red-50 border-red-100"
+    },
+    // Aquí podemos agregar más módulos en el futuro (ej: Notificaciones, Pagos, etc.)
+  ];
+
   return (
-    <div className="mx-auto max-w-5xl px-4 md:px-6 py-6">
-      <h1 className="text-2xl md:text-3xl font-bold leading-none tracking-tight text-[var(--brand)]">
-        Perfil
-      </h1>
-      <p className="text-sm text-slate-600 mt-1">
-        Gestiona los datos de tu cuenta, seguridad y preferencia de contacto.
-      </p>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
+      
+      {/* HEADER */}
+      <div className="max-w-4xl mx-auto px-6 pt-10 pb-8">
+        <div className="flex items-center gap-4">
+            <div className="p-3 bg-slate-900 rounded-2xl shadow-sm">
+                <ShieldCheckIcon className="w-8 h-8 text-white" />
+            </div>
+            <div>
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+                    Configuración
+                </h1>
+                <p className="text-slate-500 font-medium text-sm">
+                    Gestiona tu cuenta y preferencias de seguridad.
+                </p>
+            </div>
+        </div>
+      </div>
 
-      <div className="mt-6">
-        <SettingsView />
+      <div className="max-w-4xl mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {settingsOptions.map((option) => (
+                <Link 
+                    key={option.href} 
+                    href={option.href}
+                    className="group bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all flex items-start gap-5 relative overflow-hidden"
+                >
+                    {/* Icono */}
+                    <div className={`p-4 rounded-2xl border ${option.color} shrink-0`}>
+                        <option.icon className="w-8 h-8" />
+                    </div>
+
+                    {/* Texto */}
+                    <div className="relative z-10">
+                        <h3 className="font-black text-lg text-slate-900 group-hover:text-[#E33127] transition-colors">
+                            {option.title}
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+                            {option.description}
+                        </p>
+                    </div>
+
+                    {/* Flecha decorativa */}
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300">
+                        <ChevronRightIcon className="w-5 h-5 text-slate-300" />
+                    </div>
+                </Link>
+            ))}
+
+        </div>
+        
+        {/* Footer Info */}
+        <div className="mt-10 text-center">
+            <p className="text-xs text-slate-400 font-medium">
+                Moto Store LLC © 2025 • Panel de Control v2.0
+            </p>
+        </div>
+
       </div>
     </div>
   );

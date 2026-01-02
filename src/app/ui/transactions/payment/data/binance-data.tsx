@@ -1,4 +1,5 @@
-export default function BinanceData({payment}) {
+// CORRECCIÓN: Tipamos 'payment' como 'any' para que pase el build
+export default function BinanceData({ payment }: { payment: any }) {
   
   return (
     <>

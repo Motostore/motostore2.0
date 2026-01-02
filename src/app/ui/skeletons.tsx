@@ -1,34 +1,39 @@
+// src/app/ui/skeletons.tsx
+// ✨ MEJORA: Añadido 'animate-pulse' para efecto de carga premium.
+
+const shimmer = "animate-pulse"; // Clase de animación
+
 export function TableRowSkeleton() {
   return (
-    <tr className="w-full border-b border-gray-100 last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg">
+    <tr className={`w-full border-b border-gray-100 last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg ${shimmer}`}>
       {/* Customer Name and Image */}
       <td className="relative overflow-hidden whitespace-nowrap py-3 pl-6 pr-3">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-gray-100"></div>
-          <div className="h-6 w-24 rounded bg-gray-100"></div>
+          <div className="h-8 w-8 rounded-full bg-gray-200"></div>
+          <div className="h-6 w-24 rounded bg-gray-200"></div>
         </div>
       </td>
       {/* Email */}
       <td className="whitespace-nowrap px-3 py-3">
-        <div className="h-6 w-32 rounded bg-gray-100"></div>
+        <div className="h-6 w-32 rounded bg-gray-200"></div>
       </td>
       {/* Amount */}
       <td className="whitespace-nowrap px-3 py-3">
-        <div className="h-6 w-16 rounded bg-gray-100"></div>
+        <div className="h-6 w-16 rounded bg-gray-200"></div>
       </td>
       {/* Date */}
       <td className="whitespace-nowrap px-3 py-3">
-        <div className="h-6 w-16 rounded bg-gray-100"></div>
+        <div className="h-6 w-16 rounded bg-gray-200"></div>
       </td>
       {/* Status */}
       <td className="whitespace-nowrap px-3 py-3">
-        <div className="h-6 w-16 rounded bg-gray-100"></div>
+        <div className="h-6 w-16 rounded bg-gray-200"></div>
       </td>
       {/* Actions */}
       <td className="whitespace-nowrap py-3 pl-6 pr-3">
         <div className="flex justify-end gap-3">
-          <div className="h-[38px] w-[38px] rounded bg-gray-100"></div>
-          <div className="h-[38px] w-[38px] rounded bg-gray-100"></div>
+          <div className="h-[38px] w-[38px] rounded bg-gray-200"></div>
+          <div className="h-[38px] w-[38px] rounded bg-gray-200"></div>
         </div>
       </td>
     </tr>
@@ -37,22 +42,22 @@ export function TableRowSkeleton() {
 
 export function TransactionsMobileSkeleton() {
   return (
-    <div className="mb-2 w-full rounded-md bg-white p-4">
+    <div className={`mb-2 w-full rounded-md bg-white p-4 ${shimmer}`}>
       <div className="flex items-center justify-between border-b border-gray-100 pb-8">
         <div className="flex items-center">
-          <div className="mr-2 h-8 w-8 rounded-full bg-gray-100"></div>
-          <div className="h-6 w-16 rounded bg-gray-100"></div>
+          <div className="mr-2 h-8 w-8 rounded-full bg-gray-200"></div>
+          <div className="h-6 w-16 rounded bg-gray-200"></div>
         </div>
-        <div className="h-6 w-16 rounded bg-gray-100"></div>
+        <div className="h-6 w-16 rounded bg-gray-200"></div>
       </div>
       <div className="flex w-full items-center justify-between pt-4">
         <div>
-          <div className="h-6 w-16 rounded bg-gray-100"></div>
-          <div className="mt-2 h-6 w-24 rounded bg-gray-100"></div>
+          <div className="h-6 w-16 rounded bg-gray-200"></div>
+          <div className="mt-2 h-6 w-24 rounded bg-gray-200"></div>
         </div>
         <div className="flex justify-end gap-2">
-          <div className="h-10 w-10 rounded bg-gray-100"></div>
-          <div className="h-10 w-10 rounded bg-gray-100"></div>
+          <div className="h-10 w-10 rounded bg-gray-200"></div>
+          <div className="h-10 w-10 rounded bg-gray-200"></div>
         </div>
       </div>
     </div>

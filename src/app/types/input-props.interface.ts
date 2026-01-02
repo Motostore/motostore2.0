@@ -8,7 +8,8 @@ export interface InputProps {
     validation?: InputPropValidation;
     className?: string;
     value?: string;
-    onInputChange?(e): void;
+    // CORRECCIÓN: Agregado ': any' al parámetro 'e'
+    onInputChange?(e: any): void;
   }
 
 interface InputPropValidation {

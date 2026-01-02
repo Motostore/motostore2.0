@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ListBulletIcon, ArrowPathIcon } from '@heroicons/react/24/outline'; // Iconos para estética
 
 type RoleOption = {
   code?: string;
@@ -28,7 +29,7 @@ export default function RolesTestPage() {
         const data = await r.json();
         setRaw(data);
 
-        // Soporta: array de objetos (preferido) o array de strings
+        // Lógica de normalización robusta:
         const list: RoleOption[] = Array.isArray(data)
           ? (typeof data[0] === 'string'
               ? (data as string[]).map((s) => ({ code: s, value: s, label: s, name: s }))
@@ -44,47 +45,61 @@ export default function RolesTestPage() {
   }, [base]);
 
   return (
-    <main style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: 22, marginBottom: 12 }}>Roles (test)</h1>
-      <p style={{ margin: '4px 0 16px' }}>
-        <small>API base: <code>{base}</code></small>
-      </p>
+    <main className="p-6 md:p-10 min-h-screen bg-slate-50">
+      <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+        
+        {/* ENCABEZADO PREMIUM */}
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-2">
+            <ListBulletIcon className="w-6 h-6 text-[#E33127]" />
+            Prueba de Roles de API
+        </h1>
+        <p className="text-sm text-slate-500 mb-4 border-b border-slate-100 pb-4">
+            Verificando los roles disponibles desde: <code>{base}/users/roles</code>
+        </p>
 
-      {loading && <p>Cargando…</p>}
-      {err && <p style={{ color: 'red' }}>Error: {err}</p>}
-      {!loading && !err && roles.length === 0 && <p>Sin datos…</p>}
+        {/* ESTADOS DE CARGA/ERROR */}
+        {loading && (
+            <p className="flex items-center gap-2 text-slate-600 font-medium">
+                <ArrowPathIcon className="w-4 h-4 animate-spin text-slate-400" /> Cargando roles...
+            </p>
+        )}
+        {err && <p className="text-red-600 font-medium bg-red-50 p-3 rounded-lg border border-red-200">Error de conexión: {err}</p>}
+        {!loading && !err && roles.length === 0 && <p className="text-slate-500">Sin datos de roles. La ruta no devolvió información.</p>}
 
-      {!loading && !err && roles.length > 0 && (
-        <table style={{ borderCollapse: 'collapse', width: '100%', maxWidth: 520 }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: '8px' }}>Label</th>
-              <th style={{ textAlign: 'left', borderBottom: '1px solid #ddd', padding: '8px' }}>Code</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roles.map((r, i) => {
-              const code = r.code ?? r.value ?? r.name ?? `role-${i}`;
-              const label = r.label ?? code;
-              return (
-                <tr key={code}>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>{label}</td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0', opacity: 0.8 }}>
-                    <code>{code}</code>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+        {/* TABLA DE RESULTADOS PREMIUM */}
+        {!loading && !err && roles.length > 0 && (
+          <table className="w-full max-w-lg mt-6 text-sm border-collapse">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="text-left border-b border-slate-200 px-4 py-3 font-bold text-slate-600 uppercase">Nombre de Rol</th>
+                <th className="text-left border-b border-slate-200 px-4 py-3 font-bold text-slate-600 uppercase">Código Interno</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roles.map((r, i) => {
+                const code = r.code ?? r.value ?? r.name ?? `role-${i}`;
+                const label = r.label ?? code;
+                return (
+                  <tr key={code} className="even:bg-slate-50 hover:bg-red-50/50 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-slate-900 border-b border-slate-100">{label}</td>
+                    <td className="px-4 py-3 text-slate-600 border-b border-slate-100">
+                      <code className="bg-slate-200 rounded px-1 text-xs">{code}</code>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
 
-      <details style={{ marginTop: 16 }}>
-        <summary>Ver respuesta cruda</summary>
-        <pre style={{ background: '#f7f7f7', padding: 12, borderRadius: 8, overflow: 'auto' }}>
+        {/* VISTA CRUDA */}
+        <details className="mt-6 border border-slate-200 rounded-xl p-4 bg-slate-50">
+          <summary className="cursor-pointer font-bold text-slate-700">Ver respuesta cruda (JSON)</summary>
+          <pre className="mt-3 bg-slate-800 text-green-400 p-4 rounded-lg text-xs overflow-auto">
 {JSON.stringify(raw, null, 2)}
-        </pre>
-      </details>
+          </pre>
+        </details>
+      </div>
     </main>
   );
 }

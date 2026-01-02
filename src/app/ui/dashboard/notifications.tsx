@@ -8,20 +8,25 @@ import { useEffect, useState } from "react";
 
 export default function Notifications() {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  // CORRECCIÓN: Definimos que es un array de cualquier cosa (<any[]>)
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     getNotifications();
   }, []);
 
-  async function readNotification(id) {
+  // CORRECCIÓN: Agregamos el tipo ': any' al id
+  async function readNotification(id: any) {
     const response = await markAsRead(id);
     getNotifications();
   }
 
   async function getNotifications() {
     const response = await fetchNotifications();
-    setNotifications(response);
+    // Verificamos que sea un array antes de guardarlo
+    if (Array.isArray(response)) {
+        setNotifications(response);
+    }
   }
 
   return (
@@ -54,12 +59,13 @@ export default function Notifications() {
           ?
           <ul className="mt-1">
             {
-              notifications.map((n) => (
+              // CORRECCIÓN: Tipamos 'n' como any
+              notifications.map((n: any) => (
                 
                 // <li className="hover:bg-gray-100 rounded-md px-2 py-1">Notificacion 1</li>
                 <Link
                   key={n.id}
-                  href={n.url}
+                  href={n.url || '#'} 
                   className="flex grow items-center justify-center gap-2 rounded-md p-2 text-gray-500 text-sm hover:bg-gray-300  md:flex-none md:justify-start md:p-2 md:px-3 bg-white"
                   onClick={() => readNotification(n.id)}
                 >

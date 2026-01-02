@@ -1,7 +1,16 @@
 import { useEffect } from "react";
 import TransferForm from "../forms/TransferForm";
 
-export default function BankTransfer({ service, setPaymentData, setOpenModal }) {
+// CORRECCIÓN: Tipamos las props como 'any' para evitar el error de build
+export default function BankTransfer({ 
+  service, 
+  setPaymentData, 
+  setOpenModal 
+}: { 
+  service: any, 
+  setPaymentData: any, 
+  setOpenModal: any 
+}) {
   const payload = {
     transaction: "Transferencia bancaria",
     bankName: "Banesco Banco Universal",

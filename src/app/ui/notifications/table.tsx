@@ -13,7 +13,8 @@ export default function NotificationsTable({
   query: string;
   currentPage: number;
 }) {
-  const [notifications, setNotifications] = useState([]);
+  // CORRECCIÓN: Definimos el estado como un array de cualquier tipo (<any[]>)
+  const [notifications, setNotifications] = useState<any[]>([]);
 
 
   useEffect(() => {
@@ -22,10 +23,14 @@ export default function NotificationsTable({
   
   async function getNotifications() {
     const response = await fetchAllNotifications();
-    setNotifications(response)
+    // Verificamos que sea un array antes de setearlo para evitar errores
+    if (Array.isArray(response)) {
+        setNotifications(response);
+    }
   }
 
-  async function readNotification(id) {
+  // CORRECCIÓN: Agregamos el tipo ': any' al id
+  async function readNotification(id: any) {
     const response = await markAsRead(id);
     getNotifications();
   }

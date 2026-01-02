@@ -1,7 +1,16 @@
 import { useEffect } from "react";
 import WallyForm from "../forms/WallyForm";
 
-export default function WallyPayment({ service, setPaymentData, setOpenModal }) {
+// CORRECCIÓN: Agregamos los tipos ': any' para que pase el build
+export default function WallyPayment({ 
+  service, 
+  setPaymentData, 
+  setOpenModal 
+}: { 
+  service: any, 
+  setPaymentData: any, 
+  setOpenModal: any 
+}) {
   const payload = {
     transaction: "Wally",
     wallyNumber: "+584124901442",

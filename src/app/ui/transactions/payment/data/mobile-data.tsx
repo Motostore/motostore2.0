@@ -1,4 +1,5 @@
-export default function MobileData({payment}) {
+// CORRECCIÓN: Tipamos 'payment' como 'any' para evitar error de compilación
+export default function MobileData({ payment }: { payment: any }) {
   
   return (
     <>

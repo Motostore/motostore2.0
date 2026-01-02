@@ -7,7 +7,8 @@ export interface SelectProps {
     options?: InputPropRoles[];
     title?: string;
     selected?: string;
-    onSelectChange?;
+    // CORRECCIÓN: Definimos el tipo explícitamente como 'any' o función
+    onSelectChange?: any;
     value?: string;
   }
 

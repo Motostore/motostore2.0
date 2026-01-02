@@ -1,4 +1,5 @@
-export default function BankTransferData({payment}) {
+// CORRECCIÓN: Definimos 'payment' como any para que TypeScript apruebe el build
+export default function BankTransferData({ payment }: { payment: any }) {
   
   return (
     <>

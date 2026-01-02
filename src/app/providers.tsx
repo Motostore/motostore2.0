@@ -1,18 +1,19 @@
 // src/app/providers.tsx
-'use client';
+"use client";
 
-import { SessionProvider } from 'next-auth/react';
-import React from 'react';
+import { SessionProvider } from "next-auth/react";
+import { ReactNode } from "react";
 
-type Props = { children: React.ReactNode };
-
-export default function Providers({ children }: Props) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider refetchOnWindowFocus={false}>
+    <SessionProvider refetchInterval={60} refetchOnWindowFocus={true}>
       {children}
     </SessionProvider>
   );
 }
+
+
+
 
 
 

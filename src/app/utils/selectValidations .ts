@@ -6,6 +6,8 @@
 |  🐸 Returns:  -
 *-------------------------------------------------------------------*/
 
+// Estructura mínima para un componente de selección
+
 export const role_validation = {
     name: 'role',
     label: 'Roles',
@@ -17,10 +19,11 @@ export const role_validation = {
         value: 'ADMIN',
         name: 'Administrador'
       },
-      {
-        value: 'RESELLER',
-        name: 'Distribuidor'
-      },
+      // Usamos RESELLER ya que es el que se usa en el mapeo de roles
+      { 
+        value: 'RESELLER', 
+        name: 'Distribuidor / Reseller'
+      }, 
       {
         value: 'CLIENT',
         name: 'Cliente'
@@ -64,11 +67,13 @@ export const role_validation = {
     },
   }
 
+  // 🔥 CORRECCIÓN CLAVE: El Label debe ser genérico (Subdivisión) 
+  // para que la función getSubdivisionLabel lo sobrescriba dinámicamente.
   export const state_validation = {
     name: 'state',
-    label: 'Estados',
+    label: 'Subdivisión / Estado', 
     id: 'state',
-    title: 'Estado',
+    title: 'Subdivisión / Estado',
     selected: "STATE",
     options: [],
     validation: {

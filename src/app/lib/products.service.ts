@@ -1,4 +1,4 @@
-// src/app/lib/products.service.ts
+// src/app/lib/products.service.ts (CÓDIGO CORREGIDO Y COMPLETO - PREMIUM ORO PRO+++)
 
 type Json = Record<string, unknown> | unknown[];
 
@@ -51,6 +51,7 @@ export async function fetchPagedProductsByType(
 ) {
   const qs = new URLSearchParams({
     type,
+    // 🛑 CORRECCIÓN: Convertir productPath (type) a string si es necesario para el query string
     page: String(page),
     pageSize: String(pageSize),
   });
@@ -58,10 +59,19 @@ export async function fetchPagedProductsByType(
 }
 
 /** Crea un producto en la colección indicada por productPath */
-export async function fetchCreateProduct(payload: Json, productPath: string) {
+export async function fetchCreateProduct(
+  payload: Json, 
+  productPath: string,
+  token: string // 🛑 CORRECCIÓN: AÑADIR TOKEN (Resuelve TS2554 en formularios)
+) {
   return api(`/api/products/${productPath}`, {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`, // Usar el token
+    },
+    cache: "no-store"
   });
 }
 
@@ -69,18 +79,62 @@ export async function fetchCreateProduct(payload: Json, productPath: string) {
 export async function fetchUpdateProduct(
   id: string,
   payload: Json,
-  productPath: string
+  productPath: string,
+  token: string // 🛑 CORRECCIÓN: AÑADIR TOKEN
 ) {
   return api(`/api/products/${productPath}/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
+    headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Usar el token
+    },
+    cache: "no-store"
   });
 }
 
 /** Elimina un producto por id en productPath */
-export async function fetchDeleteProduct(id: string, productPath: string) {
-  return api(`/api/products/${productPath}/${id}`, { method: "DELETE" });
+export async function fetchDeleteProduct(
+    id: string | number, // 🛑 Tipar id para compatibilidad
+    productPath: string,
+    token: string // 🛑 CORRECCIÓN: AÑADIR TOKEN
+) {
+  return api(`/api/products/${productPath}/${id}`, { 
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Usar el token
+      },
+      cache: "no-store"
+  });
 }
+
+
+/* 🛑 FUNCIÓN AÑADIDA PARA MYTABS.TSX (SOLUCIONA EL TS2305) 🛑 */
+/**
+ * Obtiene todos los productos de diferentes rubros en una sola llamada concurrente.
+ * (Usado en MyTabs para poblar las galerías)
+ */
+export async function fetchAllProducts() {
+  
+  // Se ejecutan las 4 peticiones en paralelo para optimizar la carga
+  // 🛑 Nota: Se debe consumir el .json() aquí, ya que el componente MyTabs asume que los resultados
+  // son objetos listos para usar (streamings, licenses, etc.)
+  const streamingPromise = fetchProductsByType('streaming').then(res => res.json());
+  const licensesPromise = fetchProductsByType('licenses').then(res => res.json());
+  const rechargesPromise = fetchProductsByType('recharges').then(res => res.json());
+  const marketingPromise = fetchProductsByType('marketing').then(res => res.json());
+
+  const [streamings, licenses, recharges, marketing] = await Promise.all([
+    streamingPromise,
+    licensesPromise,
+    rechargesPromise,
+    marketingPromise
+  ]);
+
+  return { streamings, licenses, recharges, marketing };
+}
+
 
 /* ───── Productos (genéricos) ───── */
 
@@ -89,10 +143,14 @@ export async function fetchDeleteProduct(id: string, productPath: string) {
  * Esta función coincide con lo que importa /dashboard/products/new/page.tsx
  * y usa la ruta interna /api/products/create.
  */
-export async function createProduct(payload: Json) {
+export async function createProduct(payload: Json, token: string) { // 🛑 CORRECCIÓN: Añadir token
   return api(`/api/products/create`, {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Usar el token
+    },
   });
 }
 
@@ -104,11 +162,14 @@ export async function fetchCategories() {
 }
 
 /** Crea una nueva categoría */
-export async function createCategory(payload: Json) {
+export async function createCategory(payload: Json, token: string) { // 🛑 CORRECCIÓN: Añadir token
   return api(`/api/products/categories`, {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Usar el token
+    },
   });
 }
-
 

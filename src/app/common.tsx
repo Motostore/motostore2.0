@@ -1,39 +1,39 @@
-// common.tsx
-export const partsOfTheDay = (name: string = "") => {
-  const date = new Date();
-  const hour = date.getHours();
-  let message = "Buenos dias"; 
+// src/app/common.ts (EDICIÓN FINAL: CÓDIGO LIMPIO Y EFICIENTE)
 
-  if (hour >= 12 && hour < 19) {
-    message = "Buenas tardes"; 
-  } else if (hour >= 19) {
-    message = "Buenas noches"; 
+/**
+ * Retorna el saludo del día basado en la hora local (0-23h).
+ * Optimizado: Sin procesamiento de strings innecesario.
+ */
+export const partsOfTheDay = (name: string = "") => {
+  const hour = new Date().getHours();
+  
+  // Asignamos directamente el string formateado (Title Case) para ahorrar CPU
+  let greeting = "Buenas Noches"; // Por defecto cubre de 20:00 a 04:59
+
+  if (hour >= 5 && hour < 12) {
+    greeting = "Buenos Días";
+  } else if (hour >= 12 && hour < 20) {
+    greeting = "Buenas Tardes";
   }
 
-  const words = message.toLowerCase().split(' ');
-  const capitalizedMessage = words.map(word => {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
-
-  return capitalizedMessage + name; 
+  return name ? `${greeting}, ${name}` : greeting; 
 };
 
+/**
+ * Retorna la fecha actual con formato completo en español.
+ * Ejemplo: "Lunes, 8 de diciembre de 2025"
+ */
 export const currentDate = () => {
-  const date = new Date();
-  // Obtén las partes individualmente, incluyendo el año
-  const weekday = date.toLocaleDateString('es-ES', { weekday: 'long' });
-  const day = date.toLocaleDateString('es-ES', { day: 'numeric' });
-  const month = date.toLocaleDateString('es-ES', { month: 'long' });
-  const year = date.getFullYear(); // Obtiene el año completo (ej. 2025)
-
-  // Capitaliza la primera letra de cada parte si es necesario
-  const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-  const capitalizedMonth = month.charAt(0).toUpperCase() + month.slice(1);
-
-  // Construye la cadena final con el año
-  return `${capitalizedWeekday}, ${day} de ${capitalizedMonth} de ${year}`;
+  const dateString = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  
+  // JavaScript retorna los días en minúscula ("lunes"), aquí lo capitalizamos.
+  return dateString.charAt(0).toUpperCase() + dateString.slice(1);
 };
-
 
 
 

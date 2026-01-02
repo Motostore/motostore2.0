@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
 import MobileForm from "../forms/MobileForm";
 
-export default function MobilePayment({ service, setPaymentData, setOpenModal }) {
+// CORRECCIÓN: Tipamos las props como 'any' para desbloquear el build
+export default function MobilePayment({ 
+  service, 
+  setPaymentData, 
+  setOpenModal 
+}: { 
+  service: any, 
+  setPaymentData: any, 
+  setOpenModal: any 
+}) {
   const mercantil = {
     transaction: "Pago móvil",
     bankName: "Mercantil",

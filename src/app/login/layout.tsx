@@ -1,36 +1,24 @@
-// src/app/login/layout.tsx
-'use client';
+// src/app/login/layout.tsx (CONTENEDOR INVISIBLE - NIVEL PRO)
 
-import Header from '../ui/header';
-import Navigation from '../ui/navigation';
-import Footer from '../ui/footer';
-import { ProfileProvider } from '../Context/profileContext';
+import React from 'react'; 
 
-export default function LoginLayout({ children }: { children: React.ReactNode }) {
+export default function LoginLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <main className="flex min-h-screen flex-col overflow-x-hidden text-gray-700 bg-white">
-      {/* Header con el saludo y botón "Salir" tal como lo tienes */}
-      <Header />
-
-      {/* Barra de navegación */}
-      <div className="w-100 h-100">
-        <span className="motostore-advice hidden">Anuncios aquí</span>
-        <hr className="w-11/12 h-1 bg-gray-400 rounded-full border-none m-auto my-2" />
-        <Navigation />
-      </div>
-
-      {/* Contenido de la página de login */}
-      <ProfileProvider>
-        <div className="flex grow flex-col gap-4 md:flex-row pt-10">
-          <div className="flex flex-col w-full">
-            {children}
-          </div>
-        </div>
-      </ProfileProvider>
-
-      {/* Footer */}
-      <Footer />
-    </main>
+    // 🔥 IMPORTANTE: 
+    // 1. Usamos 'bg-white' para mantener la continuidad del lienzo.
+    // 2. ELIMINAMOS 'flex items-center justify-center' porque el page.tsx ya maneja el diseño completo.
+    // 3. Este archivo solo sirve para pasar el contenido sin interferir.
+    <div className="min-h-screen bg-white font-sans text-slate-900">
+      {children}
+    </div>
   );
 }
+
+
+
+
 

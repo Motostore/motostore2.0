@@ -4,12 +4,23 @@ import { fetchPaymentMethod } from "@/app/lib/payment-methods";
 import { ZinliPayload } from "@/app/lib/definitions";
 import { PaymentMethodEnum } from "@/app/lib/enums";
 
-export default function ZinliPayment({ service, setPaymentData, setOpenModal }) {
+// CORRECCIÓN 1: Tipamos las props como 'any' para evitar el bloqueo del build
+export default function ZinliPayment({ 
+  service, 
+  setPaymentData, 
+  setOpenModal 
+}: { 
+  service: any, 
+  setPaymentData: any, 
+  setOpenModal: any 
+}) {
   const [payload, setPayload] = useState<ZinliPayload | undefined>(undefined);
 
   useEffect(() => {
     async function getZinliInfo() {
-      const response = await fetchPaymentMethod(PaymentMethodEnum.ZINLI_PAYMENT);
+      // CORRECCIÓN 2: Tipamos la respuesta como 'any' para evitar errores como "Property 'length' does not exist on type 'Response'"
+      const response: any = await fetchPaymentMethod(PaymentMethodEnum.ZINLI_PAYMENT);
+      
       if (response && response.length > 0) {
         setPayload(response[0]);
         setPaymentData(response[0]);
@@ -41,7 +52,10 @@ export default function ZinliPayment({ service, setPaymentData, setOpenModal }) 
       </div>
       <div className="col-span-2">
         <h5 className="font-bold text-lg text-gray-600 mb-2">Datos de la transacción</h5>
-        <ZinliForm service={service} payload={payload} setOpenModal={setOpenModal} />
+        {/* CORRECCIÓN 3: Solo mostramos el formulario si hay payload para evitar errores de tipo */}
+        {payload && (
+          <ZinliForm service={service} payload={payload} setOpenModal={setOpenModal} />
+        )}
       </div>
     </>
   );

@@ -1,36 +1,24 @@
-// src/app/QuienesSomos/layout.tsx
+// src/app/QuienesSomos/layout.tsx (LIMPIO - PARA EVITAR DUPLICADOS)
+
 'use client';
 
-import Header from '../ui/header';
-import Navigation from '../ui/navigation';
-import Footer from '../ui/footer';
-import { ProfileProvider } from '../Context/profileContext'; // Asegúrate de que este Contexto sea necesario aquí
+import { ProfileProvider } from '../Context/profileContext'; 
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex flex-col min-h-screen overflow-x-hidden text-gray-700 bg-white">
-      {/* Proveedor de perfil para acceso global al contexto */}
+    // CAMBIO CLAVE:
+    // 1. Usamos 'bg-white' para mantener la continuidad del diseño limpio.
+    // 2. Eliminamos Header, Navigation y Footer de aquí porque YA ESTÁN en page.tsx con el diseño nuevo.
+    <main className="min-h-screen bg-white font-sans text-slate-900">
+      
+      {/* Mantenemos el ProfileProvider por si lo usas para datos de usuario */}
       <ProfileProvider>
-        {/* Header - Barra superior con el logo, navegación y barra informativa */}
-        <Header />
-
-        {/* Barra de navegación */}
-        <div className="w-full">
-          <span className="motostore-advice hidden">Anuncios aquí</span>
-          <hr className="w-11/12 h-1 bg-gray-400 rounded-full border-none m-auto my-2" />
-          <Navigation />
-        </div>
+        
+        {/* Renderizamos solo los hijos (el contenido de page.tsx) */}
+        {children}
+        
       </ProfileProvider>
 
-      {/* Contenedor para el contenido dinámico (páginas específicas) */}
-      <div className="flex-grow flex flex-col gap-4 md:flex-row">
-        <div className="flex flex-row justify-center items-start gap-6 px-6 py-6 md:px-16">
-          {children}
-        </div>
-      </div>
-
-      {/* Pie de página (Footer) */}
-      <Footer />
     </main>
   );
 }

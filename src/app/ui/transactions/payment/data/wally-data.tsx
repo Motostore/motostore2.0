@@ -1,4 +1,5 @@
-export default function WallyData({payment}) {
+// CORRECCIÓN: Tipamos 'payment' como 'any'
+export default function WallyData({ payment }: { payment: any }) {
   
   return (
     <>

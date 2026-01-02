@@ -7,16 +7,24 @@ import { useContext } from "react";
 import VerifyForm from "../forms/verify-form";
 import { TransactionEnum } from "@/app/lib/enums";
 
+// CORRECCIÓN 1: Casteamos Modal a 'any' para evitar conflictos de tipos con .Header/.Body
+const ModalAny = Modal as any;
+
+// CORRECCIÓN 2: Definimos los tipos de las props como 'any'
 export default function ModalRejected({
   openModal,
   setOpenModal,
   transaction,
+}: {
+  openModal: any,
+  setOpenModal: any,
+  transaction: any
 }) {
   return (
     <>
-      <Modal show={openModal} onClose={() => setOpenModal(false)}>
-        <Modal.Header>Rechazar solicitud</Modal.Header>
-        <Modal.Body>
+      <ModalAny show={openModal} onClose={() => setOpenModal(false)}>
+        <ModalAny.Header>Rechazar solicitud</ModalAny.Header>
+        <ModalAny.Body>
           {transaction ? (
             <div className="space-y-6">
               <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
@@ -32,8 +40,8 @@ export default function ModalRejected({
               </p>
             </div>
           )}
-        </Modal.Body>
-        <Modal.Footer className="flex flex-col md:flex-row justify-between gap-2">
+        </ModalAny.Body>
+        <ModalAny.Footer className="flex flex-col md:flex-row justify-between gap-2">
           {transaction ? (
             <VerifyForm
               transactionStatus={TransactionEnum.REJECTED}
@@ -42,8 +50,8 @@ export default function ModalRejected({
               setOpenModal={setOpenModal}
             />
           ) : null}
-        </Modal.Footer>
-      </Modal>
+        </ModalAny.Footer>
+      </ModalAny>
     </>
   );
 }

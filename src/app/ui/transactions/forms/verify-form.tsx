@@ -7,7 +7,18 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-export default function VerifyForm({ transactionId, clientId, transactionStatus, setOpenModal}) {
+// CORRECCIÓN: Definimos los tipos de las props como 'any'
+export default function VerifyForm({ 
+  transactionId, 
+  clientId, 
+  transactionStatus, 
+  setOpenModal
+}: {
+  transactionId: any,
+  clientId: any,
+  transactionStatus: any,
+  setOpenModal: any
+}) {
 
   const [fetchError, setFetchError] = useState<FetchError>();
   const router = useRouter();

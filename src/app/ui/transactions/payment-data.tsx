@@ -12,13 +12,15 @@ import WallyData from "./payment/data/wally-data";
 
 export default function PaymentData({ id }: { id: string }) {
 
-  const [payment, setPayment] = useState(null);
+  // CORRECCIÓN 1: Tipamos el estado como 'any' para evitar errores al leer propiedades
+  const [payment, setPayment] = useState<any>(null);
 
   useEffect(() => {
     getPayment(id)
   }, [])
 
-  async function getPayment(id) {
+  // CORRECCIÓN 2: Tipamos el parámetro id como 'any'
+  async function getPayment(id: any) {
     const response = await fetchPaymentMethodById(id);
     setPayment(response)
   }

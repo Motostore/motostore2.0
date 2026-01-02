@@ -1,18 +1,18 @@
-// src/app/lib/roles.ts
+// src/app/lib/roles.ts (CÓDIGO FINAL CORREGIDO)
 
 /**
  * ============================================================
- *  ROLES EXACTOS SEGÚN TU ESPECIFICACIÓN
- *  ------------------------------------------------------------
- *  - Superuser: control total
- *  - Admin: control (debajo de Superuser)
- *  - Distribuidor: puede crear Distribuidor, Taquilla, Cliente (en su rama)
- *  - Reseller:    solo puede crear Taquilla, Cliente (en su rama)
- *  - Taquilla:    puede crear Cliente
- *  - Cliente:     sin permisos de gestión
+ * ROLES EXACTOS SEGÚN TU ESPECIFICACIÓN
+ * ------------------------------------------------------------
+ * - Superuser: control total
+ * - Admin: control (debajo de Superuser)
+ * - Distribuidor: puede crear Distribuidor, Taquilla, Cliente (en su rama)
+ * - Reseller:    solo puede crear Taquilla, Cliente (en su rama)
+ * - Taquilla:    puede crear Cliente
+ * - Cliente:     sin permisos de gestión
  *
- *  Adicional: "Cliente cuando se registra en la página pasa directo a administrador"
- *  → Configurable abajo en SELF_SIGNUP (dueño y redirect post-registro).
+ * Adicional: "Cliente cuando se registra en la página pasa directo a administrador"
+ * → Configurable abajo en SELF_SIGNUP (dueño y redirect post-registro).
  * ============================================================
  */
 
@@ -66,12 +66,19 @@ export const SELF_SIGNUP = {
 };
 
 /* ============================================================
- *  A PARTIR DE AQUÍ: UTILIDADES (no necesitas tocarlas)
+ * A PARTIR DE AQUÍ: UTILIDADES (no necesitas tocarlas)
  * ============================================================
  */
 
 export type Role = keyof typeof ROLE_DEF;
 export const ROLES = Object.keys(ROLE_DEF) as Role[];
+
+/** Roles que tienen acceso a funciones de billetera o gestión de saldo */
+export const ALLOWED_WALLET_ROLES: Role[] = [
+  "SUPERUSER", 
+  "ADMIN", 
+  "DISTRIBUTOR"
+];
 
 /** Si llega un rol desconocido, caemos a CLIENT (si existe) */
 export const DEFAULT_ROLE: Role = ("CLIENT" in ROLE_DEF ? "CLIENT" : ROLES[0]) as Role;
@@ -127,7 +134,8 @@ export function homeByRole(r: unknown): string {
 
 /** Árbol directo desde "manages" */
 const ROLE_TREE: Record<Role, Role[]> = ROLES.reduce((acc, r) => {
-  const mg = (ROLE_DEF[r].manages || []).filter((x): x is Role => ROLES.includes(x as Role));
+  // CORRECCIÓN AQUÍ: Casteamos a 'readonly string[]' para evitar error de predicado estricto
+  const mg = ((ROLE_DEF[r].manages || []) as readonly string[]).filter((x): x is Role => ROLES.includes(x as Role));
   acc[r] = mg;
   return acc;
 }, {} as Record<Role, Role[]>);
@@ -139,8 +147,8 @@ export const rolePriority: Record<Role, number> = ROLES.reduce((acc, r, i) => {
 }, {} as Record<Role, number>);
 
 /** ¿actor puede gestionar al target?
- *  - true si target === actor
- *  - true si target está en la clausura transitiva de "manages" del actor
+ * - true si target === actor
+ * - true si target está en la clausura transitiva de "manages" del actor
  */
 export function canManageRole(actor: unknown, target: unknown): boolean {
   const a = normalizeRole(actor);
@@ -197,7 +205,6 @@ export function isElevated(r: unknown): boolean {
   const v = normalizeRole(r);
   return v === "SUPERUSER" || v === "ADMIN";
 }
-
 
 
 

@@ -1,217 +1,172 @@
+// src/app/ayuda/AyudaClient.tsx (EDICIÓN FINAL: PRO ORO +++)
+
 'use client';
 
 import { InformationCircleIcon, QuestionMarkCircleIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import './tabs.css';
-import Tutorial from '../ui/common/tutorial';
-import { Accordion, AccordionItem, AccordionItemButton, AccordionItemHeading, AccordionItemPanel } from 'react-accessible-accordion';
-import AccordionMoto from '../ui/common/accordion';
-import Gallery from '../components/GalleryStreaming';
+import Tutorial from '../ui/common/tutorial'; 
+import FAQAccordion from '../ui/common/FAQAccordion'; 
+
+// Componente para el Título de la Pestaña (Icono + Texto)
+const CustomTabTitle = ({ icon: Icon, title }: { icon: React.ElementType, title: string }) => (
+    <div className="flex items-center justify-center gap-2 px-2 py-1 whitespace-nowrap">
+        <Icon className="w-5 h-5" />
+        <span>{title}</span>
+    </div>
+);
 
 export default function AyudaClient() {
+    const BRAND_RED = 'text-[#E33127]';
+
     return (
-        <div className='text-gray-500'>
-            <Tabs defaultIndex={0}>
-                <TabList>
-                    <Tab>
-                        <a href="#" className="inline-flex items-center px-4 py-1" aria-current="page" title='¿Cómo funciona?'>
-                            <InformationCircleIcon className='w-6 md:w-8 mr-2' />
-                            <span className='block md:inline'>¿Cómo funciona?</span>
-                        </a>
-                    </Tab>
-                    <Tab>
-                        <a href="#" className="inline-flex items-center px-4 py-1" title="Preguntas frecuentes">
-                            <QuestionMarkCircleIcon className='w-6 md:w-8 mr-2' />
-                            <span className='block md:inline'>Preguntas frecuentes</span>
-                        </a>
-                    </Tab>
-                    <Tab>
-                        <a href="#" className="inline-flex items-center px-4 py-1" title="¿Qué puedo hacer en Moto Store LLC?">
-                            <ListBulletIcon className='w-6 md:w-8 mr-2' />
-                            <span className='block md:inline'>¿Qué puedo hacer en Moto Store LLC?</span>
-                        </a>
-                    </Tab>
-                </TabList>
+        <div className="bg-white text-slate-600 min-h-[600px]">
+            
+            {/* ENCABEZADO DE LA SECCIÓN */}
+            <div className="text-center mb-12">
+                <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+                    Centro de Ayuda y <span className={BRAND_RED}>Soporte</span>
+                </h1>
+                <p className="text-lg md:text-xl text-slate-500 max-w-3xl mx-auto leading-relaxed">
+                    Todo lo que necesitas saber para operar tu negocio digital con Moto Store LLC.
+                </p>
+            </div>
 
-                <TabPanel>
-                    <div className="shadow-sm text-medium rounded-lg w-full">
-                        <div className='rounded-lg py-4'>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 rounded-lg">¿Cómo funciona?</h3>
-                            <p className="mb-2">En <strong>Moto Store LLC</strong>, facilitamos el proceso de obtener soluciones digitales eficientes y fáciles de usar. Nuestro sistema está diseñado para ser intuitivo y accesible, permitiendo que nuestros clientes naveguen sin dificultad y encuentren la mejor opción para sus necesidades.</p>
-                            <ul>
-                                <li><strong>1. Regístrate en nuestra plataforma:</strong> Al registrarte, accedes a un espacio personalizado donde podrás gestionar todas tus operaciones y acceder a las soluciones que ofrecemos.</li>
-                                <li><strong>2. Elige el servicio adecuado:</strong> Navega por nuestros servicios y selecciona el que mejor se adapte a tus necesidades. Ofrecemos desde soluciones de marketing digital hasta asesoramiento tecnológico.</li>
-                                <li><strong>3. Procesa tu solicitud:</strong> Después de seleccionar el servicio, sigue los pasos que se te indican. Nuestro sistema te guiará de manera clara y eficiente a través de cada etapa.</li>
-                                <li><strong>4. Disfruta de los resultados:</strong> Una vez procesada tu solicitud, disfrutarás de los beneficios que nuestras soluciones ofrecen, ayudando a tu empresa a crecer y alcanzar sus metas de manera efectiva.</li>
-                            </ul>
-                            <Tutorial />
+            <Tabs defaultIndex={0} className="w-full" selectedTabClassName="!border-b-2 !border-[#E33127] !text-[#E33127]">
+                
+                {/* 1. LISTA DE PESTAÑAS (DISEÑO MODERNO) */}
+                <div className="flex justify-center mb-12">
+                    <TabList className="flex flex-wrap justify-center gap-2 md:gap-8 border-b border-gray-100 w-full max-w-4xl pb-1">
+                        
+                        {/* Tab 1: Cómo funciona */}
+                        <Tab className="cursor-pointer px-4 py-3 text-base font-semibold text-slate-500 outline-none transition-all hover:text-[#E33127] border-b-2 border-transparent">
+                            <CustomTabTitle icon={InformationCircleIcon} title="¿Cómo funciona?" />
+                        </Tab>
+                        
+                        {/* Tab 2: Preguntas Frecuentes */}
+                        <Tab className="cursor-pointer px-4 py-3 text-base font-semibold text-slate-500 outline-none transition-all hover:text-[#E33127] border-b-2 border-transparent">
+                            <CustomTabTitle icon={QuestionMarkCircleIcon} title="Preguntas Frecuentes" />
+                        </Tab>
+                        
+                        {/* Tab 3: Qué puedo hacer */}
+                        <Tab className="cursor-pointer px-4 py-3 text-base font-semibold text-slate-500 outline-none transition-all hover:text-[#E33127] border-b-2 border-transparent">
+                            <CustomTabTitle icon={ListBulletIcon} title="Nuestros Servicios" />
+                        </Tab>
+                        
+                    </TabList>
+                </div>
+
+                {/* 2. PANELES DE CONTENIDO (Clean Design) */}
+                <div className="max-w-5xl mx-auto animate-fade-in-up">
+                    
+                    {/* PANEL 1: CÓMO FUNCIONA */}
+                    <TabPanel>
+                        <div className="space-y-8">
+                            <div className="text-center mb-10">
+                                <h2 className="text-3xl font-bold text-slate-900 mb-4">Tu camino al éxito digital</h2>
+                                <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                                    Nuestra plataforma está diseñada para ser intuitiva. En solo 4 pasos estarás operando.
+                                </p>
+                            </div>
+                            
+                            {/* Pasos Visuales (Grid) */}
+                            <div className="grid md:grid-cols-2 gap-8 mb-12">
+                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
+                                    <span className="text-4xl font-black text-[#E33127]/20 mb-2 block">01</span>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-2">Regístrate Gratis</h3>
+                                    <p className="text-slate-600">Crea tu cuenta en segundos y accede a tu panel de control personalizado.</p>
+                                </div>
+                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
+                                    <span className="text-4xl font-black text-[#E33127]/20 mb-2 block">02</span>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-2">Elige tu Solución</h3>
+                                    <p className="text-slate-600">Selecciona entre recargas, licencias, marketing o servicios satelitales.</p>
+                                </div>
+                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
+                                    <span className="text-4xl font-black text-[#E33127]/20 mb-2 block">03</span>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-2">Procesa al Instante</h3>
+                                    <p className="text-slate-600">Sigue los pasos guiados. Nuestro sistema automatizado hace el trabajo duro.</p>
+                                </div>
+                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
+                                    <span className="text-4xl font-black text-[#E33127]/20 mb-2 block">04</span>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-2">Crece sin Límites</h3>
+                                    <p className="text-slate-600">Disfruta de los resultados y expande tu negocio con nuestras herramientas.</p>
+                                </div>
+                            </div>
+                            
+                            {/* Video Tutorial */}
+                            <div className="bg-slate-900 rounded-3xl p-4 md:p-8 shadow-2xl">
+                                <h3 className="text-white text-center font-bold text-xl mb-6">Video Tutorial Rápido</h3>
+                                <Tutorial />
+                            </div>
                         </div>
-                    </div>
-                </TabPanel>
+                    </TabPanel>
 
-                <TabPanel>
-                    <AccordionMoto />
-                </TabPanel>
-
-                <TabPanel>
-                    <div className="shadow-sm text-medium rounded-lg w-full">
-                        <div className='p-2 md:mx-10 my-6'>
-                            <h2 className='text-2xl font-bold'>¿Qué puedo hacer en Moto Store LLC?</h2>
-                            <p>En <strong>Moto Store LLC</strong>, puedes realizar diversas acciones que incluyen:</p>
-                            <Accordion allowZeroExpanded>
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            ¿Qué servicios ofrece Moto Store LLC?
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>En Moto Store LLC ofrecemos:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Recargas telefónicas.</li>
-                                            <li>Servicios digitales para empresas.</li>
-                                            <li>Asesoría tecnológica.</li>
-                                            <li>Soluciones en marketing digital.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            ¿Cómo puedo aprovechar Moto Store LLC?
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>Para aprovechar al máximo los servicios de Moto Store LLC, sigue estos pasos:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Crea tu cuenta para acceder a todos los servicios.</li>
-                                            <li>Elige el servicio adecuado según tus necesidades.</li>
-                                            <li>Aprovecha el soporte técnico personalizado.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            ¿Qué soluciones digitales puedes encontrar en Moto Store LLC?
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>En Moto Store LLC, ofrecemos las siguientes soluciones digitales:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Recargas móviles.</li>
-                                            <li>Servicios de internet satelital.</li>
-                                            <li>Pago de facturas.</li>
-                                            <li>Licencias digitales y otros servicios innovadores.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            Explora los servicios de Moto Store LLC
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>Explora los diferentes servicios que ofrecemos:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Servicios de telecomunicaciones.</li>
-                                            <li>Pagos digitales.</li>
-                                            <li>Soporte técnico especializado.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            Todo lo que puedes hacer con Moto Store LLC
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>Con Moto Store LLC puedes:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Realizar recargas.</li>
-                                            <li>Contratar servicios de internet.</li>
-                                            <li>Pagar facturas.</li>
-                                            <li>Acceder a soporte técnico personalizado.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            Conoce los servicios disponibles en Moto Store LLC
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>Disponemos de servicios como:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Recargas.</li>
-                                            <li>Pagos.</li>
-                                            <li>Asistencia técnica personalizada.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            ¿Cómo puede ayudarte Moto Store LLC?
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>Moto Store LLC puede ayudarte a realizar:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Recargas rápidas y seguras.</li>
-                                            <li>Acceder a una variedad de servicios digitales.</li>
-                                            <li>Obtener soporte técnico confiable y rápido.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            Descubre las opciones que te ofrecemos en Moto Store LLC
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>Descubre nuestras opciones de recargas, pagos y acceso a diversas plataformas digitales:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Recargas para diferentes países.</li>
-                                            <li>Múltiples formas de pago.</li>
-                                            <li>Acceso a plataformas digitales de streaming, juegos y más.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-
-                                <AccordionItem>
-                                    <AccordionItemHeading>
-                                        <AccordionItemButton>
-                                            Servicios y soluciones en Moto Store LLC
-                                        </AccordionItemButton>
-                                    </AccordionItemHeading>
-                                    <AccordionItemPanel>
-                                        <p>En Moto Store LLC ofrecemos soluciones integrales para todas tus necesidades digitales:</p>
-                                        <ul className="list-disc pl-5">
-                                            <li>Servicios de recargas.</li>
-                                            <li>Asistencia técnica especializada.</li>
-                                            <li>Soluciones innovadoras para empresas y particulares.</li>
-                                        </ul>
-                                    </AccordionItemPanel>
-                                </AccordionItem>
-                            </Accordion>
+                    {/* PANEL 2: FAQ */}
+                    <TabPanel>
+                        <div className="max-w-3xl mx-auto">
+                            <div className="text-center mb-10">
+                                <h2 className="text-3xl font-bold text-slate-900 mb-4">Preguntas Frecuentes</h2>
+                                <p className="text-lg text-slate-600">Resolvemos tus dudas más comunes al instante.</p>
+                            </div>
+                            <FAQAccordion /> 
                         </div>
-                        <Gallery buttonText={''} items={[]} className={"md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4"} />
-                    </div>
-                </TabPanel>
+                    </TabPanel>
+
+                    {/* PANEL 3: QUÉ PUEDO HACER */}
+                    <TabPanel>
+                        <div className="grid md:grid-cols-2 gap-12 items-start">
+                            <div>
+                                <h2 className='text-3xl font-bold text-slate-900 mb-6'>
+                                    Un Ecosistema Completo
+                                </h2>
+                                <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                                    En <strong>Moto Store LLC</strong> no solo vendemos servicios, creamos soluciones. 
+                                    Hemos centralizado las herramientas digitales más importantes en un solo lugar.
+                                </p>
+                                
+                                {/* Lista Estilizada */}
+                                <ul className="space-y-6">
+                                    <li className="flex gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-[#E33127]">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-900 text-lg">Recargas Globales</h4>
+                                            <p className="text-sm text-slate-500">Saldo instantáneo para operadores en 5 países.</p>
+                                        </div>
+                                    </li>
+                                    <li className="flex gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-[#E33127]">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" /></svg>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-900 text-lg">Licencias Digitales</h4>
+                                            <p className="text-sm text-slate-500">Software original y legal activado al momento.</p>
+                                        </div>
+                                    </li>
+                                    <li className="flex gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 text-[#E33127]">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418" /></svg>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-900 text-lg">Servicios Premium</h4>
+                                            <p className="text-sm text-slate-500">Gestión de Starlink, Marketing y Pagos Flexibles.</p>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            {/* Ilustración de la Derecha (Opcional, si no tienes SVG usa un contenedor de color) */}
+                            <div className="hidden md:flex justify-center items-center h-full bg-gray-50 rounded-3xl p-8 border border-gray-100">
+                                <div className="text-center">
+                                    <span className="text-6xl mb-4 block">🚀</span>
+                                    <h3 className="font-bold text-slate-400">Moto Store Solutions</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </TabPanel>
+
+                </div>
             </Tabs>
         </div>
     );
 }
-

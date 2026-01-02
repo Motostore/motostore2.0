@@ -1,72 +1,139 @@
-/*-------------------------------------------------------------------
-|  🐼 React FC Form
-|
-|  🦝 Todo: CREATE AN AWESOME AND MAINTAINABLE FORM COMPONENT 
-|
-|  🐸 Returns:  JSX
-*-------------------------------------------------------------------*/
+"use client";
 
-import { Input } from './components/Input'
+import { useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
+import { Toaster, toast } from 'react-hot-toast'
+import { PaperAirplaneIcon, CheckBadgeIcon } from '@heroicons/react/24/outline'
+
+// Importamos el Input usando el alias @
+import { Input } from '@/app/components/Input' 
+
+// CORRECCIÓN FINAL AQUÍ:
+// Usamos '@/app/utils/...' para que Next.js encuentre el archivo sin importar dónde esté este componente.
 import {
   name_validation,
   desc_validation,
   email_validation,
   num_validation,
   password_validation,
-} from './utils/inputValidations'
-import { useState } from 'react'
-import { GrMail } from 'react-icons/gr'
-import { BsFillCheckSquareFill } from 'react-icons/bs'
+} from '@/app/utils/inputValidations'
 
 export const Form = () => {
-
   const methods = useForm()
   const [success, setSuccess] = useState(false)
 
-  const onSubmit = methods.handleSubmit(data => {
-    methods.reset()
+  const handleFormSubmission = (data: any) => {
+    // 1. Simulación de envío exitoso
+    console.log(data) 
+    
+    // 2. Éxito visual
     setSuccess(true)
-  })
+    methods.reset()
+
+    // 3. Notificación Toast Premium
+    toast.success('¡Formulario enviado correctamente!', {
+      style: {
+        borderRadius: '12px',
+        background: '#1e293b', // Slate-800 elegante
+        color: '#fff',
+        fontWeight: '600',
+      },
+      iconTheme: {
+        primary: '#E33127', // Rojo Marca
+        secondary: '#fff',
+      },
+      duration: 4000,
+    })
+    
+    // Resetear estado de éxito después de unos segundos
+    setTimeout(() => setSuccess(false), 3000)
+  }
 
   return (
     <FormProvider {...methods}>
-      <form
-        onSubmit={e => e.preventDefault()}
-        noValidate
-        autoComplete="off"
-        className="container"
-      >
-        <div className="grid gap-5 md:grid-cols-2">
-        <Input {...name_validation} />
-        <div className="relative">
-          <div style={{top: '2.80rem'}} className="absolute start-0 flex items-center ps-3.5 pointer-events-none">
-            <svg className="w-4 h-4 text-orange-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
-              <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>
-              <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
-            </svg>
+      
+      {/* CONTENEDOR 'GLASS' PREMIUM */}
+      <div className="w-full max-w-4xl mx-auto bg-white p-8 sm:p-12 rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100 animate-in fade-in zoom-in duration-500">
+        
+        {/* Encabezado del Formulario */}
+        <div className="mb-8 text-center sm:text-left">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+            Completa tus Datos
+          </h2>
+          <p className="text-slate-400 text-sm font-bold mt-1">
+            Ingresa la información requerida a continuación.
+          </p>
+        </div>
+
+        <form
+          onSubmit={methods.handleSubmit(handleFormSubmission)}
+          noValidate
+          autoComplete="off"
+          className="w-full"
+        >
+          {/* GRID DE INPUTS */}
+          <div className="grid gap-6 md:grid-cols-2 mb-8">
+            
+            <div className="space-y-1">
+              <Input {...name_validation} />
+            </div>
+            
+            <div className="space-y-1">
+              <Input {...email_validation} />
+            </div>
+            
+            <div className="space-y-1">
+              <Input {...num_validation} />
+            </div>
+            
+            <div className="space-y-1">
+              <Input {...password_validation} />
+            </div>
+            
+            {/* Textarea ocupando todo el ancho */}
+            <div className="md:col-span-2 space-y-1">
+               <Input {...desc_validation} className="h-32" /> 
+            </div>
+            
           </div>
-          <Input {...email_validation} label="" />
-        </div>
-        <Input {...num_validation} />
-        <Input {...password_validation} />
-        <Input {...desc_validation} className="md:col-span-2" />
-        </div>
-        <div className="mt-5">
+
+          {/* MENSAJE DE ÉXITO */}
           {success && (
-            <p className="flex items-center gap-1 mb-5 font-semibold text-green-500">
-              <BsFillCheckSquareFill /> Form has been submitted successfully
-            </p>
+            <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl flex items-center gap-3 animate-pulse">
+              <CheckBadgeIcon className="w-6 h-6 text-green-600" />
+              <p className="font-bold text-green-700 text-sm">
+                Datos procesados exitosamente.
+              </p>
+            </div>
           )}
-          <button
-            onClick={onSubmit}
-            className="flex items-center gap-1 p-5 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-800"
-          >
-            <GrMail />
-            Submit Form
-          </button>
-        </div>
-      </form>
+
+          {/* BOTÓN DE ACCIÓN */}
+          <div className="flex justify-end pt-4 border-t border-slate-50">
+            <button
+              type="submit"
+              className="
+                group relative
+                flex items-center gap-3 
+                px-8 py-4 rounded-xl
+                bg-gradient-to-r from-[#E33127] to-[#C52B22] 
+                hover:from-[#C52B22] hover:to-[#A9221A] 
+                text-white font-black tracking-widest uppercase text-xs sm:text-sm
+                shadow-lg shadow-red-500/20 hover:shadow-xl hover:-translate-y-0.5
+                transition-all duration-300 overflow-hidden
+              "
+            >
+              <span className="relative z-10">Enviar Información</span>
+              <PaperAirplaneIcon className="relative z-10 w-5 h-5 -rotate-45 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
+              
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-white/20 transition-transform duration-700 ease-in-out -skew-x-12"></div>
+            </button>
+          </div>
+
+        </form>
+      </div>
+      
+      {/* Toast Notification Container */}
+      <Toaster position="bottom-right" />
     </FormProvider>
   )
 }

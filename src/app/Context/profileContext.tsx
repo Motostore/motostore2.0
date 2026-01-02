@@ -1,23 +1,32 @@
 'use client';
-import { createContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { ProfileButtonsEnum } from "../lib/enums";
 
-export const ProfileContext = createContext(null);
+// Definir el tipo para el contexto
+export type ProfileContextType = {
+  option: ProfileButtonsEnum;
+  setOption: React.Dispatch<React.SetStateAction<ProfileButtonsEnum>>;
+};
 
-export const ProfileProvider = ({children}) => {
+// Crear el contexto con el tipo
+export const ProfileContext = createContext<ProfileContextType | null>(null);
 
-  const router = useRouter();
-
-  const [option, setOption] = useState(ProfileButtonsEnum.CANCEL);
+// Asegurar que ProfileProvider reciba `children` correctamente tipado
+export const ProfileProvider = ({ children }: { children: ReactNode }) => {
+  const [option, setOption] = useState<ProfileButtonsEnum>(ProfileButtonsEnum.CANCEL);
 
   return (
-    <ProfileContext.Provider
-      value={{
-        option,
-        setOption
-      }}>
+    <ProfileContext.Provider value={{ option, setOption }}>
       {children}
     </ProfileContext.Provider>
   );
-}
+};
+
+// Hook personalizado para usar el contexto en otros componentes
+export const useProfile = () => {
+  const context = useContext(ProfileContext);
+  if (!context) {
+    throw new Error("useProfile debe usarse dentro de ProfileProvider");
+  }
+  return context;
+};

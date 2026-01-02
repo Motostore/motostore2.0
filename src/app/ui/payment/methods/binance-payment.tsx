@@ -1,7 +1,16 @@
 import { useEffect } from "react";
 import BinanceForm from "../forms/BinanceForm";
 
-export default function BinancePayment({ service, setPaymentData, setOpenModal }) {
+// CORRECCIÓN: Tipamos las props como 'any' para desbloquear el build
+export default function BinancePayment({ 
+  service, 
+  setPaymentData, 
+  setOpenModal 
+}: { 
+  service: any, 
+  setPaymentData: any, 
+  setOpenModal: any 
+}) {
   const payload = {
     transaction: "Binance",
     binancePay: "207609666",

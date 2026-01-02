@@ -1,4 +1,5 @@
-export default function ZelleData({payment}) {
+// CORRECCIÓN: Tipamos 'payment' como 'any' para que pase el build
+export default function ZelleData({ payment }: { payment: any }) {
   
   return (
     <>

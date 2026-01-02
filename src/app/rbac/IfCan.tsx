@@ -1,14 +1,28 @@
-import IfCan from "../rbac/IfCan";
+// src/app/rbac/IfCan.tsx
+'use client';
 
-// "Admin"
-<IfCan action="products:write">
-  <Link href="/dashboard/admin/products">Productos</Link>
-</IfCan>
+import { useSession } from "next-auth/react";
+import { can, type Action } from "./permissions"; // Asegúrate de que permissions.ts esté en la misma carpeta
 
-<IfCan action="users:create">
-  <Link href="/dashboard/admin/users">Usuarios</Link>
-</IfCan>
+type IfCanProps = {
+  action: Action;
+  children: React.ReactNode;
+};
 
-<IfCan action="transactions:read:any">
-  <Link href="/dashboard/admin/transactions">Transacciones globales</Link>
-</IfCan>
+export default function IfCan({ action, children }: IfCanProps) {
+  const { data: session, status } = useSession();
+
+  // Mientras carga, no mostramos nada (o podrías mostrar un skeleton)
+  if (status === "loading") return null;
+
+  // Obtenemos el rol del usuario (o "CLIENT" por defecto)
+  const userRole = session?.user?.role || "CLIENT";
+
+  // Verificamos si el rol tiene permiso para la acción
+  if (can(userRole, action)) {
+    return <>{children}</>;
+  }
+
+  // Si no tiene permiso, no renderizamos nada
+  return null;
+}

@@ -9,16 +9,15 @@ import {
   Cog6ToothIcon, MegaphoneIcon, CodeBracketIcon, 
   UserIcon, IdentificationIcon, LockClosedIcon, DevicePhoneMobileIcon, 
   EnvelopeIcon, BanknotesIcon,
-  // 👇 Importamos iconos adicionales para funciones nuevas
-  CheckBadgeIcon, ArrowDownCircleIcon, WalletIcon 
+  CheckBadgeIcon, ArrowDownCircleIcon, WalletIcon,
+  DocumentCheckIcon, CreditCardIcon
 } from '@heroicons/react/24/outline';
 
-// Importamos IfCan desde la ruta correcta (ajusta si es necesario)
+// Importación relativa segura a la carpeta rbac (ajusta si tu estructura es diferente)
 import IfCan from '../../rbac/IfCan'; 
 
 function Item({ href, children, className = '' }: { href: string; children: React.ReactNode; className?: string; }) {
   const pathname = usePathname();
-  // Lógica Premium: Activo si es exacto O si es una sub-ruta directa
   const active = pathname === href || (href !== '/' && pathname.startsWith(href));
 
   return (
@@ -41,12 +40,10 @@ function Item({ href, children, className = '' }: { href: string; children: Reac
 export default function NavLinksDashboard() {
   const pathname = usePathname();
 
-  // 🕵️ DETECTIVE DE RUTAS: Rutas relacionadas con pagos y wallet
   const isPaymentReportPage = pathname.startsWith('/dashboard/reports/payment');
   const isWalletAdminPage = pathname.startsWith('/dashboard/wallet/admin-withdrawals'); 
   const isPaymentsApprovalsPage = pathname.startsWith('/dashboard/payments/approvals');
 
-  // 1. LÓGICA COMPRAS (ULTRA PRO)
   const purchasesOpen = useMemo(() => 
     pathname.startsWith('/dashboard/purchases') || 
     pathname.startsWith('/dashboard/payment-methods') || 
@@ -56,7 +53,6 @@ export default function NavLinksDashboard() {
     isPaymentReportPage, 
   [pathname, isPaymentReportPage, isPaymentsApprovalsPage, isWalletAdminPage]);
 
-  // 2. LÓGICA REPORTES (ULTRA PRO)
   const reportsOpen = useMemo(() => 
     pathname.startsWith('/dashboard/reports') && 
     !isPaymentReportPage, 
@@ -66,7 +62,6 @@ export default function NavLinksDashboard() {
     pathname.startsWith('/dashboard/users'), 
   [pathname]);
 
-  // Estilo dinámico para el encabezado del menú desplegable
   const summaryClass = (isOpen: boolean) => [
     'flex items-center gap-2 list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition-all duration-200 font-bold',
     isOpen
@@ -88,7 +83,7 @@ export default function NavLinksDashboard() {
         <span className="flex items-center gap-2"><ShoppingBagIcon className="w-5 h-5"/> Productos</span>
       </Item>
 
-      {/* --- MENÚ DE COMPRAS (El protagonista) --- */}
+      {/* --- MENÚ DE COMPRAS --- */}
       <details open={purchasesOpen} className="group">
         <summary className={summaryClass(purchasesOpen)}>
           <ShoppingBagIcon className="w-5 h-5"/> Compras
@@ -96,8 +91,8 @@ export default function NavLinksDashboard() {
         <div className="mt-1 ml-3 border-l-2 border-slate-100 pl-3 space-y-1">
           <Item href="/dashboard/purchases">Listado de Compras</Item>
           
-          {/* ✅ CORRECCIÓN: Usamos 'payments:verify' en lugar de 'payments:approve' para evitar el error de tipos */}
-          <IfCan action="payments:verify">
+          {/* ✅ CORRECCIÓN: Usamos 'permission' en lugar de 'action' */}
+          <IfCan permission="manage_payments">
             <Item href="/dashboard/payments/approvals">
                 <span className="flex items-center gap-2">
                     <CheckBadgeIcon className="w-5 h-5 text-emerald-500"/> Aprobar Pagos
@@ -110,7 +105,6 @@ export default function NavLinksDashboard() {
             </Item>
           </IfCan>
           
-          {/* ENLACES DE USUARIO */}
           <Item href="/dashboard/reports/payment">Reportar Pago</Item>
           <Item href="/dashboard/wallet/withdraw">
             <span className="flex items-center gap-2">
@@ -150,7 +144,8 @@ export default function NavLinksDashboard() {
       </details>
 
       {/* --- MENÚ DE CONFIGURACIÓN (Protegido) --- */}
-      <IfCan action="users:read:any">
+      {/* ✅ CORRECCIÓN: Usamos 'permission' en lugar de 'action' */}
+      <IfCan permission="manage_users">
         <details className="group pt-1">
           <summary className="flex items-center gap-2 list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition-all duration-200 font-bold hover:bg-gray-50 text-slate-700 hover:text-black">
             <Cog6ToothIcon className="w-5 h-5"/> Configuración
@@ -165,17 +160,9 @@ export default function NavLinksDashboard() {
           </div>
         </details>
       </IfCan>
-
-      <Item href="/dashboard/rbac-test" className="mt-2 pt-2 border-t border-slate-200 bg-red-800 hover:bg-red-700">
-        <span className="flex items-center gap-2 text-yellow-300 font-bold">
-          <CodeBracketIcon className="w-5 h-5"/> 🛑 DEBUG BYPASS
-        </span>
-      </Item>
     </nav>
   );
 }
-
-
 
 
 

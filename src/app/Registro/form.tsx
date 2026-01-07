@@ -1,11 +1,9 @@
-// src/app/Registro/form.tsx (VERSIÓN FINAL TURBO)
-
 'use client';
 
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { signIn } from 'next-auth/react';
+import { signIn } from 'next-auth/react'; // Solo para social login, no para auto-login post-registro
 import toast, { Toaster } from 'react-hot-toast';
 import {
   EyeIcon,
@@ -107,6 +105,7 @@ export default function RegisterForm() {
   }, [state, getCities, resetField]);
 
   const handleSocialLogin = (provider: 'google' | 'apple') => {
+    // Nota: El social login también debería verificar aprobación en el callback de NextAuth
     void signIn(provider, { callbackUrl: '/dashboard' });
   };
 
@@ -116,35 +115,40 @@ export default function RegisterForm() {
       return;
     }
     
-    // Toast de carga que no desaparece hasta terminar
-    const toastId = toast.loading('Creando tu cuenta...');
+    const toastId = toast.loading('Procesando solicitud...');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}${process.env.NEXT_PUBLIC_API_AUTH}/register`, {
+      // Usamos la URL de API basada en entorno o fallback a relativa
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE || ''; 
+      const response = await fetch(`${apiBase}/api/auth/register`, { // Asegurar ruta correcta
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
       });
       const resp = await response.json() as AuthResponse;
 
-      if (!resp.error) {
-        toast.success('¡Registro exitoso!', { id: toastId });
-        toast.loading('Iniciando sesión...', { id: toastId });
+      if (response.ok && !resp.error) {
         
-        // Auto-Login inmediato
-        const loginRes = await signIn('credentials', { 
-            username: data.username, 
-            password: data.password, 
-            redirect: false 
+        // --- SEGURIDAD PRO: NO LOGIN AUTOMÁTICO ---
+        
+        toast.success('¡Registro completado!', { id: toastId });
+        
+        // Mensaje de espera de aprobación
+        toast('Tu cuenta está PENDIENTE DE APROBACIÓN. Te notificaremos cuando esté activa.', { 
+            icon: '🔒', 
+            duration: 6000,
+            style: {
+                borderRadius: '10px',
+                background: '#1e293b',
+                color: '#fff',
+                border: '1px solid #334155'
+            },
         });
 
-        if (loginRes?.ok) {
-            toast.success('¡Bienvenido a bordo!', { id: toastId });
-            router.push('/dashboard'); // Redirección directa al Dashboard
-        } else {
-            toast.error('Cuenta creada, pero debes iniciar sesión manual.', { id: toastId });
+        // Redirigir al LOGIN, no al Dashboard
+        setTimeout(() => {
             router.push('/login');
-        }
+        }, 3000);
 
       } else {
         toast.error(resp.message || 'Error al registrar usuario', { id: toastId });

@@ -7,12 +7,12 @@ export default function DanliBalanceCard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Llama al archivo que acabamos de arreglar arriba
+    // Llamamos a NUESTRO propio servidor (el puente), no al backend directo
     fetch('/api/proxy/danli')
       .then(res => res.json())
       .then(data => {
         if (data.balance) {
-          setBalance(parseFloat(data.balance).toFixed(2));
+          setBalance(data.balance);
         } else {
           setBalance("Error");
         }
@@ -34,9 +34,9 @@ export default function DanliBalanceCard() {
       </div>
       <div className="truncate rounded-xl bg-gray-50 px-4 py-6 text-center">
         <span className={`text-2xl font-black ${loading ? 'text-gray-400' : 'text-emerald-600'}`}>
-            {loading ? "..." : balance}
+            {loading ? "Cargando..." : balance}
         </span>
-        {!loading && balance !== "Offline" && balance !== "Error" && (
+        {!loading && balance !== "Error" && (
             <span className="text-xs font-bold text-gray-400 ml-1">VES</span>
         )}
       </div>

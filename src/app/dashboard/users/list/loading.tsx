@@ -1,24 +1,28 @@
-// src/app/dashboard/loading.tsx (Estilo Premium - Corazón de Marca)
+'use client';
+
+import Image from "next/image";
+
 export default function Loading() {
   return (
-    <div className="flex w-full h-full min-h-[400px] items-center justify-center p-8 bg-slate-50">
-      
-      {/* Contenedor del Spinner */}
+    <div className="flex w-full h-screen items-center justify-center bg-slate-50/80 backdrop-blur-sm">
       <div className="flex flex-col items-center">
         
-        {/* Spinner del Corazón (Lateheart) - Más moderno y visual */}
-        <div className="relative w-12 h-12">
-          <div 
-            className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-[#E33127] animate-spin"
-            aria-label="Cargando contenido..."
+        {/* Logo de MotoStore con animación de pulso */}
+        <div className="relative w-24 h-24 mb-6 animate-pulse">
+          <Image
+            src="/motostore-logo.png" // Asegúrate de que tu logo esté aquí en la carpeta public
+            alt="Cargando Moto Store..."
+            fill
+            className="object-contain"
+            priority
           />
-          {/* Un punto en el centro como corazón de la marca */}
-          <div className="absolute top-1/2 left-1/2 w-4 h-4 -translate-x-1/2 -translate-y-1/2 bg-[#E33127] rounded-full shadow-md animate-pulse duration-1000" />
         </div>
 
-        {/* Mensaje de Carga */}
-        <p className="mt-6 text-sm font-semibold text-slate-500 animate-in fade-in duration-1000">
-          Cargando datos...
+        {/* Spinner sutil en el color de la marca */}
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-[#E33127] rounded-full animate-spin"></div>
+        
+        <p className="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+          Cargando sistema...
         </p>
       </div>
     </div>

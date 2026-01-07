@@ -1,11 +1,6 @@
-// src/app/dashboard/layout.tsx
-
-// 🔥 SOLUCIÓN FINAL: USANDO CARPETA 'ui' (minúsculas)
 import TopNav from "../ui/dashboard/topnav"; 
 import BrandHeader from "../ui/dashboard/brand-header";
 import DashboardMarquee from "../ui/dashboard/dashboard-marquee";
-
-// 💎 CORRECCIÓN: Quitamos la extensión ".tsx" del import. TypeScript lo resuelve solo.
 import IAMotoMotoAssistant from "../ui/dashboard/IAMotoMotoAssistant"; 
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

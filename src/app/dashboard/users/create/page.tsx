@@ -1,5 +1,4 @@
-// src/app/dashboard/users/create/page.tsx
-"use client";
+'use client';
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -13,49 +12,31 @@ import {
 } from "@/app/lib/roles";
 import {
   UserPlusIcon,
-  ArrowRightIcon,
   ArrowLeftIcon,
   UserIcon,
   AtSymbolIcon,
   KeyIcon,
   PhoneIcon,
   EnvelopeIcon,
-  WrenchScrewdriverIcon,
-  CheckCircleIcon,
-  PencilSquareIcon, // Usamos PencilSquareIcon para coherencia con otras vistas
-  ShieldExclamationIcon 
+  ShieldExclamationIcon,
+  CheckBadgeIcon,
+  IdentificationIcon
 } from "@heroicons/react/24/outline";
 import toast, { Toaster } from "react-hot-toast";
 
-/* ================= Helpers (Tu lógica de negocio es la prioridad) ================= */
+/* ================= Configuración ================= */
+const API_BASE_RENDER = "https://motostore-api.onrender.com/api/v1";
 
-/** Toma el token de la sesión (si existe) */
 function pickToken(s: any): string | null {
-  const u = s?.user ?? {};
-  const t = u?.token ?? u?.accessToken ?? (s as any)?.accessToken ?? null;
-  return typeof t === "string" ? t : null;
+  return s?.accessToken || s?.user?.accessToken || s?.user?.token || null;
 }
-
-/** Base API: prioriza NEXT_PUBLIC_API_FULL y cae a NEXT_PUBLIC_API_BASE_URL. Sin slash final. */
-function apiBase(): string {
-  try {
-    const raw =
-      (process.env.NEXT_PUBLIC_API_FULL ||
-        process.env.NEXT_PUBLIC_API_BASE_URL ||
-        "") + "";
-    return raw.replace(/\/$/, "");
-  } catch {
-    return "";
-  }
-}
-
-/* ================= Types & defaults ================= */
 
 type FormState = {
   name: string;
   username: string;
   email: string;
   phone: string;
+  cedula: string;
   role: Role;
   password: string;
   confirm: string;
@@ -67,20 +48,18 @@ const DEFAULTS: FormState = {
   username: "",
   email: "",
   phone: "",
+  cedula: "",
   role: "CLIENT",
   password: "",
   confirm: "",
-  active: true,
+  active: true, 
 };
 
-/* ================= Page ================= */
-
 export default function UsersCreatePage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
-
   const token = useMemo(() => pickToken(session), [session]);
-  const base = useMemo(() => apiBase(), []);
+  
   const currentRole = useMemo(
     () => normalizeRole((session?.user as any)?.role),
     [session]
@@ -97,144 +76,66 @@ export default function UsersCreatePage() {
   }));
 
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
-
   const abortRef = useRef<AbortController | null>(null);
 
   function onChange<K extends keyof FormState>(k: K, v: FormState[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  function validate(): string | null {
-    if (!roleOptions.length)
-      return "No autorizado: tu rol no puede crear cuentas.";
-    if (!form.name.trim() || !form.username.trim() || !form.email.trim())
-      return "Nombre, usuario y correo son obligatorios.";
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim()))
-      return "Correo inválido.";
-    if (!form.password || form.password.length < 6)
-      return "La contraseña debe tener al menos 6 caracteres.";
-    if (form.password !== form.confirm) return "Las contraseñas no coinciden.";
-    if (!base && !process.env.NEXT_PUBLIC_API_FULL)
-      return "Falta configurar la URL del backend (NEXT_PUBLIC_API_FULL).";
-    const isSameOrigin =
-      typeof window !== "undefined" &&
-      (!!base ? base.startsWith(window.location.origin) : true);
-    if (!isSameOrigin && !token) return "No se encontró token de sesión.";
-    const normalized = normalizeRole(form.role);
-    if (!roleOptions.includes(normalized))
-      return "No tienes permisos para asignar ese rol.";
-    return null;
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
 
-    setErr(null);
-    setOk(null);
-
-    const v = validate();
-    if (v) {
-      setErr(v);
-      toast.error(v);
-      return;
-    }
+    // Validaciones
+    if (form.password !== form.confirm) return toast.error("Las contraseñas no coinciden");
+    if (form.password.length < 6) return toast.error("La contraseña es muy corta (mín. 6)");
+    if (!form.cedula) return toast.error("La Cédula/ID es obligatoria");
+    if (!token) return toast.error("Tu sesión ha expirado. Por favor, reingresa.");
 
     setLoading(true);
+    const toastId = toast.loading("Registrando usuario...");
+    
     abortRef.current?.abort();
     abortRef.current = new AbortController();
-    const { signal } = abortRef.current;
 
     try {
-      const normalizedRole = normalizeRole(form.role);
-
-      const payload: any = {
+      const payload = {
         name: form.name.trim(),
-        username: form.username.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim() || null,
-        role: normalizedRole,
+        username: form.username.trim().toLowerCase(),
+        email: form.email.trim().toLowerCase(),
         password: form.password,
-        disabled: !form.active,
+        cedula: form.cedula.trim(),
+        telefono: form.phone.trim(),
+        full_name: form.name.trim(),
+        role: normalizeRole(form.role),
+        disabled: !form.active 
       };
 
-      const isSameOrigin =
-        typeof window !== "undefined" &&
-        (!!base ? base.startsWith(window.location.origin) : true);
+      const res = await fetch(`${API_BASE_RENDER}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+        signal: abortRef.current.signal,
+      });
 
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(isSameOrigin
-          ? {}
-          : {
-              Authorization: token!.startsWith("Bearer ")
-                ? token!
-                : `Bearer ${token}`,
-            }),
-      };
-
-      const endpoints = [
-        "/api/admin/users",
-        "/admin/users",
-        "/users",
-        "/auth/register",
-      ];
-
-      let created: any = null;
-      let lastError = "";
-
-      for (const ep of endpoints) {
-        try {
-          const res = await fetch(`${base}${ep}`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload),
-            cache: "no-store",
-            signal,
-          });
-
-          if (res.ok) {
-            try { created = await res.json(); } 
-            catch {
-              const txt = await res.text();
-              created = { value: txt };
-            }
-            break;
-          }
-
-          let msg = `Error ${res.status} en ${ep}`;
-          const txt = await res.text().catch(() => "");
-          if (txt) {
-            try {
-              const j = JSON.parse(txt);
-              msg += `: ${j?.message || j?.error || j?.detail || (typeof j === "string" ? j : "")}`;
-            } catch {
-              msg += `: ${txt.slice(0, 300)}`;
-            }
-          }
-          lastError = msg;
-        } catch (e: any) {
-          if (e?.name === "AbortError") return; // cancelado
-          lastError = `Fallo de red en ${ep}: ${e?.message || e}`;
-        }
+      if (res.ok) {
+        toast.success(`Usuario ${form.username} creado correctamente`, { id: toastId });
+        setTimeout(() => router.push("/dashboard/users/list"), 1000);
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Error al crear el usuario");
       }
-
-      if (!created) {
-        throw new Error(lastError || "No se pudo crear el usuario (URL/API/permisos).");
-      }
-
-      setOk("✅ Usuario creado correctamente.");
-      toast.success("Usuario creado exitosamente.");
-      router.replace("/dashboard/users/list");
     } catch (e: any) {
-      if (e?.name === "AbortError") return;
-      setErr(e?.message || "No se pudo crear el usuario.");
-      toast.error(e?.message || "Error al crear usuario.");
+      if (e.name !== 'AbortError') {
+        toast.error(e.message, { id: toastId });
+      }
     } finally {
-      setLoading(false);
+      if (abortRef.current && !abortRef.current.signal.aborted) {
+         setLoading(false);
+      }
     }
   }
 
@@ -242,228 +143,174 @@ export default function UsersCreatePage() {
     return () => abortRef.current?.abort();
   }, []);
 
-  if (!roleOptions.length) {
+  if (status === 'authenticated' && !roleOptions.length) {
     return (
-      <div className="min-h-[calc(100vh-56px)] p-6 md:p-10 bg-slate-50"> {/* Fondo Base del Dashboard */}
-        <div className="mx-auto max-w-3xl rounded-xl border border-red-200 bg-red-50 p-6 shadow-md">
-          <h1 className="text-xl md:text-2xl font-bold text-red-800 mb-3">
-            <ShieldExclamationIcon className="w-6 h-6 inline mr-2" /> Permiso Denegado
-          </h1>
-          <p className="text-red-700 mb-4">
-            Tu rol <span className="chip bg-red-100 text-red-800">{currentRole}</span> no tiene permisos para crear usuarios.
-          </p>
-          <Link href="/dashboard/users/list" className="flex items-center gap-2 text-sm text-red-600 hover:underline">
-            <ArrowLeftIcon className="w-4 h-4" /> Volver a la lista
-          </Link>
+      <div className="min-h-screen p-6 bg-slate-50 flex items-center justify-center animate-fadeIn">
+        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl text-center border border-slate-100">
+          <ShieldExclamationIcon className="w-14 h-14 text-red-500 mx-auto mb-4" />
+          <h1 className="text-xl font-black text-slate-900 mb-2 uppercase">Acceso Restringido</h1>
+          <p className="text-slate-500 text-sm mb-6">Tu nivel de usuario ({currentRole}) no tiene permisos para crear nuevas cuentas.</p>
+          <Link href="/dashboard/users/list" className="text-[#E33127] font-bold text-sm hover:underline">Volver al listado</Link>
         </div>
       </div>
     );
   }
-  
-  // Clase de utilidad para el icono (Asegura el tamaño profesional y sutil)
-  const ICON_CLASS = "pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E33127]";
-  // Clase para Inputs de Formulario (Ultra Premium)
-  const INPUT_CLASS = "w-full p-3 rounded-xl border border-slate-200 bg-white text-slate-800 focus:border-[#E33127] focus:ring-2 focus:ring-red-500/10 outline-none transition-all";
 
+  if (status === 'loading') return <div className="p-10 text-center text-slate-500 text-sm animate-pulse">Cargando permisos...</div>;
 
-  const RoleInput = (
-    <div className="md:col-span-2"> {/* Expandido para mejor visibilidad */}
-      <label className="input-label text-slate-600" htmlFor="role">Rol a asignar</label>
-      <div className="relative group"> 
-        <WrenchScrewdriverIcon className={ICON_CLASS} />
-        <select
-          id="role"
-          className={`${INPUT_CLASS} pl-10`} // Estilo de input consistente
-          value={form.role}
-          onChange={(e) => onChange("role", normalizeRole(e.target.value))}
-        >
-          {roleOptions.map((r) => (
-            <option key={r} value={r} className="bg-white text-slate-800">
-              {roleLabel[r]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <p className="mt-1 text-xs text-slate-500">
-        Solo se muestran los roles que tu perfil puede crear, según la jerarquía.
-      </p>
-    </div>
-  );
+  // CLASES OPTIMIZADAS (Más compactas y elegantes)
+  const ICON_CLASS = "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E33127] transition-colors";
+  const INPUT_CLASS = "w-full py-2.5 pl-9 pr-3 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:border-[#E33127] focus:ring-2 focus:ring-[#E33127]/10 outline-none transition-all placeholder:text-slate-400";
+  const LABEL_CLASS = "block text-[10px] font-black uppercase text-slate-400 mb-1 ml-1 tracking-wide";
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6 bg-slate-50 min-h-screen"> {/* Fondo Base del Dashboard */}
-      <Toaster />
+    // CAMBIO CLAVE: max-w-3xl para que no se vea "tan grande" en escritorio
+    <div className="max-w-3xl mx-auto p-4 md:p-6 animate-fadeIn">
+      <Toaster position="top-right" />
       
-      {/* HEADER */}
-      <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
-        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <UserPlusIcon className="w-7 h-7 text-[#E33127]" />
-            Crear Nuevo Usuario
-        </h1>
-        <Link href="/dashboard/users/list" className="flex items-center gap-2 text-sm text-slate-600 hover:text-[#E33127] transition-colors font-medium">
-          <ArrowLeftIcon className="w-4 h-4" /> Regresar
+      {/* HEADER COMPACTO */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
+                <div className="p-1.5 bg-red-50 rounded-lg">
+                    <UserPlusIcon className="w-6 h-6 text-[#E33127]" />
+                </div>
+                Crear Nuevo Usuario
+            </h1>
+            <p className="text-slate-500 text-xs mt-1 ml-11">Añade un nuevo miembro al sistema manualmente.</p>
+        </div>
+        <Link 
+            href="/dashboard/users/list" 
+            className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:border-[#E33127] hover:text-[#E33127] transition-all shadow-sm"
+        >
+            <ArrowLeftIcon className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
+            Volver
         </Link>
       </div>
 
-      {/* Tarjeta del Formulario (BLANCA y ELEGANTE) */}
-      <form onSubmit={onSubmit} className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100 space-y-6">
+      <form onSubmit={onSubmit} className="bg-white p-5 md:p-8 rounded-2xl shadow-lg shadow-slate-200/40 border border-slate-100 space-y-6">
           
-          <h2 className="text-xl font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
-            <PencilSquareIcon className="w-5 h-5 text-slate-500" />
-            Detalles de Cuenta
-          </h2>
+          {/* SECCIÓN 1: DATOS BÁSICOS */}
+          <div>
+            <h3 className="text-xs font-black text-slate-900 uppercase border-b border-slate-100 pb-2 mb-4 flex items-center gap-2">
+                <UserIcon className="w-4 h-4 text-[#E33127]"/> Información Personal
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={LABEL_CLASS}>Nombre Completo</label>
+                  <div className="relative group">
+                      <UserIcon className={ICON_CLASS} />
+                      <input className={INPUT_CLASS} value={form.name} onChange={(e) => onChange("name", e.target.value)} placeholder="Ej. Juan Pérez" required />
+                  </div>
+                </div>
 
-          <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4" disabled={loading} aria-busy={loading}>
-            
-            {/* Nombre Completo */}
-            <div>
-              <label className="input-label text-slate-600" htmlFor="name">Nombre Completo</label>
-              <div className="relative group">
-                <UserIcon className={ICON_CLASS} />
-                <input
-                  id="name"
-                  className={`${INPUT_CLASS} pl-10`}
-                  value={form.name}
-                  onChange={(e) => onChange("name", e.target.value)}
-                  placeholder="Ej: Juan Pérez"
-                  required
-                  autoComplete="name"
-                />
-              </div>
+                <div>
+                  <label className={LABEL_CLASS}>Cédula / ID</label>
+                  <div className="relative group">
+                      <IdentificationIcon className={ICON_CLASS} />
+                      <input className={INPUT_CLASS} value={form.cedula} onChange={(e) => onChange("cedula", e.target.value)} placeholder="V-12345678" required />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={LABEL_CLASS}>Usuario (Login)</label>
+                  <div className="relative group">
+                      <AtSymbolIcon className={ICON_CLASS} />
+                      <input className={INPUT_CLASS} value={form.username} onChange={(e) => onChange("username", e.target.value)} placeholder="Ej. juan.perez" required />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={LABEL_CLASS}>Correo Electrónico</label>
+                  <div className="relative group">
+                      <EnvelopeIcon className={ICON_CLASS} />
+                      <input type="email" className={INPUT_CLASS} value={form.email} onChange={(e) => onChange("email", e.target.value)} placeholder="correo@ejemplo.com" required />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className={LABEL_CLASS}>Teléfono / WhatsApp</label>
+                  <div className="relative group">
+                      <PhoneIcon className={ICON_CLASS} />
+                      <input className={INPUT_CLASS} value={form.phone} onChange={(e) => onChange("phone", e.target.value)} placeholder="+58 412..." />
+                  </div>
+                </div>
             </div>
-
-            {/* Username */}
-            <div>
-              <label className="input-label text-slate-600" htmlFor="username">Nombre de Usuario</label>
-              <div className="relative group">
-                <AtSymbolIcon className={ICON_CLASS} />
-                <input
-                  id="username"
-                  className={`${INPUT_CLASS} pl-10`}
-                  value={form.username}
-                  onChange={(e) => onChange("username", e.target.value)}
-                  placeholder="usuario"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  required
-                  autoComplete="username"
-                />
-              </div>
-            </div>
-
-            {/* Correo */}
-            <div>
-              <label className="input-label text-slate-600" htmlFor="email">Correo Electrónico</label>
-              <div className="relative group">
-                <EnvelopeIcon className={ICON_CLASS} />
-                <input
-                  id="email"
-                  type="email"
-                  className={`${INPUT_CLASS} pl-10`}
-                  value={form.email}
-                  onChange={(e) => onChange("email", e.target.value)}
-                  placeholder="correo@dominio.com"
-                  required
-                  inputMode="email"
-                  autoComplete="email"
-                />
-              </div>
-            </div>
-
-            {/* Teléfono */}
-            <div>
-              <label className="input-label text-slate-600" htmlFor="phone">Teléfono (opcional)</label>
-              <div className="relative group">
-                <PhoneIcon className={ICON_CLASS} />
-                <input
-                  id="phone"
-                  className={`${INPUT_CLASS} pl-10`}
-                  value={form.phone}
-                  onChange={(e) => onChange("phone", e.target.value)}
-                  placeholder="+1 555 000 0000"
-                  inputMode="tel"
-                  autoComplete="tel"
-                />
-              </div>
-            </div>
-
-            {RoleInput}
-
-            {/* Contraseña */}
-            <div>
-              <label className="input-label text-slate-600" htmlFor="password">Contraseña</label>
-              <div className="relative group">
-                <KeyIcon className={ICON_CLASS} />
-                <input
-                  id="password"
-                  type="password"
-                  className={`${INPUT_CLASS} pl-10`}
-                  value={form.password}
-                  onChange={(e) => onChange("password", e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                />
-              </div>
-            </div>
-
-            {/* Confirmar Contraseña */}
-            <div>
-              <label className="input-label text-slate-600" htmlFor="confirm">Confirmar Contraseña</label>
-              <div className="relative group">
-                <KeyIcon className={ICON_CLASS} />
-                <input
-                  id="confirm"
-                  type="password"
-                  className={`${INPUT_CLASS} pl-10`}
-                  value={form.confirm}
-                  onChange={(e) => onChange("confirm", e.target.value)}
-                  placeholder="Repite la contraseña"
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                />
-              </div>
-            </div>
-
-            {/* Campo Activo */}
-            <div className="md:col-span-2 pt-2">
-                <label className="flex items-center gap-3 text-sm font-medium text-slate-700 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-white transition-colors">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-slate-300 text-[#E33127] focus:ring-[#E33127]"
-                    checked={form.active}
-                    onChange={(e) => onChange("active", e.target.checked)}
-                  />
-                  <CheckCircleIcon className="w-5 h-5 text-emerald-500"/>
-                  <span>
-                    Activo (Permitir acceso al sistema de forma inmediata).
-                  </span>
-                </label>
-            </div>
-            
-          </fieldset>
-
-          {/* Botones de Acción */}
-          <div className="mt-6 flex gap-3 border-t border-slate-100 pt-4">
-            <button 
-              type="submit"
-              disabled={loading} 
-              // Botón de marca ROJO SOLIDO
-              className="flex items-center gap-2 px-5 py-3 bg-[#E33127] text-white rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-red-700 active:scale-[0.99] transition-all disabled:opacity-50"
-            >
-              {loading ? "Creando…" : "Crear Nuevo Usuario"}
-              <ArrowRightIcon className="w-5 h-5" />
-            </button>
-            <Link href="/dashboard/users/list" className="px-5 py-3 text-slate-600 rounded-xl hover:bg-slate-100 font-medium transition-colors border border-slate-200">
-              Cancelar
-            </Link>
           </div>
 
-          <p className="form-help mt-4 text-xs text-slate-400">
-            Nota: Si la creación falla, el sistema intentará varias rutas de API (admin/users, /users, /auth/register).
-          </p>
+          {/* SECCIÓN 2: SEGURIDAD Y ROL */}
+          <div>
+            <h3 className="text-xs font-black text-slate-900 uppercase border-b border-slate-100 pb-2 mb-4 flex items-center gap-2 mt-2">
+                <KeyIcon className="w-4 h-4 text-[#E33127]"/> Seguridad y Permisos
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div className="md:col-span-2">
+                    <label className={LABEL_CLASS}>Rol en el Sistema</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                        {roleOptions.map((r) => (
+                            <div 
+                                key={r}
+                                onClick={() => onChange("role", r)}
+                                className={`cursor-pointer rounded-lg border px-2 py-2 text-center text-[10px] font-bold transition-all ${form.role === r ? 'border-[#E33127] bg-red-50 text-[#E33127]' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'}`}
+                            >
+                                {roleLabel[r]}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
+                    <label className={LABEL_CLASS}>Contraseña</label>
+                    <div className="relative group">
+                        <KeyIcon className={ICON_CLASS} />
+                        <input type="password" className={INPUT_CLASS} value={form.password} onChange={(e) => onChange("password", e.target.value)} placeholder="Mín. 6 caracteres" required minLength={6} />
+                    </div>
+                </div>
+
+                <div>
+                    <label className={LABEL_CLASS}>Confirmar Contraseña</label>
+                    <div className="relative group">
+                        <KeyIcon className={ICON_CLASS} />
+                        <input type="password" className={INPUT_CLASS} value={form.confirm} onChange={(e) => onChange("confirm", e.target.value)} placeholder="Repite la contraseña" required minLength={6} />
+                    </div>
+                </div>
+
+                {/* Switch de Activo Compacto */}
+                <div className="md:col-span-2 flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div 
+                        onClick={() => onChange("active", !form.active)}
+                        className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors duration-300 ${form.active ? 'bg-green-500' : 'bg-slate-300'}`}
+                    >
+                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-300 ${form.active ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                    </div>
+                    <span className="text-xs font-bold text-slate-600">
+                        {form.active ? "Usuario activo inmediatamente" : "Requiere aprobación manual"}
+                    </span>
+                </div>
+
+            </div>
+          </div>
+
+          {/* BOTONES */}
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
+            <Link href="/dashboard/users/list" className="flex-1 sm:flex-none px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all text-center">
+                Cancelar
+            </Link>
+            <button 
+                type="submit" 
+                disabled={loading} 
+                className="flex-1 py-3 bg-[#E33127] text-white rounded-xl font-black text-sm shadow-lg shadow-red-200 hover:bg-red-700 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+                {loading ? (
+                    <>Guardando...</>
+                ) : (
+                    <>
+                        <CheckBadgeIcon className="w-5 h-5" /> CREAR USUARIO
+                    </>
+                )}
+            </button>
+          </div>
       </form>
     </div>
   );

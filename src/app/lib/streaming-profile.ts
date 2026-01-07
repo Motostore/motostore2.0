@@ -41,7 +41,8 @@ async function safePagedJson(response: Response): Promise<PagedProfiles> {
 }
 
 function getApiBase(): string {
-  const base = (process.env.NEXT_PUBLIC_API_FULL || "").replace(/\/$/, "");
+  // Asegúrate de que esta variable de entorno apunte a tu backend (ej: https://motostore-api.onrender.com/api/v1)
+  const base = (process.env.NEXT_PUBLIC_API_FULL || process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
   return base;
 }
 
@@ -57,7 +58,7 @@ export async function fetchProfiles(
 
   try {
     const session = await getSession();
-    const token = (session as any)?.user?.token;
+    const token = (session as any)?.user?.token || (session as any)?.accessToken;
 
     const params = new URLSearchParams({
       query: query ?? "",
@@ -96,8 +97,11 @@ export async function fetchClientProfiles(): Promise<PagedProfiles> {
 
   try {
     const session = await getSession();
-    const token = (session as any)?.user?.token;
+    const token = (session as any)?.user?.token || (session as any)?.accessToken;
 
+    // NOTA: Ajusta la ruta si tu backend Python usa solo "/streaming"
+    // He dejado /streaming/profile/client si así lo tienes configurado, 
+    // pero si usas el backend simple que te di, podría ser solo "/streaming" filtrado.
     const response = await fetch(`${base}/streaming/profile/client`, {
       method: "GET",
       headers: {
@@ -106,6 +110,14 @@ export async function fetchClientProfiles(): Promise<PagedProfiles> {
       },
       cache: "no-store",
     });
+
+    // Si falla la ruta específica de cliente, intentamos la genérica como fallback
+    if (response.status === 404) {
+       const fallback = await fetch(`${base}/streaming`, {
+         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+       });
+       if(fallback.ok) return await safePagedJson(fallback);
+    }
 
     if (!response.ok) {
       console.error("fetchClientProfiles: HTTP error", response.status);
@@ -128,7 +140,7 @@ export async function fetchRemoveProfile(id: string | number) {
 
   try {
     const session = await getSession();
-    const token = (session as any)?.user?.token;
+    const token = (session as any)?.user?.token || (session as any)?.accessToken;
 
     const response = await fetch(`${base}/streaming/profile/${id}`, {
       method: "DELETE",
@@ -154,7 +166,7 @@ export async function fetchHardRemoveProfile(id: string | number) {
 
   try {
     const session = await getSession();
-    const token = (session as any)?.user?.token;
+    const token = (session as any)?.user?.token || (session as any)?.accessToken;
 
     const response = await fetch(`${base}/streaming/profile/delete/${id}`, {
       method: "DELETE",
@@ -169,4 +181,37 @@ export async function fetchHardRemoveProfile(id: string | number) {
     console.error("Database Error (fetchHardRemoveProfile):", error);
     throw new Error("Failed to hard-remove profile.");
   }
+}
+
+/* =========================================================
+   CREAR NUEVO PERFIL (POST) - 🔥 AQUÍ ESTÁ LA CORRECCIÓN
+   ========================================================= */
+export async function createClientProfile(data: any, token?: string) {
+  const base = getApiBase();
+  if (!base) throw new Error("API base URL not configured");
+
+  // 1. Prioridad: Token pasado por argumento > Token de sesión
+  let authToken = token;
+  if (!authToken) {
+     const session = await getSession();
+     authToken = (session as any)?.user?.token || (session as any)?.accessToken;
+  }
+
+  // 2. Llamada al Backend (Asegúrate que tu backend escuche en /streaming)
+  const response = await fetch(`${base}/streaming`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("Error creating profile:", errorBody);
+    throw new Error("Error al guardar en el servidor");
+  }
+
+  return await response.json();
 }

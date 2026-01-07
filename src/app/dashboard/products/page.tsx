@@ -5,13 +5,13 @@ import {
   DevicePhoneMobileIcon, 
   RocketLaunchIcon, 
   ChevronRightIcon,
-  ShieldCheckIcon 
+  ShieldCheckIcon
 } from "@heroicons/react/24/solid";
 
 export default function ProductsPage() {
   const categories = [
     {
-      title: "Recarga Telefónica", // Título ajustado
+      title: "Recarga Telefónica",
       desc: "Gestión de saldo instantáneo.",
       href: "/dashboard/products/recarga/telefonica",
       icon: <DevicePhoneMobileIcon className="w-6 h-6 text-white" />,
@@ -27,6 +27,25 @@ export default function ProductsPage() {
       color: "from-orange-500 to-red-600",
       bg: "bg-orange-50",
       status: "Activo"
+    },
+    // --- STREAMING (ICONO FUTURISTA) ---
+    {
+      title: "Streaming",
+      desc: "Netflix, Disney+, Max y más.",
+      href: "/dashboard/products/streaming",
+      // Icono SVG Personalizado: "Digital Pulse Play"
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7 text-white" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          {/* Triángulo Play Relleno */}
+          <path d="M5 3l14 9-14 9V3z" fill="currentColor" stroke="none" />
+          {/* Ondas de Señal Futurista (Lado Derecho) */}
+          <path d="M19 12a9 9 0 0 1-2.5 6.5" stroke="currentColor" strokeWidth={2.5} opacity="0.7"/>
+          <path d="M22 12a12 12 0 0 1-3.5 9" stroke="currentColor" strokeWidth={2.5} opacity="0.4"/>
+        </svg>
+      ),
+      color: "from-violet-600 to-fuchsia-600", // Degradado Neon/Futurista
+      bg: "bg-violet-50",
+      status: "Nuevo"
     }
   ];
 
@@ -55,15 +74,18 @@ export default function ProductsPage() {
           >
             {/* STATUS MINI */}
             <div className="absolute top-3 right-3 z-10">
-              <span className="flex items-center gap-1 bg-white/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-bold text-slate-600 border border-slate-100 shadow-sm">
+              <span className="flex items-center gap-1 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-bold text-slate-600 border border-slate-100 shadow-sm">
                 <ShieldCheckIcon className="w-2.5 h-2.5 text-emerald-500" />
                 {cat.status}
               </span>
             </div>
 
-            {/* ÁREA VISUAL REDUCIDA */}
-            <div className={`h-28 flex items-center justify-center ${cat.bg} relative`}>
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+            {/* ÁREA VISUAL */}
+            <div className={`h-28 flex items-center justify-center ${cat.bg} relative overflow-hidden`}>
+              {/* Efecto de luz de fondo sutil */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-10 group-hover:opacity-20 transition-opacity`} />
+              
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:shadow-2xl transition-all duration-500 relative z-10`}>
                 {cat.icon}
               </div>
             </div>
@@ -88,8 +110,10 @@ export default function ProductsPage() {
         ))}
 
         {/* BOTÓN "AÑADIR" PEQUEÑO */}
-        <div className="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-6 bg-slate-50/30 opacity-60">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Configurar<br/>Nuevo</p>
+        <div className="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-6 bg-slate-50/30 opacity-60 hover:opacity-100 transition-all cursor-pointer hover:border-red-200 group">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center group-hover:text-red-500 transition-colors">
+              Configurar<br/>Nuevo
+            </p>
         </div>
       </div>
     </div>

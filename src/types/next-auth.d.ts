@@ -1,46 +1,37 @@
-// src/app/types/input-props.interface.ts
+// src/types/next-auth.d.ts
+import NextAuth, { DefaultSession } from "next-auth";
 
-export interface InputProps {
-  label?: string;
-  type?: string;
-  id?: string;
-  name?: string;
-  placeholder?: string;
-  className?: string;
-  value?: string | number;
-  
-  // CORRECCIÓN: Se agrega ': any' para que TypeScript no bloquee el build
-  onInputChange?(e: any): void;
-  
-  // Propiedades opcionales extra para evitar conflictos
-  defaultValue?: string | number;
-  disabled?: boolean;
-  [key: string]: any; // Permite cualquier otra propiedad extra
+declare module "next-auth" {
+  /**
+   * Extendemos la interfaz de SESIÓN para incluir el ID y otros datos
+   */
+  interface Session {
+    user: {
+      id: string;        // 👈 ¡Esto es lo que arregla el error!
+      username?: string;
+      role?: string;
+      balance?: number;
+      accessToken?: string;
+    } & DefaultSession["user"];
+  }
+
+  /**
+   * Extendemos la interfaz de USUARIO (lo que devuelve authorize)
+   */
+  interface User {
+    id: string;
+    username?: string;
+    role?: string;
+    accessToken?: string;
+    balance?: number;
+    [key: string]: any; // Permite propiedades extra del backend
+  }
 }
 
-export interface InputPropValidation {
-  required?: {
-    value: boolean;
-    message: string;
-  } | string;
-  pattern?: {
-    value: RegExp;
-    message: string;
-  };
-  min?: {
-    value: number | string;
-    message: string;
-  };
-  max?: {
-    value: number | string;
-    message: string;
-  };
-  minLength?: {
-    value: number;
-    message: string;
-  };
-  maxLength?: {
-    value: number;
-    message: string;
-  };
+declare module "next-auth/jwt" {
+  interface JWT {
+    user?: any;
+    accessToken?: string;
+    sub?: string;
+  }
 }

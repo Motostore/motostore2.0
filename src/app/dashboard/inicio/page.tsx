@@ -11,7 +11,7 @@ import {
   UsersIcon,
   ChartBarIcon,
   CurrencyDollarIcon,
-  TicketIcon
+  // TicketIcon Eliminado por seguridad
 } from '@heroicons/react/24/outline';
 
 import { normalizeRole } from '@/app/lib/roles'; 
@@ -19,14 +19,13 @@ import { normalizeRole } from '@/app/lib/roles';
 export default function InicioPage() {
   const { data: session } = useSession();
   const user = session?.user as any;
-  const role = normalizeRole(user?.role); // Normalizamos el rol (ADMIN, CLIENT, etc)
+  const role = normalizeRole(user?.role); 
   
   const firstName = user?.name?.split(' ')[0] || 'Usuario';
   const balance = user?.balance || 0;
 
   // =========================================================================
   // 👑 VISTA 1: ADMINISTRADORES Y SUPERUSUARIOS
-  // (Enfoque en Gestión, Control y Finanzas)
   // =========================================================================
   if (['ADMIN', 'SUPERUSER'].includes(role)) {
     return (
@@ -40,7 +39,6 @@ export default function InicioPage() {
                   Resumen global y control operativo de Moto Store LLC.
                 </p>
             </div>
-            {/* El Admin también ve su saldo personal por si necesita hacer pruebas */}
             <div className="hidden md:flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
                 <WalletIcon className="w-5 h-5 text-slate-400"/>
                 <span className="font-bold text-slate-600 text-sm">
@@ -51,7 +49,8 @@ export default function InicioPage() {
 
          <hr className="border-slate-200" />
 
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         {/* Grid ajustado a 3 columnas porque quitamos la Taquilla */}
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <DashboardCard 
               href="/dashboard/reports/general"
               title="Finanzas Globales"
@@ -66,13 +65,7 @@ export default function InicioPage() {
               icon={UsersIcon}
               color="blue"
             />
-             <DashboardCard 
-              href="/dashboard/ticket"
-              title="Taquilla / POS"
-              desc="Ventas manuales y recargas rápidas."
-              icon={TicketIcon}
-              color="red"
-            />
+            {/* TAQUILLA ELIMINADA AQUI */}
             <DashboardCard 
               href="/dashboard/settings"
               title="Configuración"
@@ -103,12 +96,11 @@ export default function InicioPage() {
 
   // =========================================================================
   // 👤 VISTA 2: CLIENTES Y DISTRIBUIDORES
-  // (Enfoque en Compra, Consumo y Recarga)
   // =========================================================================
   return (
     <div className="min-h-screen pb-20 animate-in fade-in space-y-8">
       
-      {/* HEADER CLIENTE (Saldo Destacado) */}
+      {/* HEADER CLIENTE */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -135,7 +127,7 @@ export default function InicioPage() {
 
       <hr className="border-slate-200" />
 
-      {/* GRID DE ACCIONES CLIENTE */}
+      {/* GRID CLIENTE */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <DashboardCard 
           href="/dashboard/products"
@@ -160,7 +152,7 @@ export default function InicioPage() {
         />
       </div>
 
-      {/* BANNER CTA DE RECARGA (Solo Clientes) */}
+      {/* BANNER CTA DE RECARGA */}
       <div className="bg-gradient-to-r from-[#E33127] to-red-600 rounded-3xl p-8 text-white shadow-lg shadow-red-500/20 relative overflow-hidden group">
           <div className="relative z-10 max-w-lg">
               <h3 className="text-2xl font-black mb-2">¿Necesitas saldo?</h3>
@@ -171,7 +163,6 @@ export default function InicioPage() {
                   Reportar Pago <ArrowRightIcon className="w-4 h-4"/>
               </Link>
           </div>
-          {/* Decoración animada */}
           <WalletIcon className="absolute -right-6 -bottom-6 w-64 h-64 text-white/10 rotate-12 group-hover:rotate-6 transition-transform duration-700" />
       </div>
     </div>

@@ -4,15 +4,15 @@ import { Inter } from "next/font/google";
 // Estilos Globales
 import "./ui/globals.css";
 
-// 1. INTEGRACIÓN DE FONT AWESOME (Iconos)
+// 1. INTEGRACIÓN DE FONT AWESOME (Iconos) - ¡MANTENER!
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 config.autoAddCss = false; 
 
-// 2. INTEGRACIÓN DE ANALYTICS (Vercel)
+// 2. INTEGRACIÓN DE ANALYTICS (Vercel) - ¡MANTENER!
 import { Analytics } from '@vercel/analytics/react'; 
 
-// 3. PROVEEDOR DE SESIÓN (Auth)
+// 3. PROVEEDOR DE SESIÓN (Auth) - ¡MANTENER!
 import { AuthProvider } from "./providers"; 
 
 // Fuente optimizada por Google
@@ -23,44 +23,73 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // 🔥 CLAVE: Evita que el usuario haga zoom (siente como App nativa)
-  themeColor: '#E33127', // 🔥 CLAVE: La barra de estado del celular será ROJA (Marca)
+  userScalable: false, // Evita zoom accidental (sensación App Nativa)
+  themeColor: '#E33127', // Barra de estado ROJA (Tu marca)
 };
 
-// 🏆 METADATA MAESTRA (SEO GLOBAL + PWA)
+// 🏆 METADATA MAESTRA (SEO GLOBAL + REDES SOCIALES)
 export const metadata: Metadata = {
   metadataBase: new URL('https://motostorellc.com'), 
+  
   title: {
     template: '%s | Moto Store LLC', 
-    default: 'Moto Store LLC | Soluciones Digitales 24/7',
+    default: 'Moto Store LLC | Soluciones Digitales y Recargas',
   },
-  description: "Plataforma líder en servicios digitales, recargas móviles internacionales y licencias de software seguras.",
-  keywords: ["recargas venezuela", "starlink", "netflix", "servicios digitales", "moto store"],
+  
+  description: "Plataforma líder en Venezuela para recargas automáticas (Zelle, Binance), licencias de software y servicios de streaming. Seguridad garantizada.",
+  
+  keywords: ["recargas venezuela", "zelle", "binance", "usdt", "netflix", "spotify", "moto store", "pago movil"],
+  
   authors: [{ name: "Moto Store LLC Team" }],
   
-  // 🔥 CONFIGURACIÓN PARA IPHONE (iOS)
+  // Configuración para iPhone (PWA)
   appleWebApp: {
     capable: true,
     title: "Moto Store",
-    statusBarStyle: "default", // O 'black-translucent' si quieres que se funda
+    statusBarStyle: "default",
   },
   
   icons: {
     icon: '/favicon.ico', 
-    apple: '/icon-192.png', // Icono para iPhone
+    apple: '/icon-192.png', // Icono app iPhone
   },
   
+  // 📸 CÓMO SE VE AL COMPARTIR (WhatsApp, Facebook) - ¡NUEVO!
   openGraph: {
-    title: 'Moto Store LLC',
-    description: 'Soluciones Digitales Rápidas y Seguras.',
+    title: 'Moto Store LLC | Tu Solución Digital',
+    description: 'Recargas Zelle/Binance y Servicios Streaming al instante.',
     url: 'https://motostorellc.com',
     siteName: 'Moto Store LLC',
-    locale: 'es_ES',
+    locale: 'es_VE',
     type: 'website',
+    images: [
+      {
+        url: '/og-image.png', // 🔥 RECUERDA SUBIR ESTA IMAGEN A LA CARPETA PUBLIC
+        width: 1200,
+        height: 630,
+        alt: 'Moto Store LLC Banner Oficial',
+      },
+    ],
   },
+
+  // 🐦 TARJETA DE TWITTER (X) - ¡NUEVO!
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Moto Store LLC',
+    description: 'Plataforma líder en servicios digitales y recargas.',
+    images: ['/og-image.png'],
+  },
+
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -80,11 +109,12 @@ export default function RootLayout({
           selection:bg-[#E33127] selection:text-white
         `}
       >
+        {/* Envolvemos la App con la Sesión (Login) */}
         <AuthProvider>
           {children}
         </AuthProvider>
 
-        {/* Analytics se ejecuta silenciosamente */}
+        {/* Analytics corre en segundo plano */}
         <Analytics /> 
         
       </body>

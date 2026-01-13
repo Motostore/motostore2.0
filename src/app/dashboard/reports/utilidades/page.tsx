@@ -14,10 +14,8 @@ import {
 
 /* ================= CONFIG & UTILS (Fuera del componente) ================= */
 
-// 1. Configuración centralizada y limpia
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"
-).replace(/\/+$/, "");
+// 1. Configuración centralizada (Conexión directa a Render)
+const API_BASE = "https://motostore-api.onrender.com/api/v1";
 
 const UTILITIES_PATH = "/reports/utilities";
 const REFRESH_MS = 30_000;
@@ -141,17 +139,13 @@ export default function UtilidadesPage() {
     [status, getToken, data]
   );
 
-  // ==================== ZONA CORREGIDA (SOLUCIÓN DEL BUG) ====================
+  // ==================== ZONA DE EFECTOS ====================
   
   // Efecto inicial (Solo al montar)
   useEffect(() => {
     fetchData();
-    // NOTA: No retornamos nada aquí porque fetchData es async y retornaba una Promesa.
-    // TypeScript fallaba al intentar ejecutar una promesa como función de limpieza.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
-
-  // ===========================================================================
 
   // Efecto de Auto-refresh
   useEffect(() => {

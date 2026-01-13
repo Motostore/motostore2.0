@@ -62,7 +62,7 @@ const MOVEMENTS_PATHS = [
   "/reports/movement",
   "/reports/movements",
   "/reports/transaction",
-  "/reports/transactions",
+  "/api/v1/reports/transactions",
 ];
 
 const REFRESH_MS = 30_000;

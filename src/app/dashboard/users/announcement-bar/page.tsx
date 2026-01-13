@@ -1,86 +1,71 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   MegaphoneIcon,
-  CalendarDaysIcon,
   LinkIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
   InformationCircleIcon,
-  XMarkIcon,
-  ShieldCheckIcon,
-  ArrowPathIcon,
   BellAlertIcon,
   FireIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  DevicePhoneMobileIcon,
-  SpeakerWaveIcon
+  SpeakerWaveIcon,
+  GlobeAltIcon,
+  RectangleStackIcon,
+  LockClosedIcon,
+  ArrowPathIcon,
+  EyeSlashIcon
 } from "@heroicons/react/24/outline";
 import toast, { Toaster } from "react-hot-toast";
 
-/* ================= Lógica de Negocio ================= */
-import {
-  Role,
-  normalizeRole,
-  roleLabel,
-} from "@/app/lib/roles";
-
-// --- HELPERS ---
+/* ================= Lógica de Roles ================= */
+import { Role, normalizeRole } from "@/app/lib/roles";
 
 function pickToken(s: any): string | null {
   const u = s?.user ?? {};
   return u?.token ?? u?.accessToken ?? (s as any)?.accessToken ?? null;
 }
 
+// --- PROXY ACTIVADO ---
 function apiBase(): string {
-  // Ajuste para asegurar que usa la URL de producción si no hay env
-  return (process.env.NEXT_PUBLIC_API_BASE_URL || "https://motostore-api.onrender.com/api/v1").replace(/\/+$/, "");
+  return "/api-proxy";
 }
 
+// Función API mejorada
 async function api(path: string, init?: RequestInit) {
-  const res = await fetch(path, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(txt || `HTTP ${res.status}`);
+  try {
+      const res = await fetch(path, {
+        ...init,
+        headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+         const txt = await res.text().catch(() => "");
+         throw new Error(`Error ${res.status}: ${txt}`);
+      }
+      return res.json();
+  } catch (err: any) {
+      console.error("🔥 Error API:", err);
+      throw err;
   }
-  const ct = res.headers.get("content-type") || "";
-  if (!ct.includes("application/json")) return null;
-  return res.json();
-}
-
-// Jerarquía de roles para validación de permisos
-const ROLE_HIERARCHY: Role[] = ['CLIENT', 'RESELLER', 'DISTRIBUTOR', 'ADMIN', 'SUPERUSER'];
-
-function checkPermission(currentRole: Role, requiredRole: Role): boolean {
-  const currentIndex = ROLE_HIERARCHY.indexOf(currentRole);
-  const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole);
-  return currentIndex >= requiredIndex;
 }
 
 // --- TIPOS ---
-
 type Variant = "info" | "success" | "warning" | "error" | "neutral";
-type OwnerScope = "ALL" | "OWN_TREE";
+type LocationType = "INTERNAL" | "EXTERNAL";
 
 type Announcement = {
-  id?: string | number | null;
+  id?: number | null;
   message: string;
   variant: Variant;
   active: boolean;
   dismissible: boolean;
   linkUrl: string;
   audience: Role[] | "ALL";
+  location: LocationType;
+  ownerScope: "ALL" | "OWN_TREE"; 
   includeDescendants: boolean;
-  ownerScope: OwnerScope;
-  ownerId?: string | number | null;
   startsAt?: string | null;
   endsAt?: string | null;
 };
@@ -93,48 +78,32 @@ const DEFAULT: Announcement = {
   dismissible: true,
   linkUrl: "",
   audience: "ALL",
-  includeDescendants: true,
+  location: "INTERNAL",
   ownerScope: "ALL",
-  ownerId: null,
+  includeDescendants: true,
   startsAt: null,
   endsAt: null,
 };
 
-// Estilos de previsualización (Tailwind)
+// Tarjetas de estilo visual
+const VARIANT_CARDS: Record<Variant, { title: string, icon: any, colorClass: string }> = {
+    info: { title: "Informativo", icon: InformationCircleIcon, colorClass: "text-blue-600 bg-blue-50 border-blue-200 ring-blue-500" },
+    success: { title: "Éxito", icon: CheckCircleIcon, colorClass: "text-emerald-600 bg-emerald-50 border-emerald-200 ring-emerald-500" },
+    warning: { title: "Alerta", icon: BellAlertIcon, colorClass: "text-amber-600 bg-amber-50 border-amber-200 ring-amber-500" },
+    error: { title: "Urgente", icon: FireIcon, colorClass: "text-[#E33127] bg-red-50 border-red-200 ring-[#E33127]" },
+    neutral: { title: "Neutro", icon: MegaphoneIcon, colorClass: "text-slate-600 bg-slate-50 border-slate-200 ring-slate-500" },
+};
+
 const VARIANT_PREVIEW: Record<Variant, string> = {
-  info: "bg-blue-600 text-white shadow-lg shadow-blue-500/30 border-l-4 border-blue-800",
-  success: "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 border-l-4 border-emerald-800",
-  warning: "bg-amber-500 text-white shadow-lg shadow-amber-500/30 border-l-4 border-amber-700",
-  error: "bg-[#E33127] text-white shadow-lg shadow-red-500/30 border-l-4 border-red-900",
-  neutral: "bg-slate-800 text-white shadow-lg shadow-slate-500/30 border-l-4 border-black",
+  info: "bg-blue-600 text-white border-l-4 border-blue-800",
+  success: "bg-emerald-600 text-white border-l-4 border-emerald-800",
+  warning: "bg-amber-500 text-white border-l-4 border-amber-700",
+  error: "bg-[#E33127] text-white border-l-4 border-red-900",
+  neutral: "bg-slate-800 text-white border-l-4 border-black",
 };
 
-// Tarjetas de selección de estilo
-const VARIANT_CARDS: Record<Variant, { title: string, desc: string, icon: any, colorClass: string }> = {
-    info: { title: "Informativo", desc: "Avisos generales.", icon: InformationCircleIcon, colorClass: "text-blue-600 bg-blue-50 border-blue-200 ring-blue-500" },
-    success: { title: "Éxito", desc: "Logros y novedades.", icon: CheckCircleIcon, colorClass: "text-emerald-600 bg-emerald-50 border-emerald-200 ring-emerald-500" },
-    warning: { title: "Alerta", desc: "Mantenimiento.", icon: BellAlertIcon, colorClass: "text-amber-600 bg-amber-50 border-amber-200 ring-amber-500" },
-    error: { title: "Urgente", desc: "Crítico / Importante.", icon: FireIcon, colorClass: "text-[#E33127] bg-red-50 border-red-200 ring-[#E33127]" },
-    neutral: { title: "Neutro", desc: "Noticias simples.", icon: MegaphoneIcon, colorClass: "text-slate-600 bg-slate-50 border-slate-200 ring-slate-500" },
-};
-
-const ENDPOINTS = ["/users/announcement-bar", "/announcement-bar", "/admin/announcement"];
-
-// Helpers de fecha
-function toLocalInput(dt?: string | number | Date | null): string {
-  if (!dt) return "";
-  const d = new Date(dt);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function fromLocalInput(s: string): string | null {
-  if (!s) return null;
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
-}
+// --- CORRECCIÓN AQUÍ: Apuntamos a la dirección correcta del Backend ---
+const ENDPOINTS = ["/announcements", "/announcements/bar"];
 
 export default function UsersAnnouncementBarPage() {
   const { data: session } = useSession();
@@ -143,30 +112,26 @@ export default function UsersAnnouncementBarPage() {
   
   const me: any = session?.user;
   const myRole = useMemo(() => normalizeRole(me?.role), [me]);
-  const myId = useMemo(() => me?.id, [me]);
-
-  // Permisos: Solo Admin y Superuser pueden editar anuncios globales
-  const canEdit = checkPermission(myRole, "ADMIN"); 
-  const isGlobalAdmin = checkPermission(myRole, "SUPERUSER");
-
+  
+  const isGlobalAdmin = ['SUPERUSER', 'ADMIN'].includes(myRole);
+  
+  const [currentTab, setCurrentTab] = useState<LocationType>("INTERNAL");
   const [form, setForm] = useState<Announcement>({ ...DEFAULT });
   const [loading, setLoading] = useState(false);
   
-  const abortRef = useRef<AbortController | null>(null);
-
   function onChange<K extends keyof Announcement>(k: K, v: Announcement[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  // Cargar anuncio existente
   async function loadCurrent() {
     if (!token) return;
     const headers = { Authorization: `Bearer ${token}` };
     
-    // Intentamos cargar de varios endpoints posibles
+    setForm(prev => ({ ...DEFAULT, location: currentTab })); 
+
     for (const ep of ENDPOINTS) {
       try {
-        const data = await api(`${base}${ep}`, { headers });
+        const data = await api(`${base}${ep}?location=${currentTab}`, { headers });
         const item = Array.isArray(data) ? data[0] : (data?.data || data);
         
         if (item) {
@@ -178,87 +143,81 @@ export default function UsersAnnouncementBarPage() {
             dismissible: item.dismissible ?? true,
             linkUrl: item.linkUrl || "",
             audience: item.audience || "ALL",
+            location: currentTab,
+            ownerScope: item.ownerScope || "ALL",
             includeDescendants: item.includeDescendants ?? true,
-            ownerScope: item.ownerScope || (isGlobalAdmin ? "ALL" : "OWN_TREE"),
-            startsAt: toLocalInput(item.startsAt),
-            endsAt: toLocalInput(item.endsAt),
+            startsAt: item.startsAt || null,
+            endsAt: item.endsAt || null,
           });
           return;
         }
-      } catch { /* Continue to next endpoint */ }
+      } catch { /* Probar siguiente endpoint */ }
     }
   }
 
   useEffect(() => { 
-      if (canEdit && token) loadCurrent(); 
-  }, [canEdit, token, isGlobalAdmin, base]);
+      if (token) loadCurrent(); 
+  }, [token, currentTab]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
 
     if (!form.message.trim()) return toast.error("El mensaje es obligatorio.");
-    if (form.startsAt && form.endsAt && new Date(form.startsAt) > new Date(form.endsAt)) {
-        return toast.error("La fecha de inicio debe ser anterior al fin.");
+    
+    if (currentTab === 'EXTERNAL' && !isGlobalAdmin) {
+        return toast.error("No tienes permisos para modificar la barra externa.");
     }
 
     setLoading(true);
-    const toastId = toast.loading("Publicando anuncio...");
+    const toastId = toast.loading("Guardando cambios...");
 
     try {
-        const headers = { 
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-        };
-
+        const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+        
         const payload = {
-            ...form,
-            startsAt: fromLocalInput(form.startsAt || ""),
-            endsAt: fromLocalInput(form.endsAt || ""),
-            // Forzamos el scope según el rol para seguridad
-            ownerScope: isGlobalAdmin ? "ALL" : "OWN_TREE",
-            ownerId: isGlobalAdmin ? null : myId
+            id: form.id,
+            message: form.message,
+            variant: form.variant,
+            active: form.active,
+            dismissible: form.dismissible,
+            linkUrl: form.linkUrl || null,
+            audience: form.audience,
+            location: currentTab, 
+            ownerScope: "ALL",
+            includeDescendants: form.includeDescendants,
+            startsAt: form.startsAt,
+            endsAt: form.endsAt
         };
 
-        // Guardamos en el primer endpoint que responda
         let saved = false;
+        let lastError = null;
+
         for (const ep of ENDPOINTS) {
             try {
                 await api(`${base}${ep}`, { method: "POST", headers, body: JSON.stringify(payload) });
                 saved = true;
                 break;
-            } catch { /* Try next */ }
+            } catch (err: any) { 
+                console.error(`Fallo intento en ${ep}:`, err);
+                lastError = err;
+            }
         }
 
         if (saved) {
-            toast.success("¡Anuncio publicado correctamente!", { id: toastId });
+             toast.dismiss(toastId);
+             toast.success(`Barra ${currentTab === 'INTERNAL' ? 'Interna' : 'Externa'} actualizada!`);
+             loadCurrent();
         } else {
-            throw new Error("No se pudo conectar con el servidor de anuncios.");
+             throw lastError || new Error("No se pudo conectar con el servidor.");
         }
 
     } catch (e: any) {
-        toast.error(e.message || "Error al guardar", { id: toastId });
+        toast.error(`${e.message}`, { id: toastId });
     } finally {
         setLoading(false);
     }
   }
-
-  if (!canEdit) {
-      return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-            <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
-                <ShieldCheckIcon className="w-16 h-16 text-slate-300 mx-auto mb-4"/>
-                <h2 className="text-xl font-black text-slate-800">Acceso Restringido</h2>
-                <p className="text-slate-500 mt-2 text-sm">Esta herramienta es exclusiva para Administradores.</p>
-                <Link href="/dashboard" className="mt-6 inline-block text-[#E33127] font-bold text-sm hover:underline">Volver al inicio</Link>
-            </div>
-        </div>
-      );
-  }
-
-  const audienceAll = form.audience === "ALL";
-  const selectedRoles = audienceAll ? [] : (form.audience as Role[]);
-  const targetRoles: Role[] = ["CLIENT", "RESELLER", "DISTRIBUTOR", "ADMIN"];
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24 animate-fadeIn">
@@ -273,48 +232,77 @@ export default function UsersAnnouncementBarPage() {
                 </div>
                 <div>
                     <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">
-                        Barra de Anuncios
+                        Gestor de Anuncios
                     </h1>
                     <p className="text-slate-500 font-medium text-xs mt-1">
-                        Configura mensajes globales para la aplicación
+                        Configuración de mensajes del sistema
                     </p>
                 </div>
             </div>
-            <Link href="/dashboard" className="px-5 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 hover:text-[#E33127] transition-all text-xs shadow-sm">
-                Volver al Dashboard
-            </Link>
+            
+            {/* TABS DE SELECCIÓN */}
+            {isGlobalAdmin ? (
+                <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                    <button onClick={() => setCurrentTab("INTERNAL")} className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold transition-all ${currentTab === "INTERNAL" ? "bg-white text-[#E33127] shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-700"}`}>
+                        <RectangleStackIcon className="w-4 h-4" /> Interna
+                    </button>
+                    <button onClick={() => setCurrentTab("EXTERNAL")} className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold transition-all ${currentTab === "EXTERNAL" ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-700"}`}>
+                        <GlobeAltIcon className="w-4 h-4" /> Externa
+                    </button>
+                </div>
+            ) : (
+                <div className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-500 flex items-center gap-2">
+                    <LockClosedIcon className="w-3 h-3"/> Solo Cadena de Mando
+                </div>
+            )}
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8">
         
-        {/* EDITOR (Izquierda) */}
+        {/* EDITOR */}
         <div className="xl:col-span-7 space-y-6">
-            <form onSubmit={onSubmit} className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+            <form onSubmit={onSubmit} className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+                
+                {/* Indicador de color según la pestaña */}
+                <div className={`h-1.5 w-full ${currentTab === 'INTERNAL' ? 'bg-[#E33127]' : 'bg-blue-600'}`}></div>
+
                 <div className="p-6 md:p-8 space-y-8">
                     
-                    {/* 1. CONTENIDO */}
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-start gap-3 text-xs text-slate-600">
+                        <InformationCircleIcon className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                        <div>
+                            {currentTab === 'EXTERNAL' ? (
+                                <span className="font-bold text-blue-600">BARRA PÚBLICA (LOGIN):</span> 
+                            ) : (
+                                <span className="font-bold text-[#E33127]">BARRA INTERNA (DASHBOARD):</span>
+                            )}
+                            {currentTab === 'EXTERNAL' 
+                                ? " Visible para cualquiera que entre a la página de inicio."
+                                : " Visible solo para usuarios que han iniciado sesión."
+                            }
+                        </div>
+                    </div>
+
+                    {/* 1. MENSAJE */}
                     <div>
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">PASO 1</span> Mensaje & Enlace
-                        </h3>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Mensaje & Enlace</h3>
                         <div className="space-y-4">
                             <textarea
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E33127]/20 focus:border-[#E33127] transition-all min-h-[100px] resize-none placeholder:text-slate-400"
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-[#E33127]/20 focus:border-[#E33127] min-h-[100px] resize-none placeholder:text-slate-400"
                                 value={form.message}
                                 onChange={(e) => onChange("message", e.target.value)}
-                                placeholder="Escribe aquí el anuncio importante..."
+                                placeholder="Escribe el anuncio aquí..."
                                 required
                             />
-                            
                             <div className="relative group">
-                                <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#E33127]" />
+                                <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                 <input
                                     type="url"
-                                    className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#E33127]/20 focus:border-[#E33127] text-sm transition-all"
-                                    value={form.linkUrl}
+                                    className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-[#E33127] focus:outline-none"
+                                    value={form.linkUrl || ""}
                                     onChange={(e) => onChange("linkUrl", e.target.value)}
-                                    placeholder="https://... (URL opcional del botón)"
+                                    placeholder="https://... (Link opcional)"
                                 />
                             </div>
                         </div>
@@ -324,99 +312,27 @@ export default function UsersAnnouncementBarPage() {
 
                     {/* 2. ESTILO */}
                     <div>
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">PASO 2</span> Tipo de Aviso
-                        </h3>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Estilo Visual</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {(Object.keys(VARIANT_CARDS) as Variant[]).map((v) => {
                                 const style = VARIANT_CARDS[v];
                                 const Icon = style.icon;
-                                const isSelected = form.variant === v;
+                                const isSel = form.variant === v;
                                 return (
-                                    <button
-                                        type="button"
-                                        key={v}
-                                        onClick={() => onChange("variant", v)}
-                                        className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden ${isSelected ? style.colorClass : 'border-slate-100 bg-white hover:border-slate-300'}`}
-                                    >
+                                    <button type="button" key={v} onClick={() => onChange("variant", v)} className={`p-3 rounded-xl border text-left transition-all ${isSel ? style.colorClass : 'border-slate-100 bg-white hover:border-slate-300'}`}>
                                         <div className="flex items-center justify-between mb-1">
-                                            <Icon className={`w-5 h-5 ${isSelected ? '' : 'text-slate-400'}`} />
-                                            {isSelected && <CheckCircleIcon className="w-4 h-4 opacity-100" />}
+                                            <Icon className={`w-5 h-5 ${isSel ? '' : 'text-slate-400'}`} />
+                                            {isSel && <CheckCircleIcon className="w-4 h-4 opacity-100" />}
                                         </div>
-                                        <span className={`block text-xs font-bold ${isSelected ? '' : 'text-slate-600'}`}>{style.title}</span>
+                                        <span className={`block text-xs font-bold ${isSel ? '' : 'text-slate-600'}`}>{style.title}</span>
                                     </button>
                                 )
                             })}
                         </div>
                     </div>
-
-                    <div className="border-t border-slate-50"></div>
-
-                    {/* 3. CONFIGURACIÓN */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Programación</h3>
-                            <div className="space-y-3">
-                                <div className="relative">
-                                    <span className="absolute top-1 left-3 text-[9px] font-bold text-slate-400 uppercase">Inicio</span>
-                                    <input
-                                        type="datetime-local"
-                                        className="w-full pt-5 pb-2 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:border-[#E33127] focus:outline-none"
-                                        value={form.startsAt || ""}
-                                        onChange={(e) => onChange("startsAt", e.target.value || null)}
-                                    />
-                                </div>
-                                <div className="relative">
-                                    <span className="absolute top-1 left-3 text-[9px] font-bold text-slate-400 uppercase">Fin</span>
-                                    <input
-                                        type="datetime-local"
-                                        className="w-full pt-5 pb-2 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:border-[#E33127] focus:outline-none"
-                                        value={form.endsAt || ""}
-                                        onChange={(e) => onChange("endsAt", e.target.value || null)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Audiencia</h3>
-                            <div className="flex gap-2 mb-2 bg-slate-100 p-1 rounded-lg">
-                                <button type="button" onClick={() => onChange("audience", "ALL")} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${audienceAll ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>Todos</button>
-                                <button type="button" onClick={() => onChange("audience", ["CLIENT"])} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${!audienceAll ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>Filtrar</button>
-                            </div>
-                            
-                            {!audienceAll && (
-                                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                    {targetRoles.map((r) => (
-                                        <label key={r} className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded text-[#E33127] focus:ring-[#E33127]"
-                                                checked={selectedRoles.includes(r)}
-                                                onChange={(e) => {
-                                                    const newRoles = new Set(selectedRoles);
-                                                    if(e.target.checked) newRoles.add(r); else newRoles.delete(r);
-                                                    onChange("audience", Array.from(newRoles));
-                                                }}
-                                            />
-                                            <span className="text-[10px] font-bold text-slate-600">{roleLabel[r]}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
                 </div>
 
-                {/* FOOTER */}
-                <div className="bg-slate-50 p-5 border-t border-slate-100 flex justify-between items-center">
-                    <button
-                        type="button"
-                        onClick={() => setForm({ ...DEFAULT, ownerScope: isGlobalAdmin ? "ALL" : "OWN_TREE" })}
-                        className="text-xs font-bold text-slate-400 hover:text-[#E33127] transition-colors"
-                    >
-                        Restablecer
-                    </button>
+                <div className="bg-slate-50 p-5 border-t border-slate-100 flex justify-end">
                     <button
                         type="submit"
                         disabled={loading}
@@ -429,104 +345,42 @@ export default function UsersAnnouncementBarPage() {
             </form>
         </div>
 
-        {/* COLUMNA DERECHA: PREVIEW (5 cols) */}
+        {/* PREVIEW */}
         <div className="xl:col-span-5 space-y-6 sticky top-24">
-            
-            {/* TELÉFONO */}
             <div className="bg-slate-900 rounded-[2.5rem] p-3 shadow-2xl border-4 border-slate-800 relative mx-auto max-w-xs">
                 {/* Notch */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-slate-800 rounded-b-xl z-20"></div>
-
-                <div className="bg-white rounded-[2rem] overflow-hidden h-[500px] relative flex flex-col">
-                    
-                    {/* Header App */}
-                    <div className="bg-slate-50 border-b border-slate-100 p-4 pt-8 flex items-center justify-between">
-                        <div className="w-8 h-8 rounded-full bg-slate-200"></div>
-                        <div className="w-20 h-3 bg-slate-200 rounded-full"></div>
-                        <div className="w-8 h-8 rounded-full bg-slate-200"></div>
-                    </div>
-
-                    {/* Contenido */}
-                    <div className="flex-1 bg-slate-50 p-4 space-y-4 relative">
-                        
-                        {/* ANUNCIO PREVIEW */}
+                <div className="bg-white rounded-[2rem] overflow-hidden h-[500px] relative flex flex-col pt-8">
+                     <div className="bg-slate-50 p-4 space-y-4">
+                        <div className="text-[10px] text-center font-bold text-slate-300 uppercase tracking-widest mb-2">
+                             Vista Previa ({currentTab === 'INTERNAL' ? 'Interna' : 'Externa'})
+                        </div>
                         {form.active ? (
-                            <div className={`rounded-xl p-4 relative overflow-hidden shadow-md transform transition-all duration-300 ${VARIANT_PREVIEW[form.variant]}`}>
-                                <div className="flex items-start gap-3 relative z-10">
-                                    <InformationCircleIcon className="w-5 h-5 shrink-0 mt-0.5 opacity-90" />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-xs leading-snug whitespace-pre-wrap">
-                                            {form.message || "Tu mensaje aparecerá aquí..."}
-                                        </p>
-                                        
-                                        {form.linkUrl && (
-                                            <div className="mt-2">
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded text-[9px] font-black backdrop-blur-sm">
-                                                    VER MÁS <LinkIcon className="w-2.5 h-2.5" />
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {form.dismissible && <XMarkIcon className="w-4 h-4 opacity-70" />}
-                                </div>
+                            <div className={`rounded-xl p-4 shadow-md transition-all ${VARIANT_PREVIEW[form.variant]}`}>
+                                <p className="font-bold text-xs leading-snug">{form.message || "Tu mensaje aparecerá aquí..."}</p>
                             </div>
                         ) : (
-                            <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center text-slate-400 gap-1 bg-slate-100">
-                                <EyeSlashIcon className="w-5 h-5" />
-                                <span className="font-bold text-[10px]">OCULTO EN LA APP</span>
+                            <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center text-slate-400 text-xs font-bold bg-slate-100">
+                                <EyeSlashIcon className="w-5 h-5 mx-auto mb-1"/>
+                                Anuncio Oculto
                             </div>
                         )}
-
-                        {/* Dummy Content */}
-                        <div className="space-y-3 opacity-20 pointer-events-none">
-                            <div className="h-24 bg-slate-300 rounded-xl w-full"></div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="h-20 bg-slate-300 rounded-xl"></div>
-                                <div className="h-20 bg-slate-300 rounded-xl"></div>
-                            </div>
-                        </div>
-
-                    </div>
+                     </div>
                 </div>
             </div>
-
-            {/* CONTROLES RÁPIDOS */}
-            <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 p-5 space-y-3">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Opciones Rápidas</h3>
-                
+            
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 space-y-3 shadow-sm">
                 <div 
-                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between group transition-all ${form.active ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'}`} 
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${form.active ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'}`} 
                     onClick={() => onChange('active', !form.active)}
                 >
-                    <div className="flex items-center gap-3">
-                        <div className={`p-1.5 rounded-full ${form.active ? 'bg-emerald-200 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
-                            {form.active ? <EyeIcon className="w-4 h-4"/> : <EyeSlashIcon className="w-4 h-4"/>}
-                        </div>
-                        <span className={`text-xs font-bold ${form.active ? 'text-emerald-900' : 'text-slate-600'}`}>Visible</span>
-                    </div>
+                    <span className={`text-xs font-bold ${form.active ? 'text-emerald-900' : 'text-slate-600'}`}>Visible en App</span>
                     <div className={`w-8 h-5 rounded-full p-0.5 transition-colors ${form.active ? 'bg-emerald-500' : 'bg-slate-300'}`}>
                         <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${form.active ? 'translate-x-3' : ''}`}></div>
                     </div>
                 </div>
-
-                <div 
-                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between group transition-all ${form.dismissible ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`} 
-                    onClick={() => onChange('dismissible', !form.dismissible)}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className={`p-1.5 rounded-full ${form.dismissible ? 'bg-blue-200 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
-                            <XMarkIcon className="w-4 h-4"/>
-                        </div>
-                        <span className={`text-xs font-bold ${form.dismissible ? 'text-blue-900' : 'text-slate-600'}`}>Cerrable</span>
-                    </div>
-                    <div className={`w-8 h-5 rounded-full p-0.5 transition-colors ${form.dismissible ? 'bg-blue-500' : 'bg-slate-300'}`}>
-                        <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${form.dismissible ? 'translate-x-3' : ''}`}></div>
-                    </div>
-                </div>
             </div>
-
         </div>
-
       </div>
     </div>
   );

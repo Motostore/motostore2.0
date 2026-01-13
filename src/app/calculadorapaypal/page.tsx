@@ -12,11 +12,11 @@ import Footer from "../ui/footer";
 import { ANUNCIO_BARRA } from "../mensajes";              
 
 export const metadata: Metadata = {
-  title: "Calculadora PayPal 2025 | Moto Store LLC",
+  title: "Calculadora PayPal 2026 | Moto Store LLC",
   description: "Herramienta profesional para calcular comisiones PayPal 2025.",
   keywords: [
     "calculadora PayPal",
-    "comisiones 2025",
+    "comisiones 2026",
     "fees paypal",
     "enviar dinero",
     "moto store tools",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     canonical: "https://motostorellc.com/CalculadoraPaypal",
   },
   openGraph: {
-    title: "Calculadora PayPal 2025 | Moto Store LLC",
+    title: "Calculadora PayPal 2026 | Moto Store LLC",
     description: "Calcula tus comisiones al instante con nuestra herramienta PRO.",
     url: "https://motostorellc.com/CalculadoraPaypal",
     siteName: "Moto Store LLC",
@@ -82,7 +82,7 @@ export default function Page() {
             
             <div className="text-center mb-10">
               <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-3">
-                Calculadora <span className={BRAND_RED}>PayPal 2025</span>
+                Calculadora <span className={BRAND_RED}>PayPal 2026</span>
               </h1>
               
               {/* TEXTO EN ULTRA NEGRITA (SOLICITADO) */}

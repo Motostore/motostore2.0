@@ -9,7 +9,6 @@ import {
   ShoppingBagIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  Bars3Icon,
   XMarkIcon,
   ChevronDownIcon,
   UserGroupIcon,
@@ -30,18 +29,16 @@ import {
   EnvelopeIcon,
   ArrowsRightLeftIcon,
   InformationCircleIcon,
-  PowerIcon,
   UserPlusIcon,
   MegaphoneIcon,
   LinkIcon,
   QueueListIcon,
-  CodeBracketIcon // Icono para Debugger
+  CodeBracketIcon
 } from '@heroicons/react/24/outline';
 
-// Importamos desde la carpeta RBAC que recuperaste
-import IfCan from '../../rbac/IfCan'; 
+// NOTA: Quitamos IfCan para hacer la validación directa y segura aquí mismo
+// import IfCan from '../../rbac/IfCan'; 
 
-/* ---------- Helpers ---------- */
 function cx(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(' ');
 }
@@ -54,11 +51,11 @@ type DropItem = {
   icon?: React.ReactNode; 
 };
 
-/* ---------- Componentes de UI ---------- */
-
+/* ---------- Componentes de UI (Iconos) ---------- */
 const iconCls = "h-5 w-5"; 
 const IconBox = () => <svg viewBox="0 0 24 24" className={iconCls} fill="currentColor"><path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.032z" /></svg>;
 
+/* ---------- DROPDOWN MODERNO ---------- */
 function Dropdown({ label, icon, items, isActive }: { label: string; icon?: React.ReactNode; items: DropItem[]; isActive?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -77,31 +74,31 @@ function Dropdown({ label, icon, items, isActive }: { label: string; icon?: Reac
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
         className={cx(
-          "inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all duration-300 select-none tracking-wide",
+          "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 select-none",
           isActive 
-            ? "bg-white text-[#E33127] shadow-lg shadow-red-900/20" 
-            : "text-white hover:bg-white/15 hover:backdrop-blur-sm"
+            ? "bg-[#E33127] text-white shadow-md shadow-red-100" 
+            : "text-slate-600 hover:bg-red-50 hover:text-[#E33127]"
         )}
       >
         {icon}
         <span>{label}</span>
-        <span className={`text-[10px] transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>▼</span>
+        <ChevronDownIcon className={`w-3 h-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={2.5} />
       </button>
+
       {open && (
-        <div className="absolute left-0 mt-3 w-72 rounded-2xl bg-white shadow-2xl shadow-red-900/10 ring-1 ring-black/5 z-[999] py-3 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-left">
+        <div className="absolute left-0 mt-2 w-64 rounded-xl bg-white shadow-xl shadow-slate-200/50 ring-1 ring-black/5 z-[999] py-2 animate-in fade-in slide-in-from-top-1 duration-150 origin-top-left">
           {items.map((it) => (
             <Link key={it.href} href={it.href} className={cx(
-              "flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all duration-200 border-b border-gray-50 last:border-0 group/link whitespace-nowrap",
-              it.isDebug ? "text-red-600 font-bold bg-red-50 hover:bg-red-100" : "text-slate-700 hover:bg-red-50 hover:text-[#E33127]",
-              it.isPremium && "text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100/50 hover:text-emerald-800",
-              it.isDebug && "pl-8" 
+              "flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors duration-150 mx-2 rounded-lg",
+              it.isDebug ? "text-red-600 bg-red-50 hover:bg-red-100" : "text-slate-600 hover:bg-slate-50 hover:text-[#E33127]",
+              it.isPremium && "text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100/50",
             )}>
               {it.icon ? (
-                <span className={cx("w-5 h-5", it.isPremium ? "text-emerald-600" : "text-slate-400 group-hover/link:text-[#E33127]")}>
+                <span className={cx("w-5 h-5", it.isPremium ? "text-emerald-600" : "text-slate-400")}>
                   {it.icon}
                 </span>
               ) : (
-                <span className={cx("h-1.5 w-1.5 rounded-full transition-opacity", it.isDebug ? "bg-red-600 opacity-100" : "bg-[#E33127] opacity-0 group-hover/link:opacity-100", it.isPremium && "bg-emerald-500")}></span>
+                <span className={cx("h-1.5 w-1.5 rounded-full", it.isDebug ? "bg-red-600" : "bg-[#E33127]")}></span>
               )}
               {it.label}
             </Link>
@@ -112,13 +109,14 @@ function Dropdown({ label, icon, items, isActive }: { label: string; icon?: Reac
   );
 }
 
+/* ---------- NAVLINK MODERNO ---------- */
 function NavLink({ href, children, active, icon }: { href: string; children: React.ReactNode; active?: boolean; icon?: React.ReactNode }) {
   return (
     <Link href={href} className={cx(
-      "inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all duration-300 tracking-wide",
+      "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200",
       active 
-        ? "bg-white text-[#E33127] shadow-lg shadow-red-900/20" 
-        : "text-white hover:bg-white/15 hover:backdrop-blur-sm"
+        ? "bg-[#E33127] text-white shadow-md shadow-red-100" 
+        : "text-slate-600 hover:bg-red-50 hover:text-[#E33127]"
     )}>
       {icon}
       <span>{children}</span>
@@ -134,13 +132,8 @@ function BottomNavItem({ href, icon, label, isActive, onClick }: { href?: string
             <span className="text-[10px] font-bold tracking-wide">{label}</span>
         </div>
     );
-
-    if (onClick) {
-        return <button onClick={onClick} className="w-full h-full">{content}</button>;
-    }
-    
+    if (onClick) return <button onClick={onClick} className="w-full h-full">{content}</button>;
     if (!href) return null;
-
     return <Link href={href} className="w-full h-full flex items-center justify-center">{content}</Link>;
 }
 
@@ -186,15 +179,19 @@ export default function TopNav() {
 
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
 
-  // DETECCIÓN DE RUTAS
+  // 🔥 LÍNEA CORREGIDA: Acceso seguro al rol sin errores de TypeScript
+  const user = session?.user as { role?: string } | undefined;
+  const role = user?.role?.toUpperCase() || '';
+  
+  const isAdminOrSuper = role === 'ADMIN' || role === 'SUPERUSER';
+
   const isReportPaymentPage = pathname.startsWith('/dashboard/reports/payment');
   const isWalletAdminPage = pathname.startsWith('/dashboard/wallet/admin-withdrawals'); 
   const isWalletWithdrawPage = pathname.startsWith('/dashboard/wallet/withdraw');
   const isTreasuryPage = pathname.startsWith('/dashboard/super/treasury');
   const isProductsPage = pathname.startsWith('/dashboard/products');
-  const isRbacTestPage = pathname.startsWith('/dashboard/rbac-test'); // Detectar página de debug
+  const isRbacTestPage = pathname.startsWith('/dashboard/rbac-test');
 
-  // Listas de Menús
   const reportesItems: DropItem[] = [
     { label: "Reporte General", href: "/dashboard/reports/general", icon: <ChartPieIcon className="w-5 h-5"/> },
     { label: "Movimientos", href: "/dashboard/reports/movimiento", icon: <PresentationChartLineIcon className="w-5 h-5"/> },
@@ -220,7 +217,6 @@ export default function TopNav() {
     { label: "Link de Registro", href: "/dashboard/users/register-url", icon: <LinkIcon className="w-5 h-5"/> },
   ];
   
-  // CONFIGURACIÓN (Con Debugger RESTAURADO)
   const configItems = useMemo(() => {
     const items: DropItem[] = [
         { label: "Mi Perfil", href: "/dashboard/profile", icon: <UserIcon className="w-5 h-5"/> },
@@ -229,48 +225,43 @@ export default function TopNav() {
         { label: "Teléfono / WhatsApp", href: "/dashboard/settings/phone", icon: <DevicePhoneMobileIcon className="w-5 h-5"/> },
         { label: "Correo Electrónico", href: "/dashboard/settings/email", icon: <EnvelopeIcon className="w-5 h-5"/> },
     ];
-    const role = (session?.user as any)?.role?.toUpperCase();
-    if (role === 'ADMIN' || role === 'SUPERUSER') {
+    
+    if (isAdminOrSuper) {
         items.push({ label: "Tesorería Global", href: "/dashboard/super/treasury", icon: <ArrowsRightLeftIcon className="w-5 h-5"/> });
         items.push({ label: "Comisiones", href: "/dashboard/settings/commissions", icon: <CurrencyDollarIcon className="w-5 h-5"/> });
-        
-        // --- AQUÍ ESTÁ EL DEBUGGER (Oculto en Configuración para Admins) ---
-        items.push({ 
-            label: "🛠️ RBAC Debugger", 
-            href: "/dashboard/rbac-test", 
-            icon: <CodeBracketIcon className="w-5 h-5"/>,
-            isDebug: true // Se verá rojo en el menú para diferenciarlo
-        });
     }
     return items;
-  }, [session]);
+  }, [isAdminOrSuper]);
 
   return (
     <>
-    {/* 1. BARRA DE ESCRITORIO (Visible solo en PC - lg:block) */}
-    <div className="hidden lg:block w-full bg-gradient-to-r from-[#E33127] via-[#D9251C] to-[#B91C1C] text-white shadow-lg shadow-red-900/20 z-20 relative">
-      <div className="mx-auto w-full max-w-7xl px-4">
-        <div className="flex items-center justify-between h-[70px]">
-          <nav className="flex items-center gap-1.5">
+    {/* 1. BARRA DE ESCRITORIO (MODERNIZADA) */}
+    <div className="hidden lg:block w-full bg-white border-b border-gray-100 z-20 relative">
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          
+          <nav className="flex items-center gap-1">
             <NavLink href="/" active={pathname === "/"} icon={<HomeIcon className="w-5 h-5"/>}>INICIO</NavLink>
             <NavLink href="/dashboard/products" active={isProductsPage} icon={<IconBox />}>PRODUCTOS</NavLink>
-            <div className="h-8 w-px bg-white/10 mx-2"></div>
+            
+            <div className="h-6 w-px bg-gray-200 mx-3"></div>
             
             <Dropdown label="REPORTES" icon={<DocumentChartBarIcon className="w-5 h-5"/>} items={reportesItems} isActive={isReportActive} />
             <Dropdown label="COMPRAS" icon={<BanknotesIcon className="w-5 h-5"/>} items={comprasItems} isActive={isComprasActive} />
-            <Dropdown label="CONFIGURACIÓN" icon={<Cog6ToothIcon className="w-5 h-5"/>} items={configItems} isActive={pathname.startsWith("/dashboard/settings") || pathname.startsWith("/dashboard/profile") || isTreasuryPage || isRbacTestPage} />
+            <Dropdown label="CONFIGURACIÓN" icon={<Cog6ToothIcon className="w-5 h-5"/>} items={configItems} isActive={pathname.startsWith("/dashboard/settings") || pathname.startsWith("/dashboard/profile") || isTreasuryPage} />
             
-            <IfCan permission="manage_users">
+            {/* 🔥 CORRECCIÓN: Mostrar SIEMPRE si es ADMIN o SUPERUSER (Sin IfCan) */}
+            {isAdminOrSuper && (
                 <Dropdown label="USUARIOS" icon={<UserGroupIcon className="w-5 h-5"/>} items={usuariosItems} isActive={pathname.startsWith("/dashboard/users")} />
-            </IfCan>
-            
+            )}
           </nav>
 
-          <div className="flex items-center gap-3 pl-6 border-l border-white/10 ml-4">
-              <Link href="/dashboard/help" className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold text-red-100 hover:bg-white/10 hover:text-white transition-all">
-                <InformationCircleIcon className="w-5 h-5" /> AYUDA
+          <div className="flex items-center gap-3 pl-6 border-l border-gray-100 ml-4">
+              <Link href="/dashboard/help" className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all">
+                <InformationCircleIcon className="w-5 h-5" />
               </Link>
-              <button onClick={() => signOut({ callbackUrl: '/' })} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-black bg-white text-[#E33127] shadow-lg hover:bg-red-50 hover:shadow-xl transition-all">
+              <button onClick={() => signOut({ callbackUrl: '/' })} className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all border border-gray-200 hover:border-red-100">
                 <ArrowRightOnRectangleIcon className="w-5 h-5" /> SALIR
               </button>
           </div>
@@ -278,7 +269,7 @@ export default function TopNav() {
       </div>
     </div>
 
-    {/* 2. BARRA DE NAVEGACIÓN INFERIOR (Mobile) */}
+    {/* 2. BARRA INFERIOR MOBILE */}
     <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-[40] flex items-center justify-around h-[60px] pb-1">
         <BottomNavItem href="/" icon={<HomeIcon />} label="Inicio" isActive={pathname === '/'} />
         <BottomNavItem onClick={() => setMobileMenuOpen(true)} icon={<QueueListIcon />} label="Menú" isActive={mobileMenuOpen} />
@@ -286,13 +277,13 @@ export default function TopNav() {
         <BottomNavItem href="/dashboard/purchases/mine" icon={<WalletIcon />} label="Compras" isActive={isComprasActive} />
     </div>
 
-    {/* 3. MENU DRAWER (Móvil) */}
+    {/* 3. DRAWER MOBILE */}
     {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in" onClick={() => setMobileMenuOpen(false)} />
           <div className="relative w-[85%] max-w-sm bg-white h-full shadow-2xl animate-in slide-in-from-left duration-300 flex flex-col pb-20"> 
             <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-gradient-to-r from-[#E33127] to-[#B91C1C] text-white">
-              <span className="font-black text-xl tracking-tight">MOTO STORE</span>
+              <span className="font-black text-xl tracking-tight">MOTO STORE LLC</span>
               <button onClick={() => setMobileMenuOpen(false)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 text-white"><XMarkIcon className="w-6 h-6" /></button>
             </div>
             <div className="flex-1 overflow-y-auto py-2 text-slate-800">
@@ -307,9 +298,10 @@ export default function TopNav() {
               <MobileNavGroup label="COMPRAS" icon={<BanknotesIcon className="w-5 h-5"/>} items={comprasItems} />
               <MobileNavGroup label="CONFIGURACIÓN" icon={<Cog6ToothIcon className="w-5 h-5"/>} items={configItems} />
               
-              <IfCan permission="manage_users">
+              {/* 🔥 CORRECCIÓN: Mostrar SIEMPRE si es ADMIN o SUPERUSER (Mobile) */}
+              {isAdminOrSuper && (
                   <MobileNavGroup label="USUARIOS" icon={<UserGroupIcon className="w-5 h-5"/>} items={usuariosItems} />
-              </IfCan>
+              )}
 
               <Link href="/dashboard/help" className="flex items-center gap-3 px-5 py-4 font-bold text-slate-700 hover:bg-slate-50 border-b border-slate-100">
                 <span className="text-[#E33127]"><InformationCircleIcon className="w-5 h-5"/></span> AYUDA
@@ -326,7 +318,6 @@ export default function TopNav() {
     </>
   );
 }
-
 
 
 

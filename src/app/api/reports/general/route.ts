@@ -16,7 +16,7 @@ export async function GET() {
     return NextResponse.json({ detail: "Falta NEXT_PUBLIC_API_BASE_URL" }, { status: 500 });
   }
 
-  const res = await fetch(`${base}/reports/general`, {
+  const res = await fetch(`${base}/api/v1/reports/general`, {
     method: "GET",
     headers: {
       Accept: "application/json",

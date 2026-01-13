@@ -1,4 +1,3 @@
-// src/app/dashboard/page.tsx
 "use client";
 
 import { useSession } from "next-auth/react";
@@ -8,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { 
   ArrowTrendingUpIcon, 
   BanknotesIcon,
-  DevicePhoneMobileIcon, 
   CreditCardIcon, 
   LifebuoyIcon, 
   ChartBarIcon,
@@ -26,13 +24,13 @@ import SMMBalanceCard from "./SMMBalanceCard";
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1").replace(/\/$/, "");
 
 // ====================================================================
-// 1. VISTA DEL CLIENTE (Diseño Rico pero Corporativo)
+// 1. VISTA DEL CLIENTE
 // ====================================================================
 function ClientDashboard({ userName }: { userName: string }) {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       
-      {/* HEADER CLIENTE - BANNER ROJO (Recuperado para dar peso visual) */}
+      {/* HEADER CLIENTE - BANNER ROJO */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#E33127] to-[#B91C1C] text-white shadow-xl shadow-red-900/20 p-8">
         <div className="relative z-10">
           <h1 className="text-3xl font-black mb-2 tracking-tight">
@@ -42,20 +40,19 @@ function ClientDashboard({ userName }: { userName: string }) {
             Bienvenido a Moto Store. Tu panel está listo para gestionar tus servicios.
           </p>
         </div>
-        {/* Decoración sutil de fondo */}
         <div className="absolute right-0 top-0 h-full w-1/3 opacity-10 pointer-events-none">
            <SparklesIcon className="w-full h-full text-white" />
         </div>
       </div>
 
-      {/* RESUMEN (En tarjeta elevada) */}
+      {/* RESUMEN */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-1">
          <div className="p-6">
             <SummaryWidget />
          </div>
       </div>
 
-      {/* ACCIONES RÁPIDAS (Más robustas) */}
+      {/* ACCIONES RÁPIDAS */}
       <div>
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 ml-1">¿Qué quieres hacer hoy?</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -70,7 +67,7 @@ function ClientDashboard({ userName }: { userName: string }) {
 }
 
 // ====================================================================
-// 2. VISTA DEL ADMINISTRADOR (Panel de Control Financiero)
+// 2. VISTA DEL ADMINISTRADOR
 // ====================================================================
 function AdminDashboard({ token, role }: { token: string, role: string }) {
   const [data, setData] = useState<{ total_income: number; total_withdrawn: number; net_system_balance: number } | null>(null);
@@ -102,7 +99,7 @@ function AdminDashboard({ token, role }: { token: string, role: string }) {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       
-      {/* HEADER ROJO CON SOMBRA (Imponente) */}
+      {/* HEADER ROJO */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gradient-to-r from-[#E33127] to-[#B91C1C] text-white p-8 rounded-2xl shadow-lg shadow-red-900/20">
         <div>
            <h1 className="text-2xl lg:text-3xl font-black tracking-wider uppercase">{pageTitle}</h1>
@@ -115,17 +112,17 @@ function AdminDashboard({ token, role }: { token: string, role: string }) {
         </div>
       </div>
 
-      {/* MÉTRICAS FINANCIERAS (Diseño Rico con Colores) */}
+      {/* MÉTRICAS FINANCIERAS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          
-         {/* 1. SMM Balance (Provider) */}
+         {/* 1. SMM Balance */}
          <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm h-full hover:shadow-md transition-shadow">
             <div className="h-full p-6">
                 <SMMBalanceCard />
             </div>
          </div>
 
-         {/* 2. INGRESOS (Verde Esmeralda) */}
+         {/* 2. INGRESOS */}
          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-emerald-300 transition-all cursor-default">
              <div className="flex items-center gap-4 mb-4">
                 <div className="p-3 bg-emerald-100 rounded-xl text-emerald-700">
@@ -138,7 +135,7 @@ function AdminDashboard({ token, role }: { token: string, role: string }) {
              </p>
          </div>
 
-         {/* 3. CAPITAL (Rojo Marca) */}
+         {/* 3. CAPITAL */}
          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-red-300 transition-all cursor-default">
              <div className="flex items-center gap-4 mb-4">
                 <div className="p-3 bg-red-100 rounded-xl text-[#E33127]">
@@ -186,16 +183,17 @@ export default function DashboardPage() {
   const userName = session.user?.name || "Usuario";
   const token = (session as any)?.accessToken || (session as any)?.user?.token || "";
 
+  // 🔥 CORRECCIÓN CLAVE:
+  // Quitamos el div 'min-h-screen' y el 'max-w-7xl' porque el layout.tsx ya los tiene.
+  // Ahora este componente solo devuelve el contenido limpio.
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
-       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
-          {(role === 'SUPERUSER' || role === 'ADMIN') ? (
-             <AdminDashboard token={token} role={role} />
-          ) : (
-             <ClientDashboard userName={userName} />
-          )}
-       </div>
-    </div>
+    <>
+      {(role === 'SUPERUSER' || role === 'ADMIN') ? (
+          <AdminDashboard token={token} role={role} />
+      ) : (
+          <ClientDashboard userName={userName} />
+      )}
+    </>
   );
 }
 

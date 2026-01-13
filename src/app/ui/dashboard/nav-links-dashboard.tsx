@@ -4,16 +4,27 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
+// Importación limpia y verificada de HeroIcons v2
 import {
-  HomeIcon, ShoppingBagIcon, DocumentChartBarIcon, UserGroupIcon, 
-  Cog6ToothIcon, MegaphoneIcon, CodeBracketIcon, 
-  UserIcon, IdentificationIcon, LockClosedIcon, DevicePhoneMobileIcon, 
-  EnvelopeIcon, BanknotesIcon,
-  CheckBadgeIcon, ArrowDownCircleIcon, WalletIcon,
-  DocumentCheckIcon, CreditCardIcon
+  HomeIcon, 
+  ShoppingBagIcon, 
+  DocumentChartBarIcon, 
+  UserGroupIcon, 
+  Cog6ToothIcon, 
+  MegaphoneIcon, 
+  UserIcon, 
+  IdentificationIcon, 
+  LockClosedIcon, 
+  DevicePhoneMobileIcon, 
+  EnvelopeIcon, 
+  BanknotesIcon,
+  CheckBadgeIcon, 
+  ArrowDownCircleIcon, 
+  WalletIcon,
+  ArrowRightOnRectangleIcon // Agregado por si acaso
 } from '@heroicons/react/24/outline';
 
-// Importación relativa segura a la carpeta rbac (ajusta si tu estructura es diferente)
+// Importación de tu componente RBAC
 import IfCan from '../../rbac/IfCan'; 
 
 function Item({ href, children, className = '' }: { href: string; children: React.ReactNode; className?: string; }) {
@@ -75,10 +86,6 @@ export default function NavLinksDashboard() {
         <span className="flex items-center gap-2"><HomeIcon className="w-5 h-5"/> Inicio</span>
       </Item>
 
-      <Item href="/dashboard/users/announcement-bar">
-        <span className="flex items-center gap-2"><MegaphoneIcon className="w-5 h-5"/> Barra de Anuncios</span>
-      </Item>
-
       <Item href="/dashboard/products">
         <span className="flex items-center gap-2"><ShoppingBagIcon className="w-5 h-5"/> Productos</span>
       </Item>
@@ -91,7 +98,7 @@ export default function NavLinksDashboard() {
         <div className="mt-1 ml-3 border-l-2 border-slate-100 pl-3 space-y-1">
           <Item href="/dashboard/purchases">Listado de Compras</Item>
           
-          {/* ✅ CORRECCIÓN: Usamos 'permission' en lugar de 'action' */}
+          {/* Opción protegida: Solo Admins */}
           <IfCan permission="manage_payments">
             <Item href="/dashboard/payments/approvals">
                 <span className="flex items-center gap-2">
@@ -130,36 +137,43 @@ export default function NavLinksDashboard() {
       </details>
 
       {/* --- MENÚ DE USUARIOS --- */}
-      <details open={usersOpen} className="group pt-1">
-        <summary className={summaryClass(usersOpen)}>
-          <UserGroupIcon className="w-5 h-5"/> Usuarios
+      {/* Protegemos el menú completo de usuarios para que no lo vean clientes normales */}
+      <IfCan permission="manage_users">
+        <details open={usersOpen} className="group pt-1">
+            <summary className={summaryClass(usersOpen)}>
+            <UserGroupIcon className="w-5 h-5"/> Usuarios
+            </summary>
+            <div className="mt-1 ml-3 border-l-2 border-slate-100 pl-3 space-y-1">
+            <Item href="/dashboard/users/create">Crear Cuenta</Item>
+            <Item href="/dashboard/users/list">Lista de Usuarios</Item>
+            <Item href="/dashboard/users/announcement-bar">
+                <span className="flex items-center gap-2"><MegaphoneIcon className="w-5 h-5"/> Barra de Anuncios</span>
+            </Item>
+            <Item href="/dashboard/users/register-url">URL de Registro</Item>
+            <Item href="/dashboard/users/transactions">Transacciones Usuarios</Item>
+            </div>
+        </details>
+      </IfCan>
+
+      {/* --- MENÚ DE CONFIGURACIÓN --- */}
+      <details className="group pt-1">
+        <summary className="flex items-center gap-2 list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition-all duration-200 font-bold hover:bg-gray-50 text-slate-700 hover:text-black">
+        <Cog6ToothIcon className="w-5 h-5"/> Configuración
         </summary>
         <div className="mt-1 ml-3 border-l-2 border-slate-100 pl-3 space-y-1">
-          <Item href="/dashboard/users">Panel Usuarios</Item>
-          <Item href="/dashboard/users/create">Crear Cuenta</Item>
-          <Item href="/dashboard/users/list">Lista de Usuarios</Item>
-          <Item href="/dashboard/users/register-url">URL de Registro</Item>
-          <Item href="/dashboard/users/transactions">Transacciones Usuarios</Item>
+        <Item href="/dashboard/profile"><span className="flex items-center gap-2"><UserIcon className="w-5 h-5"/> Mi Perfil</span></Item>
+        <Item href="/dashboard/settings/account"><span className="flex items-center gap-2"><IdentificationIcon className="w-5 h-5"/> Datos de cuenta</span></Item>
+        <Item href="/dashboard/settings/password"><span className="flex items-center gap-2"><LockClosedIcon className="w-5 h-5"/> Seguridad / Clave</span></Item>
+        <Item href="/dashboard/settings/phone"><span className="flex items-center gap-2"><DevicePhoneMobileIcon className="w-5 h-5"/> Teléfono / WhatsApp</span></Item>
+        <Item href="/dashboard/settings/email"><span className="flex items-center gap-2"><EnvelopeIcon className="w-5 h-5"/> Correo Electrónico</span></Item>
+        
+        {/* Solo Admin ve Comisiones */}
+        <IfCan permission="manage_users">
+            <Item href="/dashboard/settings/commissions"><span className="flex items-center gap-2"><BanknotesIcon className="w-5 h-5"/> Comisiones</span></Item>
+        </IfCan>
         </div>
       </details>
 
-      {/* --- MENÚ DE CONFIGURACIÓN (Protegido) --- */}
-      {/* ✅ CORRECCIÓN: Usamos 'permission' en lugar de 'action' */}
-      <IfCan permission="manage_users">
-        <details className="group pt-1">
-          <summary className="flex items-center gap-2 list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition-all duration-200 font-bold hover:bg-gray-50 text-slate-700 hover:text-black">
-            <Cog6ToothIcon className="w-5 h-5"/> Configuración
-          </summary>
-          <div className="mt-1 ml-3 border-l-2 border-slate-100 pl-3 space-y-1">
-            <Item href="/dashboard/settings/profile"><span className="flex items-center gap-2"><UserIcon className="w-5 h-5"/> Mi Perfil</span></Item>
-            <Item href="/dashboard/settings/account"><span className="flex items-center gap-2"><IdentificationIcon className="w-5 h-5"/> Datos de cuenta</span></Item>
-            <Item href="/dashboard/settings/password"><span className="flex items-center gap-2"><LockClosedIcon className="w-5 h-5"/> Seguridad / Clave</span></Item>
-            <Item href="/dashboard/settings/phone"><span className="flex items-center gap-2"><DevicePhoneMobileIcon className="w-5 h-5"/> Teléfono / WhatsApp</span></Item>
-            <Item href="/dashboard/settings/email"><span className="flex items-center gap-2"><EnvelopeIcon className="w-5 h-5"/> Correo Electrónico</span></Item>
-            <Item href="/dashboard/settings/commissions"><span className="flex items-center gap-2"><BanknotesIcon className="w-5 h-5"/> Comisiones</span></Item>
-          </div>
-        </details>
-      </IfCan>
     </nav>
   );
 }

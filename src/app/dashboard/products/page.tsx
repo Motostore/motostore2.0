@@ -4,7 +4,7 @@ import Link from "next/link";
 import { 
   DevicePhoneMobileIcon, 
   RocketLaunchIcon, 
-  ChevronRightIcon,
+  ChevronRightIcon, 
   ShieldCheckIcon
 } from "@heroicons/react/24/solid";
 
@@ -28,31 +28,43 @@ export default function ProductsPage() {
       bg: "bg-orange-50",
       status: "Activo"
     },
-    // --- STREAMING (ICONO FUTURISTA) ---
     {
       title: "Streaming",
       desc: "Netflix, Disney+, Max y más.",
       href: "/dashboard/products/streaming",
-      // Icono SVG Personalizado: "Digital Pulse Play"
       icon: (
         <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7 text-white" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          {/* Triángulo Play Relleno */}
           <path d="M5 3l14 9-14 9V3z" fill="currentColor" stroke="none" />
-          {/* Ondas de Señal Futurista (Lado Derecho) */}
           <path d="M19 12a9 9 0 0 1-2.5 6.5" stroke="currentColor" strokeWidth={2.5} opacity="0.7"/>
           <path d="M22 12a12 12 0 0 1-3.5 9" stroke="currentColor" strokeWidth={2.5} opacity="0.4"/>
         </svg>
       ),
-      color: "from-violet-600 to-fuchsia-600", // Degradado Neon/Futurista
+      color: "from-violet-600 to-fuchsia-600",
       bg: "bg-violet-50",
+      status: "Nuevo"
+    },
+    // 🔥 NUEVO: Licencias de Software (Ahora visible aquí)
+    {
+      title: "Licencias Software",
+      desc: "Windows, Office, Antivirus.",
+      href: "/dashboard/products/licenses", // Ruta corregida
+      icon: (
+        <ShieldCheckIcon className="w-6 h-6 text-white" />
+      ),
+      color: "from-emerald-500 to-teal-600",
+      bg: "bg-emerald-50",
       status: "Nuevo"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8">
+    // FIX 1: Quitamos 'min-h-screen' y el padding superior excesivo.
+    // Usamos 'w-full' para asegurar ancho completo.
+    <div className="w-full">
+      
       {/* HEADER COMPACTO */}
-      <div className="max-w-6xl mx-auto mb-8">
+      {/* FIX 2: Redujimos el margen inferior (mb-6 en vez de mb-8) para acercar el título a las tarjetas */}
+      <div className="max-w-6xl mx-auto mb-6 mt-2">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-6 h-1 bg-red-600 rounded-full" />
           <span className="text-red-600 font-black uppercase tracking-widest text-[9px]">
@@ -82,7 +94,6 @@ export default function ProductsPage() {
 
             {/* ÁREA VISUAL */}
             <div className={`h-28 flex items-center justify-center ${cat.bg} relative overflow-hidden`}>
-              {/* Efecto de luz de fondo sutil */}
               <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-10 group-hover:opacity-20 transition-opacity`} />
               
               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:shadow-2xl transition-all duration-500 relative z-10`}>
@@ -110,7 +121,7 @@ export default function ProductsPage() {
         ))}
 
         {/* BOTÓN "AÑADIR" PEQUEÑO */}
-        <div className="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-6 bg-slate-50/30 opacity-60 hover:opacity-100 transition-all cursor-pointer hover:border-red-200 group">
+        <div className="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-6 bg-slate-50/30 opacity-60 hover:opacity-100 transition-all cursor-pointer hover:border-red-200 group min-h-[200px] sm:min-h-0">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center group-hover:text-red-500 transition-colors">
               Configurar<br/>Nuevo
             </p>

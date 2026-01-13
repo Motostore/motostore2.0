@@ -1,4 +1,3 @@
-// src/components/dashboard/SMMBalanceCard.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -16,7 +15,8 @@ const ALLOWED_ROLES = ['SUPERUSER', 'ADMIN'];
 
 export default function SMMBalanceCard() {
     const { data: session, status } = useSession();
-    const token = (session as any)?.accessToken || (session as any)?.user?.token || null;
+    // Recuperamos el token de forma segura
+    const token = (session as any)?.accessToken || (session as any)?.user?.token || (session as any)?.token || null;
     const currentRole = session?.user?.role?.toUpperCase();
     const isAuthorized = ALLOWED_ROLES.includes(currentRole || '');
 
@@ -30,42 +30,56 @@ export default function SMMBalanceCard() {
         if (!silent) setLoading(true);
 
         const authHeaders = {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${token}`, // Token clave para que Render responda
             'Content-Type': 'application/json',
         };
         
         try {
+            // 🔥 CORRECCIÓN CLAVE: Usamos /api-proxy/ para llegar a Render
+            // Render (Python) espera: /api/v1/marketing/balance y /api/v1/danlipagos/balance
+            // El proxy en next.config.mjs ya añade el /api/v1
+            
             const [resLegion, resDanlipagos] = await Promise.all([
-                fetch('/api/legionsmm/balance', { cache: 'no-store', headers: authHeaders }),
-                fetch('/api/danlipagos/balance', { cache: 'no-store', headers: authHeaders }) 
+                fetch('/api-proxy/marketing/balance', { cache: 'no-store', headers: authHeaders }),
+                fetch('/api-proxy/danlipagos/balance', { cache: 'no-store', headers: authHeaders }) 
             ]);
 
-            // LEGION
+            // --- PROCESAR LEGION (Marketing) ---
             if (resLegion.ok) {
                 const data = await resLegion.json();
-                setLegionData(!data.error ? data : { balance: '0.00', currency: 'USD', error: data.error });
+                // A veces el backend devuelve { data: { balance: ... } }
+                const bal = data.balance ?? data.data?.balance ?? '0.00';
+                setLegionData({ 
+                    balance: bal, 
+                    currency: 'USD', 
+                    error: undefined 
+                });
             } else {
+                console.error("Error Legion:", resLegion.status);
                 if (!legionData) setLegionData({ balance: '0.00', currency: 'USD', error: 'Error' });
             }
 
-            // DANLIPAGOS
+            // --- PROCESAR DANLIPAGOS ---
             if (resDanlipagos.ok) {
                 try {
                     const data = await resDanlipagos.json();
+                    const bal = data.balance ?? data.data?.balance ?? '0.00';
+                    const cur = data.currency ?? 'VES';
                     setDanlipagosData({
-                        balance: data.balance || '0.00',
-                        currency: data.currency || 'VES',
+                        balance: bal,
+                        currency: cur,
                         error: undefined
                     });
                 } catch(e) { 
                     if (!danlipagosData) setDanlipagosData({ balance: '0.00', currency: 'VES', error: 'JSON' });
                 }
             } else {
+                 console.error("Error Danli:", resDanlipagos.status);
                  if (!danlipagosData) setDanlipagosData({ balance: '0.00', currency: 'VES', error: `Err ${resDanlipagos.status}` });
             }
 
         } catch (e) {
-            console.error("Error fetching providers:", e);
+            console.error("Error general fetching providers:", e);
         } finally {
             setLoading(false);
             setFirstLoad(false);
@@ -74,12 +88,12 @@ export default function SMMBalanceCard() {
 
     // Auto-refresco
     useEffect(() => {
-        if (status === 'authenticated' && isAuthorized) {
+        if (status === 'authenticated' && isAuthorized && token) {
             fetchBalances(false);
-            const intervalo = setInterval(() => fetchBalances(true), 5000);
+            const intervalo = setInterval(() => fetchBalances(true), 15000); // 15s es más prudente que 5s
             return () => clearInterval(intervalo);
         }
-    }, [status, isAuthorized]);
+    }, [status, isAuthorized, token]); // Agregamos token a las dependencias
     
     if (status === 'loading') return <SkeletonLoader />;
     if (!isAuthorized) return null; 
@@ -99,7 +113,6 @@ export default function SMMBalanceCard() {
                         </h2>
                     </div>
                 </div>
-                {/* BOTÓN ELIMINADO AQUÍ */}
             </div>
 
             {/* TARJETAS */}
@@ -140,6 +153,7 @@ export default function SMMBalanceCard() {
     );
 }
 
+// ... El resto del código (WalletCard, formatMoney, SkeletonLoader) déjalo igual, está perfecto ...
 const formatMoney = (amount: string | number | undefined, currency: string) => {
     const num = Number(amount || 0);
     if (isNaN(num)) return currency === 'VES' ? 'Bs 0.00' : '$0.00';

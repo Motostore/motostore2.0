@@ -1,4 +1,3 @@
-// src/app/dashboard/summary.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -6,14 +5,13 @@ import { useSession } from 'next-auth/react';
 import { 
   BanknotesIcon, 
   ArrowTrendingUpIcon, 
-  ShieldCheckIcon,
-  ArrowPathIcon 
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 // Configuración API
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1").replace(/\/$/, "");
 
-// Roles
+// Roles con acceso
 const ROLES_CON_ACCESO = [
   'SUPERUSER', 'ADMIN', 'DISTRIBUTOR', 'RESELLER', 
   'TAQUILLA', 'SUBTAQUILLA', 'SUSTAQUILLA', 'CLIENT'
@@ -24,7 +22,7 @@ export default function SummaryWidget() {
   
   const [firstLoad, setFirstLoad] = useState(true);
   const [balance, setBalance] = useState<number>(0);
-  const [utilities, setUtilities] = useState<number>(0); // Iniciamos en 0 para que no salga --
+  const [utilities, setUtilities] = useState<number>(0);
 
   // Obtener token y rol de forma segura
   const token = (session as any)?.accessToken || (session as any)?.user?.accessToken || (session as any)?.user?.token || null;
@@ -46,30 +44,27 @@ export default function SummaryWidget() {
           Authorization: `Bearer ${token}`,
         };
 
-        const [bRes, uRes] = await Promise.all([
-          fetch(`${API_BASE}/wallet/me`, { cache: 'no-store', headers }),
+        // 🔥 CORRECCIÓN CLAVE: Usamos /me porque esa ruta devuelve datos FRESCOS de la DB
+        // La ruta /wallet/me a veces tiene caché o datos viejos.
+        const [userRes, utilRes] = await Promise.all([
+          fetch(`${API_BASE}/me`, { cache: 'no-store', headers }), // <--- CAMBIO AQUÍ
           fetch(`${API_BASE}/reports/utilities`, { cache: 'no-store', headers }),
         ]);
 
-        // --- PROCESAR SALDO ---
-        if (bRes.ok) {
-            const bJson = await bRes.json().catch(() => ({}));
-            // Aceptamos el valor si es número o string numérico
-            const val = bJson.balance ?? 0;
+        // --- PROCESAR SALDO (Desde /me) ---
+        if (userRes.ok) {
+            const userJson = await userRes.json().catch(() => ({}));
+            // El endpoint /me devuelve el objeto usuario con el campo "balance"
+            const val = userJson.balance ?? 0;
             setBalance(Number(val));
         }
 
-        // --- PROCESAR UTILIDADES (CORREGIDO) ---
-        if (uRes.ok) {
-            const uJson = await uRes.json().catch(() => ({}));
-            // Buscamos el valor en varias llaves posibles por seguridad
+        // --- PROCESAR UTILIDADES ---
+        if (utilRes.ok) {
+            const uJson = await utilRes.json().catch(() => ({}));
             const rawVal = uJson.net_system_balance ?? uJson.utilities ?? uJson.total ?? uJson.balance ?? 0;
             setUtilities(Number(rawVal));
-        } else {
-            // Si falla (ej. 404), ponemos 0 en lugar de null
-            console.warn("No se pudieron cargar utilidades:", uRes.status);
-            // No reseteamos a 0 si ya había un dato, para evitar parpadeo
-        }
+        } 
 
       } catch (e) {
         console.error("Error cargando dashboard:", e);
@@ -78,16 +73,16 @@ export default function SummaryWidget() {
       }
   };
 
-  // Auto-refresco cada 5 seg
+  // Auto-refresco cada 10 seg (para no saturar tanto)
   useEffect(() => {
     if (status === 'authenticated') {
       loadData(false);
-      const intervalo = setInterval(() => loadData(true), 5000);
+      const intervalo = setInterval(() => loadData(true), 10000); // 10s es suficiente
       return () => clearInterval(intervalo);
     }
   }, [status]);
 
-  // Formateador seguro
+  // Formateador
   const formatMoney = (n: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n || 0);
   };
@@ -96,60 +91,73 @@ export default function SummaryWidget() {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       
       {/* TARJETA 1: SALDO */}
-      <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 shadow-xl shadow-slate-100/50 flex flex-col justify-between h-full relative overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
          {/* Indicador 'En Vivo' */}
-         <div className="absolute top-4 right-4 flex h-3 w-3" title="Actualización en tiempo real">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+         <div className="absolute top-4 right-4 flex h-2 w-2" title="Actualización en tiempo real">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
          </div>
 
-         <div className="flex flex-col">
-           <div className="flex items-center gap-3 mb-4">
-             <div className="p-2 bg-red-50 rounded-lg text-[#E33127]"><BanknotesIcon className="w-6 h-6" /></div>
-             <span className="font-bold text-slate-500 text-sm tracking-wide uppercase">Saldo Disponible</span>
+         <div className="flex flex-col h-full justify-between">
+           <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                    <BanknotesIcon className="w-6 h-6" />
+                </div>
+                <span className="font-bold text-slate-400 text-xs uppercase tracking-widest">Saldo Disponible</span>
+              </div>
+              <div className="text-3xl lg:text-4xl font-black tracking-tight text-slate-800 mb-1">
+                {firstLoad ? <span className="text-slate-200 animate-pulse text-2xl">...</span> : formatMoney(balance)}
+              </div>
            </div>
-           <div className="text-4xl font-black tracking-tight text-[#E33127] mb-2 transition-all">
-             {firstLoad ? <span className="animate-pulse opacity-50 text-2xl">Cargando...</span> : formatMoney(balance)}
-           </div>
+           <p className="text-slate-400 text-xs font-medium pt-4 mt-2 border-t border-slate-50">Billetera Principal</p>
          </div>
-         <p className="text-slate-500 text-sm font-medium pt-2 border-t border-slate-100">Billetera Principal</p>
       </div>
 
-      {/* TARJETA 2: UTILIDADES (CORREGIDA) */}
-      <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 shadow-xl shadow-slate-100/50 flex flex-col justify-between h-full">
-         <div className="flex flex-col">
-           <div className="flex items-center gap-3 mb-4">
-             <div className="p-2 bg-green-100 rounded-lg text-emerald-600"><ArrowTrendingUpIcon className="w-6 h-6" /></div>
-             <span className="font-bold text-slate-500 text-sm tracking-wide uppercase">Utilidades</span>
+      {/* TARJETA 2: UTILIDADES */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+         <div className="flex flex-col h-full justify-between">
+           <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
+                    <ArrowTrendingUpIcon className="w-6 h-6" />
+                </div>
+                <span className="font-bold text-slate-400 text-xs uppercase tracking-widest">Utilidades</span>
+              </div>
+              <div className="text-3xl lg:text-4xl font-black tracking-tight text-slate-800 mb-1">
+                {firstLoad ? <span className="text-slate-200 animate-pulse text-2xl">...</span> : formatMoney(utilities)}
+              </div>
            </div>
-           <div className="text-4xl font-black tracking-tight text-slate-800 mb-2">
-             {/* Si carga, muestra 0.00 en vez de -- */}
-             {firstLoad ? <span className="animate-pulse opacity-50 text-2xl">Cargando...</span> : formatMoney(utilities)}
+           <div className="pt-4 mt-2 border-t border-slate-50">
+             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
+               ACUMULADO
+             </span>
            </div>
          </div>
-         <p className="text-emerald-600 text-sm font-bold bg-green-50 inline-block px-2 py-0.5 rounded-full pt-2 border-t border-slate-100">
-           Acumulado
-         </p>
       </div>
 
       {/* TARJETA 3: ESTADO */}
-      <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 shadow-xl shadow-slate-100/50 flex flex-col justify-between h-full">
-           <div className="flex flex-col">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-red-50 rounded-lg text-[#E33127]"><ShieldCheckIcon className="w-6 h-6" /></div>
-                <span className="font-bold text-slate-500 text-sm tracking-wide uppercase">Nivel de Acceso</span>
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+         <div className="flex flex-col h-full justify-between">
+           <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-50 rounded-lg text-[#E33127] group-hover:bg-red-100 transition-colors">
+                    <ShieldCheckIcon className="w-6 h-6" />
+                </div>
+                <span className="font-bold text-slate-400 text-xs uppercase tracking-widest">Nivel de Acceso</span>
               </div>
-              <div className="text-3xl font-black text-slate-900 tracking-tight truncate mb-4">
+              <div className="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight truncate">
                 {role}
               </div>
            </div>
-           <div className="flex justify-between items-center pt-2 border-t border-slate-100"> 
-             <span className="text-sm text-slate-500">Estado</span>
-             <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-               <span className="w-2 h-2 bg-emerald-600 rounded-full"></span>
+           <div className="flex justify-between items-center pt-4 mt-2 border-t border-slate-50"> 
+             <span className="text-xs text-slate-400">Estado de cuenta</span>
+             <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
+               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                ACTIVO
              </span>
            </div>
+         </div>
       </div>
     </div>
   );

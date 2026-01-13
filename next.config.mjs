@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  turbopack: {},  // Agrega esta línea para habilitar Turbopack
+  turbopack: {},
 
-  // Si deseas configuraciones personalizadas de Turbopack, puedes agregarlas aquí
-  // turbopack: { ... }
+  async rewrites() {
+    return [
+      {
+        source: '/api-proxy/:path*',
+        destination: 'https://motostore-api.onrender.com/api/v1/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

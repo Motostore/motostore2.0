@@ -116,7 +116,7 @@ export default function ReportsGeneralPage() {
         );
       }
 
-      const url = `${base}/reports/general`;
+      const url = `${base}/api/v1/reports/general`;
 
       const res = await fetch(url, {
         method: "GET",

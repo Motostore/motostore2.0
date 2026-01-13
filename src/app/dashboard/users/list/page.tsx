@@ -1,7 +1,5 @@
 'use client';
 
-// NOTA: Estas importaciones funcionarán en tu proyecto real de Next.js.
-// Si ves un error aquí en el editor visual, es solo porque el entorno de demo no tiene Next.js instalado.
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -19,11 +17,10 @@ import {
   IdentificationIcon,
   CheckBadgeIcon,
   KeyIcon,
-  GlobeAmericasIcon,
   MapPinIcon
 } from '@heroicons/react/24/outline';
 
-// Configuración de API
+// 🔥 CONFIGURACIÓN CENTRALIZADA DE LA API
 const API_BASE = "https://motostore-api.onrender.com/api/v1";
 
 interface User {
@@ -33,14 +30,13 @@ interface User {
   balance?: number;
   disabled?: boolean;
   email?: string;
-  // Campos de monitoreo que vienen de la BD
-  ip_address?: string;
+  last_ip_address?: string; // 🔥 CAMPO DE IP CONECTADO
   country_code?: string;
+  parent_id?: number; 
 }
 
 const AVAILABLE_ROLES = ['SUPERUSER', 'ADMIN', 'DISTRIBUTOR', 'RESELLER', 'CLIENT'];
 
-// Helper para convertir código de país (ej: "CL") a Emoji de bandera (🇨🇱)
 const getFlagEmoji = (countryCode?: string) => {
   if (!countryCode || countryCode === 'XX' || countryCode.length !== 2) return '🌐';
   const codePoints = countryCode
@@ -55,30 +51,16 @@ export default function UsersListPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
   const [q, setQ] = useState('');
   
-  // Estado para detectar mi propia IP (Admin)
-  const [myIpData, setMyIpData] = useState<{ip: string, country: string} | null>(null);
-
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING'>('ALL');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [modalType, setModalType] = useState<'balance' | 'role' | 'password' | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   
   const [amount, setAmount] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [newPassword, setNewPassword] = useState('');
-
-  // 1. DETECCIÓN DE TU IP REAL (CLIENT-SIDE) - Solo visual para el admin
-  useEffect(() => {
-    fetch('https://ipapi.co/json/')
-        .then(res => res.json())
-        .then(data => {
-            console.log("📍 Ubicación detectada:", data.country_name, data.ip);
-            setMyIpData({ ip: data.ip, country: data.country_code });
-        })
-        .catch(err => console.error("No se pudo detectar IP local", err));
-  }, []);
 
   // 🛡️ PROTECCIÓN DE RUTA
   useEffect(() => {
@@ -87,7 +69,7 @@ export default function UsersListPage() {
       const allowedRoles = ['ADMIN', 'SUPERUSER', 'DISTRIBUTOR'];
       if (!allowedRoles.includes(userRole.toUpperCase())) {
         toast.error("Acceso restringido");
-        router.push('/dashboard/inicio');
+        router.push('/dashboard');
       }
     }
   }, [status, session, router]);
@@ -104,39 +86,44 @@ export default function UsersListPage() {
     return h;
   }, [token]);
 
+  // --- CARGAR USUARIOS ---
   const load = useCallback(async () => {
     if (!token) return;
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/users/`, { headers: authHeader });
+
+      const endpoint = `${API_BASE}/users`; 
+      console.log("📡 Conectando a:", endpoint);
+
+      const res = await fetch(endpoint, { headers: authHeader });
       
       if (!res.ok) {
-        if(res.status === 401 || res.status === 403) return;
-        throw new Error('Error de conexión');
+        if(res.status === 401 || res.status === 403) {
+            console.error("Error de permisos (401/403)");
+            toast.error("Sesión expirada o sin permiso");
+            return;
+        }
+        const errorText = await res.text();
+        throw new Error(`Error ${res.status}: ${errorText}`);
       }
 
       const data = await res.json();
       const list = Array.isArray(data) ? data : data?.items ?? data?.content ?? [];
       
-      // AJUSTE INTELIGENTE DE DATOS (MOCK VISUAL PARA PRUEBAS):
-      // Si la API no trae país (porque es un usuario viejo), usamos la IP detectada localmente
-      // SOLO para efectos visuales. En producción real, elimina este .map si tu backend ya devuelve 'country_code'
       const enrichedList = list.map((u: any) => ({
         ...u,
-        // Si el usuario es el actual (yo), mostramos MI IP real detectada.
-        // Si es otro usuario y no tiene dato en BD, mostramos 'Desconocido' o simulado
-        country_code: u.country_code || (u.username === session?.user?.name && myIpData ? myIpData.country : (Math.random() > 0.5 ? 'VE' : 'CO')),
-        ip_address: u.ip_address || (u.username === session?.user?.name && myIpData ? myIpData.ip : `190.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.1`)
+        country_code: u.country_code || 'XX',
+        last_ip_address: u.last_ip_address || '---'
       }));
 
-      // Ordenar: Pendientes primero, luego por ID descendente
       setUsers(enrichedList.sort((a: User, b: User) => (a.disabled === b.disabled ? b.id - a.id : a.disabled ? -1 : 1)));
-    } catch (e) {
-      toast.error("No se pudo cargar la lista de usuarios");
+    } catch (e: any) {
+      console.error("❌ Error cargando usuarios:", e);
+      toast.error(`Error: ${e.message}`); 
     } finally {
       setLoading(false);
     }
-  }, [authHeader, token, myIpData, session?.user?.name]);
+  }, [authHeader, token]);
 
   useEffect(() => { if (status === 'authenticated') load(); }, [load, status]);
 
@@ -148,6 +135,7 @@ export default function UsersListPage() {
       result = result.filter(u => 
         u.username.toLowerCase().includes(lowerQ) || 
         (u.role && u.role.toLowerCase().includes(lowerQ)) ||
+        (u.last_ip_address && u.last_ip_address.includes(q)) || 
         (u.email && u.email.toLowerCase().includes(lowerQ))
       );
     }
@@ -165,90 +153,119 @@ export default function UsersListPage() {
     setActionLoading(false);
   };
 
-  // --- ACCIONES ---
+  // =========================================================
+  // 👇 ACCIONES DIRECTAS
+  // =========================================================
 
-  // CAJA RÁPIDA
   const handleBalance = async (type: 'add' | 'remove') => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) return toast.error("Monto inválido");
     if (!selectedUser) return;
 
     setActionLoading(true);
-    const toastId = toast.loading("Procesando...");
+    const toastId = toast.loading("Procesando saldo...");
     try {
       const finalAmount = type === 'add' ? val : -val;
+      
       const res = await fetch(`${API_BASE}/users/${selectedUser.id}/balance`, {
-        method: 'POST', headers: authHeader, body: JSON.stringify({ amount: finalAmount })
+        method: 'POST', 
+        headers: authHeader, 
+        body: JSON.stringify({ amount: finalAmount })
       });
+
       if (!res.ok) throw new Error();
       
-      toast.success("Saldo actualizado", { id: toastId });
+      toast.success("Saldo actualizado correctamente", { id: toastId });
+      
       setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, balance: Number(u.balance || 0) + finalAmount } : u));
       closeModal();
-    } catch (e) { toast.error("Error al actualizar", { id: toastId }); }
-    finally { setActionLoading(false); }
+    } catch (e) { 
+        toast.error("Error al actualizar saldo", { id: toastId }); 
+    } finally { 
+        setActionLoading(false); 
+    }
   };
 
-  // CAMBIAR ROL
   const handleUpdateRole = async () => {
     if (!selectedUser || !selectedRole) return;
     setActionLoading(true);
-    const toastId = toast.loading("Actualizando...");
+    const toastId = toast.loading("Actualizando rol...");
     try {
       const res = await fetch(`${API_BASE}/users/${selectedUser.id}`, {
-        method: 'PATCH', headers: authHeader, body: JSON.stringify({ role: selectedRole.toLowerCase() })
+        method: 'PATCH', 
+        headers: authHeader, 
+        body: JSON.stringify({ role: selectedRole.toLowerCase() })
       });
+
       if (!res.ok) throw new Error();
       
-      toast.success("Rol cambiado", { id: toastId });
+      toast.success("Rol cambiado exitosamente", { id: toastId });
       setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, role: selectedRole.toLowerCase() } : u));
       closeModal();
-    } catch (e) { toast.error("Error al cambiar rol", { id: toastId }); }
-    finally { setActionLoading(false); }
+    } catch (e) { 
+        toast.error("Error al cambiar rol", { id: toastId }); 
+    } finally { 
+        setActionLoading(false); 
+    }
   };
 
-  // CAMBIAR PASSWORD
   const handleResetPassword = async () => {
-    if (!selectedUser) return; // Validación extra
+    if (!selectedUser) return; 
     if (!newPassword || newPassword.length < 6) return toast.error("Mínimo 6 caracteres");
+    
     setActionLoading(true);
-    const toastId = toast.loading("Guardando...");
+    const toastId = toast.loading("Guardando contraseña...");
     try {
       const res = await fetch(`${API_BASE}/users/${selectedUser.id}`, {
-        method: 'PATCH', headers: authHeader, body: JSON.stringify({ password: newPassword })
+        method: 'PATCH', 
+        headers: authHeader, 
+        body: JSON.stringify({ password: newPassword })
       });
+
       if (!res.ok) throw new Error();
       
       toast.success("Contraseña actualizada", { id: toastId });
       closeModal();
-    } catch (e) { toast.error("Error al cambiar contraseña", { id: toastId }); }
-    finally { setActionLoading(false); }
+    } catch (e) { 
+        toast.error("Error al cambiar contraseña", { id: toastId }); 
+    } finally { 
+        setActionLoading(false); 
+    }
   };
 
-  // APROBAR USUARIO
   const handleApproveUser = async (user: User) => {
     if (!confirm(`¿Aprobar a ${user.username}?`)) return;
     try {
       const res = await fetch(`${API_BASE}/users/${user.id}`, {
-        method: 'PATCH', headers: authHeader, body: JSON.stringify({ disabled: false })
+        method: 'PATCH', 
+        headers: authHeader, 
+        body: JSON.stringify({ disabled: false })
       });
+
       if (!res.ok) throw new Error();
+      
       toast.success("Usuario aprobado");
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, disabled: false } : u));
-    } catch (e) { toast.error("Error al aprobar"); }
+    } catch (e) { 
+        toast.error("Error al aprobar usuario"); 
+    }
   };
 
-  // SUSPENDER / REACTIVAR
   const handleToggleStatus = async (user: User) => {
     const action = user.disabled ? "reactivar" : "suspender";
     if (!confirm(`¿${action} a ${user.username}?`)) return;
     try {
       await fetch(`${API_BASE}/users/${user.id}`, {
-        method: 'PATCH', headers: authHeader, body: JSON.stringify({ disabled: !user.disabled })
+        method: 'PATCH', 
+        headers: authHeader, 
+        body: JSON.stringify({ disabled: !user.disabled })
       });
+      
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, disabled: !u.disabled } : u));
-      toast.success(`Estado actualizado`);
-    } catch (e) { toast.error("Error al cambiar estado"); }
+      toast.success(`Usuario ${action === "reactivar" ? "activado" : "suspendido"}`);
+    } catch (e) { 
+        toast.error("Error al cambiar estado"); 
+    }
   };
 
   const getRoleBadge = (role: string = 'CLIENT') => {
@@ -330,7 +347,7 @@ export default function UsersListPage() {
                     {getRoleBadge(row.role)}
                   </td>
 
-                  {/* MONITOREO (IP Y PAÍS) */}
+                  {/* MONITOREO (IP Y PAÍS) - ACTUALIZADO */}
                   <td className="px-6 py-4 text-center">
                     <div className="flex flex-col items-center justify-center gap-1">
                         <span className="text-2xl" title={`País: ${row.country_code || 'Desconocido'}`}>
@@ -338,7 +355,8 @@ export default function UsersListPage() {
                         </span>
                         <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                             <MapPinIcon className="w-3 h-3 text-slate-400"/>
-                            {row.ip_address || '---'}
+                            {/* 🔥 AQUÍ MOSTRAMOS LA IP QUE VIENE DE LA BD */}
+                            {row.last_ip_address || '---'}
                         </div>
                     </div>
                   </td>

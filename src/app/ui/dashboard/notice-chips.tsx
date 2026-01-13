@@ -27,7 +27,7 @@ type Announcement = {
   endsAt?: string;
 };
 
-// Estilos idénticos a la vista previa del Admin para consistencia total
+// Estilos PREMIUM y vibrantes
 const VARIANT_STYLES: Record<Variant, string> = {
   info: "bg-gradient-to-r from-blue-600 to-blue-500 border-blue-800 text-white shadow-blue-500/20",
   success: "bg-gradient-to-r from-emerald-600 to-emerald-500 border-emerald-800 text-white shadow-emerald-500/20",
@@ -77,12 +77,10 @@ export default function NoticeChips() {
       };
       if (token) headers.Authorization = token;
 
-      // Intentamos leer del endpoint de usuario (lectura)
-      // Ajusta estas rutas si tu backend tiene una específica para "get current announcement"
       const endpoints = [
-        "/users/announcement-bar/current", // Ideal: Endpoint específico para "mi anuncio actual"
-        "/users/announcement-bar",         // Fallback: Lista de anuncios
-        "/announcement-bar"                // Fallback genérico
+        "/users/announcement-bar/current",
+        "/users/announcement-bar",
+        "/announcement-bar"
       ];
 
       for (const ep of endpoints) {
@@ -91,18 +89,16 @@ export default function NoticeChips() {
           if (!res.ok) continue;
           
           const data = await res.json();
-          // Manejar si devuelve un objeto directo o un array
           const item = Array.isArray(data) ? data[0] : (data?.data || data);
 
           if (item && item.active && item.message) {
-            // Validar fechas si el backend no lo hace
             const now = new Date().getTime();
             const start = item.startsAt ? new Date(item.startsAt).getTime() : 0;
             const end = item.endsAt ? new Date(item.endsAt).getTime() : Infinity;
 
             if (now >= start && now <= end) {
               if (active) setAnnouncement(item);
-              return; // Encontramos uno válido
+              return;
             }
           }
         } catch (e) {
@@ -115,59 +111,60 @@ export default function NoticeChips() {
     return () => { active = false; };
   }, [base, token]);
 
-  // Si no hay anuncio o el usuario lo cerró, no renderizar nada
   if (!announcement || !isVisible) return null;
 
   const Icon = ICONS[announcement.variant as Variant] || InformationCircleIcon;
   const styleClass = VARIANT_STYLES[announcement.variant as Variant] || VARIANT_STYLES.info;
 
   return (
-    <div className="w-full bg-white border-b border-slate-100">
-      <div className="mx-auto w-full max-w-7xl px-4 py-3">
+    // 1. FONDO FULL WIDTH (Para que se pinte de lado a lado)
+    <div className="w-full bg-slate-50 border-b border-slate-200 hidden md:block">
+      
+      {/* 2. CONTENEDOR CENTRAL (Alineado EXACTAMENTE con Header y TopNav) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         
-        {/* BARRA PREMIUM */}
-        <div className={`relative overflow-hidden rounded-xl p-4 shadow-lg border-l-4 animate-in slide-in-from-top-2 duration-500 ${styleClass}`}>
+        {/* LA TARJETA DEL ANUNCIO */}
+        <div className={`relative overflow-hidden rounded-xl p-3 shadow-sm border animate-in slide-in-from-top-2 duration-500 ${styleClass}`}>
             
-            {/* Efecto de brillo de fondo */}
+            {/* Efecto decorativo sutil */}
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div className="flex items-start gap-4 relative z-10">
+            <div className="flex items-center gap-4 relative z-10">
                 {/* Icono */}
                 <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm shrink-0">
-                    <Icon className="w-6 h-6 text-white" />
+                    <Icon className="w-5 h-5 text-white" />
                 </div>
 
-                {/* Contenido */}
-                <div className="flex-1 pt-0.5">
-                    <p className="text-sm font-bold text-white leading-snug drop-shadow-sm whitespace-pre-wrap">
+                {/* Mensaje */}
+                <div className="flex-1 flex items-center justify-between gap-4">
+                    <p className="text-sm font-bold text-white leading-tight drop-shadow-sm">
                         {announcement.message}
                     </p>
 
-                    {announcement.linkUrl && (
-                        <div className="mt-3">
+                    <div className="flex items-center gap-3">
+                        {announcement.linkUrl && (
                             <a 
                                 href={announcement.linkUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-black uppercase tracking-wide hover:bg-slate-100 hover:scale-105 transition-all shadow-md"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white text-slate-900 rounded-md text-[10px] font-black uppercase tracking-wide hover:bg-slate-100 transition-colors shadow-sm whitespace-nowrap"
                             >
                                 <LinkIcon className="w-3 h-3" />
-                                Ver Más
+                                Ver
                             </a>
-                        </div>
-                    )}
-                </div>
+                        )}
 
-                {/* Botón Cerrar */}
-                {announcement.dismissible && (
-                    <button 
-                        onClick={() => setIsVisible(false)}
-                        className="text-white/60 hover:text-white hover:bg-white/20 p-1.5 rounded-lg transition-all"
-                        title="Ocultar anuncio"
-                    >
-                        <XMarkIcon className="w-5 h-5" />
-                    </button>
-                )}
+                        {/* Botón Cerrar */}
+                        {announcement.dismissible && (
+                            <button 
+                                onClick={() => setIsVisible(false)}
+                                className="text-white/70 hover:text-white hover:bg-white/20 p-1 rounded transition-all"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
 

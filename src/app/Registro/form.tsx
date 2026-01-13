@@ -118,13 +118,15 @@ export default function RegisterForm() {
     const toastId = toast.loading('Procesando solicitud...');
 
     try {
-      // Usamos la URL de API basada en entorno o fallback a relativa
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE || ''; 
-      const response = await fetch(`${apiBase}/api/auth/register`, { // Asegurar ruta correcta
+      // 🔥 FIX CRÍTICO: URL directa al Backend en Render para evitar errores de Vercel
+      const BACKEND_URL = "https://motostore-api.onrender.com";
+      
+      const response = await fetch(`${BACKEND_URL}/api/v1/auth/register`, { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
       });
+
       const resp = await response.json() as AuthResponse;
 
       if (response.ok && !resp.error) {

@@ -1,5 +1,3 @@
-// src/app/layout.tsx (EDICIÓN FINAL: ULTRA PREMIUM MAESTRO)
-
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 
@@ -20,17 +18,18 @@ import { AuthProvider } from "./providers";
 // Fuente optimizada por Google
 const inter = Inter({ subsets: ["latin"] });
 
-// 🚀 VIEWPORT PRO: Configuración técnica para móviles
+// 🚀 VIEWPORT PRO: Configuración técnica para móviles (MODO APP)
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#ffffff', // La barra del navegador en iPhone/Android será blanca
+  userScalable: false, // 🔥 CLAVE: Evita que el usuario haga zoom (siente como App nativa)
+  themeColor: '#E33127', // 🔥 CLAVE: La barra de estado del celular será ROJA (Marca)
 };
 
-// 🏆 METADATA MAESTRA (SEO GLOBAL)
+// 🏆 METADATA MAESTRA (SEO GLOBAL + PWA)
 export const metadata: Metadata = {
-  metadataBase: new URL('https://motostorellc.com'), // URL base para resolver imágenes OG
+  metadataBase: new URL('https://motostorellc.com'), 
   title: {
     template: '%s | Moto Store LLC', 
     default: 'Moto Store LLC | Soluciones Digitales 24/7',
@@ -38,9 +37,19 @@ export const metadata: Metadata = {
   description: "Plataforma líder en servicios digitales, recargas móviles internacionales y licencias de software seguras.",
   keywords: ["recargas venezuela", "starlink", "netflix", "servicios digitales", "moto store"],
   authors: [{ name: "Moto Store LLC Team" }],
-  icons: {
-    icon: '/favicon.ico', // Asegúrate de tener este archivo
+  
+  // 🔥 CONFIGURACIÓN PARA IPHONE (iOS)
+  appleWebApp: {
+    capable: true,
+    title: "Moto Store",
+    statusBarStyle: "default", // O 'black-translucent' si quieres que se funda
   },
+  
+  icons: {
+    icon: '/favicon.ico', 
+    apple: '/icon-192.png', // Icono para iPhone
+  },
+  
   openGraph: {
     title: 'Moto Store LLC',
     description: 'Soluciones Digitales Rápidas y Seguras.',

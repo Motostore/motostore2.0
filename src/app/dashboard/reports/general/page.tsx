@@ -1,70 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { jsPDF } from "jspdf";
+import { 
+  ArrowPathIcon, 
+  ArrowDownTrayIcon, 
+  ExclamationTriangleIcon 
+} from "@heroicons/react/24/outline";
 
-/* ================= ICONOS (sin lucide-react) ================= */
-function IconDollar(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 1v22" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 5H10a3 3 0 000 6h4a3 3 0 010 6H7" />
-    </svg>
-  );
-}
-function IconCart(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6h15l-2 9H7L6 6Z" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6 5 3H2" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" />
-    </svg>
-  );
-}
-function IconTrend(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 17l6-6 4 4 8-8" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M14 7h7v7" />
-    </svg>
-  );
-}
-function IconUsers(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 20a8 8 0 0 1 16 0" />
-    </svg>
-  );
-}
-function IconDownload(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 3v12" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M7 10l5 5 5-5" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M5 21h14" />
-    </svg>
-  );
-}
-function IconRefresh(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M20 12a8 8 0 1 1-2.34-5.66" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M20 4v6h-6" />
-    </svg>
-  );
-}
-function IconAlert(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 9v4" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 17h.01" />
-    </svg>
-  );
-}
+/* ================= CONFIGURACIÓN ================= */
+// 1. Conexión Directa a Render (Igual que en las otras páginas)
+const API_BASE = "https://motostore-api.onrender.com/api/v1";
+const ENDPOINT = "/reports/general"; // Asegúrate que esta ruta exista en tu Python
+const REFRESH_MS = 30_000;
 
 /* ================= TIPOS ================= */
 type ReportData = {
@@ -77,218 +26,291 @@ type ReportData = {
   tasaConversion: number;
 };
 
-/* ================= CONFIG ================= */
-function getApiBase(): string {
-  const base =
-    (process.env.NEXT_PUBLIC_API_URL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_FULL ||
-      process.env.NEXT_PUBLIC_API_BASE ||
-      "").trim();
-
-  return base.replace(/\/+$/, "");
+interface ExtendedUser {
+  accessToken?: string;
+  token?: string;
 }
 
+/* ================= ICONOS CUSTOM (SVG) ================= */
+// Mantenemos tus iconos personalizados que están geniales
+function IconDollar(props: any) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 1v22" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 5H10a3 3 0 000 6h4a3 3 0 010 6H7" /></svg>;
+}
+function IconCart(props: any) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6h15l-2 9H7L6 6Z" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6 5 3H2" /><circle cx="9" cy="21" r="1" /><circle cx="17" cy="21" r="1" /></svg>;
+}
+function IconTrend(props: any) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 17l6-6 4 4 8-8" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M14 7h7v7" /></svg>;
+}
+function IconUsers(props: any) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 20a8 8 0 0 1 16 0" /></svg>;
+}
+
+/* ================= HELPERS ================= */
+const fmtMoney = (n?: number) => {
+  if (n === undefined || n === null) return "—";
+  return new Intl.NumberFormat("en-US", { // Estándar USD
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(n);
+};
+
+const fmtNumber = (n?: number) => {
+  if (n === undefined || n === null) return "—";
+  return new Intl.NumberFormat("es-ES").format(n);
+};
+
+/* ================= COMPONENTE PRINCIPAL ================= */
 export default function ReportsGeneralPage() {
   const { data: session, status } = useSession();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ReportData | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const fetchData = useCallback(async () => {
-    try {
+  // 2. Extracción segura del Token
+  const token = useMemo(() => {
+    if (!session?.user) return null;
+    const user = session.user as ExtendedUser;
+    return user.accessToken || user.token || (session as any).accessToken || null;
+  }, [session]);
+
+  // 3. Fetch Optimizado
+  const fetchData = useCallback(async (opts: { silent?: boolean } = {}) => {
+    if (status === "loading") return;
+
+    if (!token) {
+      if (status === "authenticated") setError("Token no encontrado.");
+      setLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    if (!opts.silent) {
       setLoading(true);
-      setErr(null);
+      setError(null);
+    }
 
-      const base = getApiBase();
-      if (!base) {
-        throw new Error(
-          "Falta la URL del backend en Vercel: NEXT_PUBLIC_API_BASE_URL (o NEXT_PUBLIC_API_FULL)."
-        );
-      }
-
-      const accessToken = (session as any)?.accessToken as string | undefined;
-      if (!accessToken) {
-        throw new Error(
-          "No hay sesión o token. Inicia sesión como ADMIN/SUPERUSER para ver reportes reales."
-        );
-      }
-
-      const url = `${base}/api/v1/reports/general`;
-
-      const res = await fetch(url, {
+    try {
+      const res = await fetch(`${API_BASE}${ENDPOINT}`, {
         method: "GET",
         headers: {
           Accept: "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
-        cache: "no-store",
+        signal: controller.signal,
       });
 
       if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(
-          `Backend respondió ${res.status}. ${txt ? txt.slice(0, 200) : ""}`.trim()
-        );
+        throw new Error(`Error ${res.status}: No se pudo cargar el reporte general.`);
       }
 
-      const json = (await res.json()) as ReportData;
-      setData(json);
+      const json = await res.json();
+      
+      // Mapeo seguro para evitar crashes si falta algún campo
+      const safeData: ReportData = {
+        ventas: Number(json.ventas || 0),
+        compras: Number(json.compras || 0),
+        utilidades: Number(json.utilidades || 0),
+        usuariosActivos: Number(json.usuariosActivos || 0),
+        ticketPromedio: Number(json.ticketPromedio || 0),
+        totalOrdenes: Number(json.totalOrdenes || 0),
+        tasaConversion: Number(json.tasaConversion || 0),
+      };
+
+      setData(safeData);
       setLastUpdated(new Date());
     } catch (e: any) {
-      console.error(e);
-      setData(null);
-      setErr(e?.message || "No se pudieron cargar los reportes reales.");
+      if (e.name !== "AbortError") {
+        console.error(e);
+        setError(e.message || "Error al conectar con el servidor.");
+      }
     } finally {
       setLoading(false);
     }
-  }, [session]);
 
-  // ✅ AUTO-REFRESH: negocio MUY activo (cada 30 segundos)
+    return () => controller.abort();
+  }, [status, token]);
+
+  // Efectos de Ciclo de Vida
   useEffect(() => {
-    if (status === "loading") return;
+    const cancel = fetchData();
+    return () => { if (typeof cancel === 'function') cancel(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    fetchData(); // carga inicial
+  useEffect(() => {
+    if (status !== "authenticated" || error) return;
+    const id = setInterval(() => fetchData({ silent: true }), REFRESH_MS);
+    return () => clearInterval(id);
+  }, [status, fetchData, error]);
 
-    const id = window.setInterval(() => {
-      fetchData();
-    }, 30000); // 30 segundos
-
-    return () => window.clearInterval(id);
-  }, [status, fetchData]);
-
+  // Generación de PDF
   const generatePDF = () => {
     if (!data) return;
 
     const doc = new jsPDF();
-    doc.setFontSize(16);
+    
+    // Encabezado
+    doc.setFontSize(20);
+    doc.setTextColor(227, 49, 39); // Rojo Motostore
     doc.text("Reporte General", 20, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 28);
 
+    // Cuerpo
+    doc.setTextColor(0);
     doc.setFontSize(12);
-    doc.text(`Ventas Totales: ${fmtMoney(data.ventas)}`, 20, 35);
-    doc.text(`Compras / Gastos: ${fmtMoney(data.compras)}`, 20, 45);
-    doc.text(`Utilidad Neta: ${fmtMoney(data.utilidades)}`, 20, 55);
-    doc.text(`Usuarios Activos: ${fmtNumber(data.usuariosActivos)}`, 20, 65);
-    doc.text(`Ticket Promedio: ${fmtMoney(data.ticketPromedio)}`, 20, 75);
-    doc.text(`Órdenes Totales: ${fmtNumber(data.totalOrdenes)}`, 20, 85);
-    doc.text(`Tasa de Conversión: ${data.tasaConversion}%`, 20, 95);
+    let y = 40;
+    
+    const lines = [
+      `Ventas Totales: ${fmtMoney(data.ventas)}`,
+      `Compras / Gastos: ${fmtMoney(data.compras)}`,
+      `Utilidad Neta: ${fmtMoney(data.utilidades)}`,
+      `Usuarios Activos: ${fmtNumber(data.usuariosActivos)}`,
+      `Ticket Promedio: ${fmtMoney(data.ticketPromedio)}`,
+      `Órdenes Totales: ${fmtNumber(data.totalOrdenes)}`,
+      `Tasa de Conversión: ${data.tasaConversion}%`
+    ];
 
-    doc.save("reporte_general.pdf");
+    lines.forEach(line => {
+      doc.text(line, 20, y);
+      y += 10;
+    });
+
+    doc.save(`reporte_general_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
-      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="mx-auto max-w-7xl pb-20 animate-in fade-in duration-500">
+      
+      {/* HEADER */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">
             Reporte General
           </h1>
-          <p className="text-slate-500 mt-1">
-            Visión general del rendimiento de tu negocio en tiempo real.
+          <p className="text-slate-500 font-medium">
+            Visión panorámica del rendimiento del negocio.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {lastUpdated && (
+            <span className="text-xs text-slate-400 hidden sm:block mr-2">
+              Actualizado: {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+          
           <button
-            onClick={fetchData}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+            onClick={() => fetchData()}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-[#E33127] transition-all disabled:opacity-50"
           >
-            <IconRefresh className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Actualizar
           </button>
 
           <button
-            type="button"
             onClick={generatePDF}
             disabled={!data || loading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#E33127] rounded-lg hover:bg-red-700 transition-opacity shadow-md shadow-red-200 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#E33127] rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-100 disabled:opacity-50"
           >
-            <IconDownload className="w-4 h-4" />
-            Exportar PDF
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            PDF
           </button>
         </div>
-      </header>
+      </div>
 
-      {err && (
-        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
-          <IconAlert className="w-5 h-5" />
-          <span className="text-sm font-medium">{err}</span>
+      {/* ERROR ALERT */}
+      {error && (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
+          <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
         </div>
       )}
 
-      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {/* KPI CARDS */}
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <KpiCard
           label="Ventas Totales"
           value={fmtMoney(data?.ventas)}
           icon={<IconDollar className="w-6 h-6 text-emerald-600" />}
           loading={loading}
+          className="border-emerald-100 shadow-emerald-500/5"
+          bgIcon="bg-emerald-50"
         />
         <KpiCard
           label="Compras / Gastos"
           value={fmtMoney(data?.compras)}
           icon={<IconCart className="w-6 h-6 text-blue-600" />}
           loading={loading}
+          className="border-blue-100 shadow-blue-500/5"
+          bgIcon="bg-blue-50"
         />
         <KpiCard
           label="Utilidad Neta"
           value={fmtMoney(data?.utilidades)}
           icon={<IconTrend className="w-6 h-6 text-indigo-600" />}
           loading={loading}
+          className="border-indigo-100 shadow-indigo-500/5"
+          bgIcon="bg-indigo-50"
         />
         <KpiCard
           label="Usuarios Activos"
           value={fmtNumber(data?.usuariosActivos)}
           icon={<IconUsers className="w-6 h-6 text-orange-600" />}
           loading={loading}
+          className="border-orange-100 shadow-orange-500/5"
+          bgIcon="bg-orange-50"
         />
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-between items-center">
-          <h3 className="font-semibold text-slate-800">Métricas de Operación</h3>
-          {lastUpdated && (
-            <span className="text-xs text-slate-400">
-              Actualizado: {lastUpdated.toLocaleTimeString()}
-            </span>
-          )}
+      {/* TABLE SECTION */}
+      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+          <h3 className="font-bold text-slate-800">Métricas Operativas</h3>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 font-medium">
+            <thead className="bg-slate-50 text-slate-400 font-bold uppercase text-xs tracking-wider">
               <tr>
-                <th className="px-6 py-3">Métrica</th>
-                <th className="px-6 py-3">Valor Actual</th>
-                <th className="px-6 py-3">Descripción</th>
-                <th className="px-6 py-3 text-right">Estado</th>
+                <th className="px-6 py-4">Indicador</th>
+                <th className="px-6 py-4">Valor</th>
+                <th className="px-6 py-4">Descripción</th>
+                <th className="px-6 py-4 text-right">Estado</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               <Row
                 name="Ticket Promedio"
                 value={fmtMoney(data?.ticketPromedio)}
-                desc="Valor promedio de cada venta realizada."
+                desc="Valor medio por transacción aprobada."
                 status="Healthy"
                 loading={loading}
               />
               <Row
                 name="Órdenes Totales"
                 value={fmtNumber(data?.totalOrdenes)}
-                desc="Cantidad total de transacciones procesadas."
+                desc="Volumen total de operaciones procesadas."
                 status="Neutral"
                 loading={loading}
               />
               <Row
                 name="Tasa de Conversión"
                 value={
-                  data?.tasaConversion !== undefined && data?.tasaConversion !== null
+                  data?.tasaConversion !== undefined
                     ? `${data.tasaConversion}%`
                     : "—"
                 }
-                desc="Porcentaje de visitas que terminan en venta."
-                status="Warning"
+                desc="Efectividad de ventas vs visitas."
+                status={Number(data?.tasaConversion) > 5 ? "Healthy" : "Warning"}
                 loading={loading}
               />
             </tbody>
@@ -299,17 +321,18 @@ export default function ReportsGeneralPage() {
   );
 }
 
-/* ================= SUBCOMPONENTES ================= */
-function KpiCard({ label, value, icon, loading }: any) {
+/* ================= COMPONENTES VISUALES ================= */
+
+function KpiCard({ label, value, icon, loading, className, bgIcon }: any) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-      <div className="flex items-center justify-between">
-        <div className="rounded-xl bg-slate-50 p-3 shadow-sm border border-slate-100">{icon}</div>
+    <div className={`relative overflow-hidden rounded-3xl border bg-white p-6 shadow-xl transition-all hover:-translate-y-1 ${className || 'border-slate-100'}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className={`rounded-2xl p-3 ${bgIcon || 'bg-slate-50'}`}>{icon}</div>
       </div>
-      <div className="mt-4">
-        <h3 className="text-sm font-medium text-slate-500">{label}</h3>
-        <div className="mt-1 text-3xl font-bold text-slate-900 tracking-tight">
-          {loading ? <Skeleton className="h-9 w-32" /> : value ?? "—"}
+      <div>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</h3>
+        <div className="text-3xl font-black text-slate-900 tracking-tight">
+          {loading ? <div className="h-9 w-24 bg-slate-100 rounded animate-pulse"></div> : value}
         </div>
       </div>
     </div>
@@ -318,48 +341,29 @@ function KpiCard({ label, value, icon, loading }: any) {
 
 function Row({ name, value, desc, status, loading }: any) {
   return (
-    <tr className="hover:bg-slate-50/80 transition-colors">
-      <td className="px-6 py-4 font-medium text-slate-900">{name}</td>
-      <td className="px-6 py-4 font-semibold text-slate-700">
-        {loading ? <Skeleton className="h-5 w-16" /> : value}
+    <tr className="hover:bg-slate-50 transition-colors group">
+      <td className="px-6 py-4 font-bold text-slate-700">{name}</td>
+      <td className="px-6 py-4 font-mono font-medium text-slate-900">
+        {loading ? <div className="h-5 w-16 bg-slate-100 rounded animate-pulse"></div> : value}
       </td>
-      <td className="px-6 py-4 text-slate-500 hidden sm:table-cell">{desc}</td>
+      <td className="px-6 py-4 text-slate-400 text-xs sm:text-sm">{desc}</td>
       <td className="px-6 py-4 text-right">
         {!loading && (
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border ${
               status === "Healthy"
-                ? "bg-green-100 text-green-800"
+                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
                 : status === "Warning"
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-gray-100 text-gray-800"
+                ? "bg-amber-50 text-amber-600 border-amber-100"
+                : "bg-slate-100 text-slate-600 border-slate-200"
             }`}
           >
-            {status}
+            {status === "Healthy" ? "Bueno" : status === "Warning" ? "Revisar" : "Normal"}
           </span>
         )}
       </td>
     </tr>
   );
-}
-
-function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-slate-200 ${className}`} />;
-}
-
-/* ================= HELPERS ================= */
-function fmtMoney(n?: number) {
-  if (n === undefined || n === null) return "—";
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function fmtNumber(n?: number) {
-  if (n === undefined || n === null) return "—";
-  return new Intl.NumberFormat("es-ES").format(n);
 }
 
 

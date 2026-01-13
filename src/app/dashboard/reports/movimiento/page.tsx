@@ -3,385 +3,379 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable"; // Asegúrate de tenerlo instalado
+import {
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ExclamationTriangleIcon,
+  CreditCardIcon,
+  CalendarDaysIcon,
+} from "@heroicons/react/24/outline";
 
-/* ================= TIPOS ================= */
-type Movimiento = {
-  id: string | number;
-  fecha: string;
-  tipo: string;
-  usuario: string;
-  monto: number;
-  estado: string;
+/* ================= CONFIGURACIÓN ================= */
+
+// 1. Conexión Directa a Render
+const API_BASE = "https://motostore-api.onrender.com/api/v1";
+
+// NOTA: Ajusta esto si tu endpoint en backend se llama distinto (ej: /movements, /history)
+const ENDPOINT_PATH = "/transactions"; 
+const REFRESH_MS = 30_000;
+
+/* ================= UTILS ================= */
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(amount);
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("es-VE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
-/* ================= ICONOS ================= */
-function IconDownload(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 3v12" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M7 10l5 5 5-5" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M5 21h14" />
-    </svg>
-  );
-}
-function IconRefresh(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M20 12a8 8 0 1 1-2.34-5.66" />
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M20 4v6h-6" />
-    </svg>
-  );
+/* ================= TIPOS ================= */
+interface Transaction {
+  id: string | number;
+  created_at: string; // O 'fecha'
+  type: string;
+  amount: number;
+  status: string;
+  reference?: string;
+  user_email?: string; // Para identificar de quién es el movimiento (Admin)
+  description?: string;
 }
 
-/* ================= CONFIG ================= */
-function getApiBaseRaw(): string {
-  const base =
-    (process.env.NEXT_PUBLIC_API_URL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_FULL ||
-      process.env.NEXT_PUBLIC_API_BASE ||
-      "").trim();
-
-  return base.replace(/\/+$/, "");
+interface ExtendedUser {
+  accessToken?: string;
+  token?: string;
+  role?: string;
 }
 
-function getApiBaseCandidates(): string[] {
-  const base = getApiBaseRaw();
-  if (!base) return [];
-  if (base.endsWith("/api/v1")) return [base];
-  return [base, `${base}/api/v1`];
-}
-
-// ✅ PROBAMOS MUCHAS RUTAS COMUNES
-const MOVEMENTS_PATHS = [
-  // Español
-  "/reports/movimiento",
-  "/reports/movimientos",
-
-  // Inglés
-  "/reports/movement",
-  "/reports/movements",
-  "/reports/transaction",
-  "/api/v1/reports/transactions",
-];
-
-const REFRESH_MS = 30_000;
-const DEBOUNCE_MS = 400;
-
+/* ================= COMPONENTE PRINCIPAL ================= */
 export default function ReportsMovimientosPage() {
   const { data: session, status } = useSession();
 
-  const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<Movimiento[]>([]);
-  const [err, setErr] = useState<string | null>(null);
-
-  const [q, setQ] = useState("");
-  const [qDebounced, setQDebounced] = useState("");
-
+  // Estados
+  const [rows, setRows] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  useEffect(() => {
-    const id = window.setTimeout(() => setQDebounced(q.trim()), DEBOUNCE_MS);
-    return () => window.clearTimeout(id);
-  }, [q]);
-
-  const token = useMemo(() => {
-    if (!session) return null;
-    return (
-      (session as any).accessToken ||
-      (session as any).token ||
-      (session as any).user?.token ||
-      (session as any).user?.accessToken ||
-      null
-    );
+  // Obtener Token y Rol
+  const { token, role } = useMemo(() => {
+    if (!session?.user) return { token: null, role: null };
+    const user = session.user as ExtendedUser;
+    return {
+      token: user.accessToken || user.token || (session as any).accessToken || null,
+      role: user.role || "user",
+    };
   }, [session]);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setErr(null);
-
+  // Función de Carga (Optimizada con AbortController)
+  const fetchData = useCallback(
+    async (opts: { silent?: boolean } = {}) => {
       if (status === "loading") return;
 
-      const bases = getApiBaseCandidates();
-      if (bases.length === 0) {
-        throw new Error(
-          "Falta la URL del backend: configura NEXT_PUBLIC_API_BASE_URL (o NEXT_PUBLIC_API_FULL) en Vercel."
-        );
-      }
-
       if (!token) {
-        throw new Error("No hay sesión o token. Inicia sesión como ADMIN/SUPERUSER.");
+        if (status === "authenticated") setError("No se encontró token de sesión.");
+        setLoading(false);
+        return;
       }
 
-      const params = new URLSearchParams();
-      if (qDebounced) params.set("q", qDebounced);
+      const controller = new AbortController();
 
-      const triedUrls: string[] = [];
+      if (!opts.silent) {
+        setLoading(true);
+        setError(null);
+      }
 
-      // probamos base + path con y sin slash final
-      for (const base of bases) {
-        for (const p of MOVEMENTS_PATHS) {
-          for (const withSlash of [false, true]) {
-            const path = withSlash ? `${p}/` : p;
-            const url = `${base}${path}${params.toString() ? `?${params.toString()}` : ""}`;
-            triedUrls.push(url);
+      try {
+        const res = await fetch(`${API_BASE}${ENDPOINT_PATH}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          signal: controller.signal,
+        });
 
-            const res = await fetch(url, {
-              method: "GET",
-              headers: {
-                Accept: "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              cache: "no-store",
-            });
-
-            if (res.ok) {
-              const json = await res.json();
-
-              const items: any[] = Array.isArray(json)
-                ? json
-                : Array.isArray(json?.items)
-                ? json.items
-                : [];
-
-              const normalized: Movimiento[] = items.map((it: any, idx: number) => ({
-                id: it?.id ?? it?._id ?? it?.uuid ?? idx,
-                fecha: String(it?.fecha ?? it?.date ?? it?.createdAt ?? ""),
-                tipo: String(it?.tipo ?? it?.type ?? ""),
-                usuario: String(it?.usuario ?? it?.user ?? it?.username ?? ""),
-                monto: Number(it?.monto ?? it?.amount ?? 0),
-                estado: String(it?.estado ?? it?.status ?? ""),
-              }));
-
-              setRows(normalized);
-              setLastUpdated(new Date());
-              return;
-            }
-
-            if (res.status === 401) throw new Error("Sesión expirada (401). Vuelve a iniciar sesión.");
-            if (res.status === 403) throw new Error("Acceso denegado (403). Solo Admin/Superuser.");
-
-            // si 404, seguimos intentando otras rutas
-          }
+        if (!res.ok) {
+          if (res.status === 401) throw new Error("Sesión expirada.");
+          if (res.status === 403) throw new Error("Sin permisos de acceso.");
+          throw new Error(`Error ${res.status}: No se pudieron cargar los movimientos.`);
         }
+
+        const json = await res.json();
+        
+        // Normalización de datos (Soporta varios formatos de respuesta)
+        const items = Array.isArray(json) ? json : json.data || json.items || [];
+        
+        const normalized: Transaction[] = items.map((item: any) => ({
+          id: item.id || item._id,
+          created_at: item.created_at || item.createdAt || item.date || new Date().toISOString(),
+          type: item.type || item.tipo || "UNKNOWN",
+          amount: Number(item.amount || item.monto || 0),
+          status: item.status || item.estado || "PENDING",
+          reference: item.reference || item.ref,
+          user_email: item.user_email || item.email || item.user?.email,
+          description: item.description || item.desc,
+        }));
+
+        // Ordenar por fecha (más reciente primero)
+        normalized.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        setRows(normalized);
+        setLastUpdated(new Date());
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          setError(err.message || "Error desconocido");
+          setRows([]);
+        }
+      } finally {
+        setLoading(false);
       }
 
-      // si nada funcionó
-      throw new Error(
-        `Backend respondió 404 (Not Found). Ninguna ruta coincide.\n\nRutas probadas:\n- ${triedUrls
-          .slice(0, 10)
-          .join("\n- ")}\n${triedUrls.length > 10 ? "\n..." : ""}`
-      );
-    } catch (e: any) {
-      console.error(e);
-      setRows([]);
-      setErr(e?.message ?? "No se pudo cargar movimientos");
-    } finally {
-      setLoading(false);
-    }
-  }, [status, token, qDebounced]);
+      return () => controller.abort();
+    },
+    [status, token]
+  );
+
+  // Efectos
+  useEffect(() => {
+    const cancel = fetchData();
+    return () => { if (typeof cancel === 'function') cancel(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    if (status === "loading") return;
-    fetchData();
-  }, [status, fetchData]);
+    if (status !== "authenticated" || error) return;
+    const interval = setInterval(() => fetchData({ silent: true }), REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [status, fetchData, error]);
 
-  useEffect(() => {
-    if (status === "loading") return;
-    const id = window.setInterval(() => fetchData(), REFRESH_MS);
-    return () => window.clearInterval(id);
-  }, [status, fetchData]);
+  // Filtrado en Cliente (Rápido y eficiente)
+  const filteredRows = useMemo(() => {
+    if (!searchTerm) return rows;
+    const lower = searchTerm.toLowerCase();
+    return rows.filter(
+      (r) =>
+        r.type.toLowerCase().includes(lower) ||
+        r.status.toLowerCase().includes(lower) ||
+        r.reference?.toLowerCase().includes(lower) ||
+        r.user_email?.toLowerCase().includes(lower) ||
+        r.id.toString().includes(lower)
+    );
+  }, [rows, searchTerm]);
 
-  const filtered = useMemo(() => {
-    const w = qDebounced.toLowerCase();
-    if (!w) return rows;
-    return rows.filter((r) => {
-      return (
-        r.tipo.toLowerCase().includes(w) ||
-        r.usuario.toLowerCase().includes(w) ||
-        String(r.monto).toLowerCase().includes(w) ||
-        r.estado.toLowerCase().includes(w) ||
-        r.fecha.toLowerCase().includes(w)
-      );
-    });
-  }, [rows, qDebounced]);
-
-  const fmtMoney = (n: number) =>
-    new Intl.NumberFormat("es-ES", { style: "currency", currency: "USD" }).format(Number(n || 0));
-
+  // Generar PDF Profesional
   const generatePDF = () => {
     const doc = new jsPDF();
-
-    doc.setFontSize(16);
-    doc.text("Reporte de Movimientos", 20, 18);
-
+    
+    // Header PDF
+    doc.setFontSize(18);
+    doc.text("Reporte de Movimientos", 14, 22);
     doc.setFontSize(10);
-    doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 26);
-    if (qDebounced) doc.text(`Filtro: ${qDebounced}`, 20, 32);
+    doc.setTextColor(100);
+    doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 28);
+    if (searchTerm) doc.text(`Filtro aplicado: "${searchTerm}"`, 14, 34);
 
-    let y = qDebounced ? 40 : 36;
+    // Datos para la tabla
+    const tableBody = filteredRows.map((row) => [
+      formatDate(row.created_at),
+      row.reference || row.id,
+      row.user_email || "N/A", // Solo útil para Admin
+      row.type,
+      formatCurrency(row.amount),
+      row.status,
+    ]);
 
-    doc.setFontSize(11);
-    doc.text("ID", 20, y);
-    doc.text("Fecha", 40, y);
-    doc.text("Tipo", 92, y);
-    doc.text("Usuario", 122, y);
-    doc.text("Monto", 160, y);
-    doc.text("Estado", 182, y);
+    // Tabla Automática
+    (doc as any).autoTable({
+      startY: searchTerm ? 40 : 35,
+      head: [["Fecha", "Ref/ID", "Usuario", "Tipo", "Monto", "Estado"]],
+      body: tableBody,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [227, 49, 39] }, // Rojo Motostore
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+    });
 
-    y += 6;
-    doc.setLineWidth(0.2);
-    doc.line(20, y, 200, y);
-    y += 6;
-
-    doc.setFontSize(10);
-
-    const pageBottom = 285;
-    const safe = (s: any) => String(s ?? "").slice(0, 22);
-    const safeWide = (s: any) => String(s ?? "").slice(0, 30);
-
-    const list = filtered.slice(0, 200);
-
-    for (const r of list) {
-      if (y > pageBottom) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(safe(r.id), 20, y);
-      doc.text(safeWide(r.fecha), 40, y);
-      doc.text(safe(r.tipo), 92, y);
-      doc.text(safe(r.usuario), 122, y);
-      doc.text(safe(fmtMoney(r.monto)), 160, y);
-      doc.text(safe(r.estado), 182, y);
-      y += 7;
-    }
-
-    doc.save("reporte_movimientos.pdf");
+    doc.save(`movimientos_${new Date().toISOString().split("T")[0]}.pdf`);
   };
 
+  /* ================= RENDERS ================= */
+
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-6 space-y-6">
-      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+    <div className="mx-auto max-w-7xl pb-20 animate-in fade-in">
+      
+      {/* HEADER */}
+      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold leading-none tracking-tight text-[#E33127]">
-            Movimientos
-          </h1>
-          <p className="text-sm text-slate-600">
-            Listado de operaciones del período.
-            {lastUpdated && (
-              <span className="ml-2 text-xs text-slate-400">Actualizado: {lastUpdated.toLocaleTimeString()}</span>
-            )}
+          <h1 className="text-3xl font-black text-[#E33127]">Movimientos</h1>
+          <p className="text-slate-500">
+            {role === 'admin' || role === 'superuser' 
+              ? "Transacciones globales de todos los usuarios." 
+              : "Historial de tus recargas y compras."}
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="w-full sm:w-64 px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm outline-none focus:ring-2 focus:ring-red-100 focus:border-[#E33127]"
-            placeholder="Buscar… (tipo, usuario, estado, fecha)"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {/* Buscador */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar referencia, usuario..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-10 w-full rounded-xl border border-slate-200 pl-9 pr-4 text-sm focus:border-[#E33127] focus:ring-1 focus:ring-[#E33127] sm:w-64"
+            />
+          </div>
 
           <button
-            type="button"
-            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium hover:bg-slate-50"
-            onClick={() => setQ("")}
-          >
-            Limpiar
-          </button>
-
-          <button
-            type="button"
-            className="px-4 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2 justify-center"
-            onClick={fetchData}
+            onClick={() => fetchData()}
             disabled={loading}
+            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-[#E33127] disabled:opacity-50"
           >
-            <IconRefresh className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            {loading ? "Actualizando…" : "Actualizar"}
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Actualizar</span>
           </button>
 
           <button
-            type="button"
             onClick={generatePDF}
-            disabled={loading || filtered.length === 0}
-            className="px-4 py-2 rounded-lg bg-[#E33127] text-white text-sm font-bold hover:bg-red-700 disabled:opacity-50 flex items-center gap-2 justify-center"
+            disabled={filteredRows.length === 0}
+            className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#E33127] px-4 text-sm font-bold text-white shadow-md shadow-red-100 transition-transform hover:bg-red-700 hover:-translate-y-0.5 disabled:opacity-50"
           >
-            <IconDownload className="w-4 h-4" />
-            Exportar PDF
+            <ArrowDownTrayIcon className="h-4 w-4" />
+            <span>PDF</span>
           </button>
         </div>
-      </header>
-
-      {err && (
-        <pre className="whitespace-pre-wrap rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {err}
-        </pre>
-      )}
-
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-[900px] w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>
-              <th className="px-3 py-3 text-left">ID</th>
-              <th className="px-3 py-3 text-left">Fecha</th>
-              <th className="px-3 py-3 text-left">Tipo</th>
-              <th className="px-3 py-3 text-left">Usuario</th>
-              <th className="px-3 py-3 text-right">Monto (USD)</th>
-              <th className="px-3 py-3 text-left">Estado</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading && filtered.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
-                  Cargando…
-                </td>
-              </tr>
-            )}
-
-            {!loading && filtered.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
-                  Sin datos.
-                </td>
-              </tr>
-            )}
-
-            {filtered.map((r) => (
-              <tr key={String(r.id)} className="border-t border-slate-100">
-                <td className="px-3 py-2">{String(r.id)}</td>
-                <td className="px-3 py-2">{r.fecha || "—"}</td>
-                <td className="px-3 py-2">{r.tipo || "—"}</td>
-                <td className="px-3 py-2">{r.usuario || "—"}</td>
-                <td className="px-3 py-2 text-right">{fmtMoney(r.monto)}</td>
-                <td className="px-3 py-2">
-                  <EstadoChip estado={r.estado || "—"} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
-      <div className="text-xs text-slate-400">
-        Auto-refresh: cada {Math.round(REFRESH_MS / 1000)} segundos.
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-red-700 flex items-center gap-3">
+          <ExclamationTriangleIcon className="w-5 h-5" />
+          <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
+
+      {/* TABLA */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-slate-600">
+            <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-400 tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Fecha</th>
+                <th className="px-6 py-4">Referencia</th>
+                {/* Mostrar columna Usuario si hay datos (Admin) */}
+                {rows.some(r => r.user_email) && <th className="px-6 py-4">Usuario</th>}
+                <th className="px-6 py-4">Tipo</th>
+                <th className="px-6 py-4">Monto</th>
+                <th className="px-6 py-4 text-center">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading && rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                    <div className="flex justify-center mb-2">
+                       <ArrowPathIcon className="w-6 h-6 animate-spin text-[#E33127]" />
+                    </div>
+                    Cargando movimientos...
+                  </td>
+                </tr>
+              ) : filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <CreditCardIcon className="w-8 h-8 opacity-20" />
+                      <p>No se encontraron movimientos.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredRows.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-slate-700">{formatDate(row.created_at).split(',')[0]}</div>
+                      <div className="text-xs text-slate-400">{formatDate(row.created_at).split(',')[1]}</div>
+                    </td>
+                    
+                    <td className="px-6 py-4 font-mono text-xs text-slate-500">
+                      {row.reference || row.id}
+                    </td>
+
+                    {/* Columna Condicional de Usuario */}
+                    {rows.some(r => r.user_email) && (
+                      <td className="px-6 py-4">
+                        <span className="text-xs font-medium bg-slate-100 text-slate-600 px-2 py-1 rounded-full">
+                          {row.user_email || "-"}
+                        </span>
+                      </td>
+                    )}
+
+                    <td className="px-6 py-4">
+                      <span className="font-bold text-xs uppercase text-slate-700">
+                        {row.type}
+                      </span>
+                      {row.description && <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{row.description}</div>}
+                    </td>
+
+                    <td className={`px-6 py-4 font-bold ${
+                      row.type === 'DEPOSIT' || row.type === 'INGRESO' ? 'text-emerald-600' : 'text-slate-900'
+                    }`}>
+                      {row.type === 'DEPOSIT' ? '+' : ''}{formatCurrency(row.amount)}
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      <StatusBadge status={row.status} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 text-xs text-slate-400 flex justify-between items-center">
+          <span>Total: {filteredRows.length} movimientos</span>
+          {lastUpdated && <span>Actualizado: {lastUpdated.toLocaleTimeString()}</span>}
+        </div>
       </div>
     </div>
   );
 }
 
-function EstadoChip({ estado }: { estado: string }) {
-  const st = estado.toLowerCase();
-  let cls = "bg-slate-100 text-slate-700";
-  if (st.includes("complet") || st.includes("paid") || st.includes("success")) cls = "bg-emerald-50 text-emerald-700";
-  else if (st.includes("pend") || st.includes("wait")) cls = "bg-amber-50 text-amber-700";
-  else if (st.includes("anul") || st.includes("cancel") || st.includes("fail")) cls = "bg-red-50 text-red-700";
+/* ================= SUB-COMPONENTES ================= */
 
-  return <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>{estado}</span>;
+function StatusBadge({ status }: { status: string }) {
+  const s = status.toLowerCase();
+  let style = "bg-slate-100 text-slate-600 border-slate-200"; // Default
+
+  if (s.includes("success") || s.includes("aprob") || s.includes("complet")) {
+    style = "bg-emerald-50 text-emerald-600 border-emerald-100";
+  } else if (s.includes("pend") || s.includes("wait")) {
+    style = "bg-amber-50 text-amber-600 border-amber-100";
+  } else if (s.includes("fail") || s.includes("rechaz") || s.includes("cancel")) {
+    style = "bg-red-50 text-red-600 border-red-100";
+  }
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${style}`}>
+      {status}
+    </span>
+  );
 }
-
 
 
 

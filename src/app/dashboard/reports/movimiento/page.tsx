@@ -3,15 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable"; // Asegúrate de tenerlo instalado
+import autoTable from "jspdf-autotable"; 
 import {
   ArrowDownTrayIcon,
   ArrowPathIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   ExclamationTriangleIcon,
   CreditCardIcon,
-  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 
 /* ================= CONFIGURACIÓN ================= */
@@ -19,7 +17,7 @@ import {
 // 1. Conexión Directa a Render
 const API_BASE = "https://motostore-api.onrender.com/api/v1";
 
-// NOTA: Ajusta esto si tu endpoint en backend se llama distinto (ej: /movements, /history)
+// NOTA: Ajusta esto si tu endpoint en backend se llama distinto
 const ENDPOINT_PATH = "/transactions"; 
 const REFRESH_MS = 30_000;
 
@@ -45,12 +43,12 @@ const formatDate = (dateString: string) => {
 /* ================= TIPOS ================= */
 interface Transaction {
   id: string | number;
-  created_at: string; // O 'fecha'
+  created_at: string; 
   type: string;
   amount: number;
   status: string;
   reference?: string;
-  user_email?: string; // Para identificar de quién es el movimiento (Admin)
+  user_email?: string; 
   description?: string;
 }
 
@@ -144,16 +142,19 @@ export default function ReportsMovimientosPage() {
       } finally {
         setLoading(false);
       }
-
+      
+      // Nota: Retornar la función de abort aquí funciona para lógica interna, 
+      // pero no se puede usar directamente en useEffect síncrono.
       return () => controller.abort();
     },
     [status, token]
   );
 
   // Efectos
+  
+  // ✅ CORRECCIÓN APLICADA AQUÍ: Eliminado el intento de usar el return de una función async
   useEffect(() => {
-    const cancel = fetchData();
-    return () => { if (typeof cancel === 'function') cancel(); };
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

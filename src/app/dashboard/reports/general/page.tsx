@@ -10,9 +10,9 @@ import {
 } from "@heroicons/react/24/outline";
 
 /* ================= CONFIGURACIÓN ================= */
-// 1. Conexión Directa a Render (Igual que en las otras páginas)
+// 1. Conexión Directa a Render
 const API_BASE = "https://motostore-api.onrender.com/api/v1";
-const ENDPOINT = "/reports/general"; // Asegúrate que esta ruta exista en tu Python
+const ENDPOINT = "/reports/general";
 const REFRESH_MS = 30_000;
 
 /* ================= TIPOS ================= */
@@ -32,7 +32,6 @@ interface ExtendedUser {
 }
 
 /* ================= ICONOS CUSTOM (SVG) ================= */
-// Mantenemos tus iconos personalizados que están geniales
 function IconDollar(props: any) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 1v22" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 5H10a3 3 0 000 6h4a3 3 0 010 6H7" /></svg>;
 }
@@ -49,7 +48,7 @@ function IconUsers(props: any) {
 /* ================= HELPERS ================= */
 const fmtMoney = (n?: number) => {
   if (n === undefined || n === null) return "—";
-  return new Intl.NumberFormat("en-US", { // Estándar USD
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 2,
@@ -110,7 +109,6 @@ export default function ReportsGeneralPage() {
 
       const json = await res.json();
       
-      // Mapeo seguro para evitar crashes si falta algún campo
       const safeData: ReportData = {
         ventas: Number(json.ventas || 0),
         compras: Number(json.compras || 0),
@@ -131,16 +129,15 @@ export default function ReportsGeneralPage() {
     } finally {
       setLoading(false);
     }
-
-    return () => controller.abort();
   }, [status, token]);
 
-  // Efectos de Ciclo de Vida
+  // ==================== ZONA CORREGIDA ====================
+  // Efecto inicial simple para evitar error de TypeScript
   useEffect(() => {
-    const cancel = fetchData();
-    return () => { if (typeof cancel === 'function') cancel(); };
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); 
+  // ========================================================
 
   useEffect(() => {
     if (status !== "authenticated" || error) return;
@@ -148,22 +145,18 @@ export default function ReportsGeneralPage() {
     return () => clearInterval(id);
   }, [status, fetchData, error]);
 
-  // Generación de PDF
   const generatePDF = () => {
     if (!data) return;
-
     const doc = new jsPDF();
     
-    // Encabezado
     doc.setFontSize(20);
-    doc.setTextColor(227, 49, 39); // Rojo Motostore
+    doc.setTextColor(227, 49, 39);
     doc.text("Reporte General", 20, 20);
     
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 28);
 
-    // Cuerpo
     doc.setTextColor(0);
     doc.setFontSize(12);
     let y = 40;
@@ -365,6 +358,5 @@ function Row({ name, value, desc, status, loading }: any) {
     </tr>
   );
 }
-
 
 

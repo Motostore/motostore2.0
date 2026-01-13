@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { jsPDF } from "jspdf";
 import {
@@ -12,33 +12,46 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
-/* ================= CONFIG ================= */
-function getApiBase(): string {
-  const base =
-    (process.env.NEXT_PUBLIC_API_URL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_FULL ||
-      process.env.NEXT_PUBLIC_API_BASE ||
-      "http://127.0.0.1:8000/api/v1"
-    ).trim();
+/* ================= CONFIG & UTILS (Fuera del componente) ================= */
 
-  return base.replace(/\/+$/, "");
-}
+// 1. Configuración centralizada y limpia
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1"
+).replace(/\/+$/, "");
 
-const UTILITIES_PATH = "/api/v1/reports/utilities";
+const UTILITIES_PATH = "/reports/utilities";
 const REFRESH_MS = 30_000;
 
+// 2. Formateador puro (Mejor rendimiento que crearlo en cada render)
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(amount);
+
 /* ================= TIPOS ================= */
-type UtilitiesData = {
+interface UtilitiesData {
   total_income: number;
   total_withdrawn: number;
   net_system_balance: number;
-};
+}
 
-/* ================= ICONO PDF (SVG SIMPLE) ================= */
-function IconDownload(props: any) {
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
+
+// Extender el tipo de Session si es necesario, o usar una interfaz auxiliar
+interface ExtendedUser {
+  accessToken?: string;
+  token?: string;
+}
+
+/* ================= COMPONENTE DE ICONO ================= */
+function IconDownload({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className}>
       <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 3v12" />
       <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M7 10l5 5 5-5" />
       <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M5 21h14" />
@@ -49,55 +62,43 @@ function IconDownload(props: any) {
 export default function UtilidadesPage() {
   const { data: session, status } = useSession();
 
+  // Estados
   const [data, setData] = useState<UtilitiesData | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false); // Nombre más semántico
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  const token = useMemo(() => {
-    if (!session) return null;
-    return (
-      (session as any).accessToken ||
-      (session as any).token ||
-      (session as any).user?.token ||
-      (session as any).user?.accessToken ||
-      null
-    );
+  // 3. Extracción segura del token (Sin casting agresivo de 'any')
+  const getToken = useCallback(() => {
+    if (!session?.user) return null;
+    const user = session.user as ExtendedUser;
+    // Ajusta esto según donde realmente guardes tu token en NextAuth
+    return user.accessToken || user.token || (session as any).accessToken || null;
   }, [session]);
 
-  const fmtMoney = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(n || 0));
-
   const fetchData = useCallback(
-    async (opts?: { silent?: boolean }) => {
+    async (opts: { silent?: boolean } = {}) => {
       if (status === "loading") return;
 
+      const token = getToken();
       if (!token) {
-        if (status === "authenticated") setError("No se encontró token de seguridad.");
+        if (status === "authenticated") setError("Token de seguridad no encontrado.");
         setInitialLoading(false);
         return;
       }
 
-      if (refreshing) return;
+      // 4. AbortController: El estándar moderno para cancelar peticiones
+      const controller = new AbortController();
+      const signal = controller.signal;
 
-      const hasData = !!data;
-      if (!hasData) setInitialLoading(true);
-      if (hasData) setRefreshing(true);
-
-      if (!opts?.silent) setError("");
+      if (!opts.silent) {
+        if (!data) setInitialLoading(true);
+        else setIsRefreshing(true);
+        setError(null);
+      }
 
       try {
-        const API_BASE = getApiBase();
-
         const res = await fetch(`${API_BASE}${UTILITIES_PATH}`, {
           method: "GET",
           headers: {
@@ -106,218 +107,297 @@ export default function UtilidadesPage() {
             "Content-Type": "application/json",
           },
           cache: "no-store",
+          signal, // Vinculamos la señal
         });
 
         if (!res.ok) {
-          const txt = await res.text().catch(() => "");
-          if (res.status === 403) throw new Error("Acceso Denegado: Solo Admin/Superuser.");
-          if (res.status === 401) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
-          throw new Error(
-            `Error al conectar con el servidor (${res.status}). ${txt ? txt.slice(0, 200) : ""}`.trim()
-          );
+          if (res.status === 403) throw new Error("Acceso Denegado: Permisos insuficientes.");
+          if (res.status === 401) throw new Error("Sesión expirada.");
+          
+          const errorData = (await res.json().catch(() => ({}))) as ApiErrorResponse;
+          throw new Error(errorData.detail || errorData.message || `Error del servidor (${res.status})`);
         }
 
-        const json = (await res.json()) as any;
+        const json = await res.json();
 
+        // Validación básica de tipos al recibir (Sanitization)
         const normalized: UtilitiesData = {
-          total_income: Number(json?.total_income ?? 0),
-          total_withdrawn: Number(json?.total_withdrawn ?? 0),
-          net_system_balance: Number(json?.net_system_balance ?? 0),
+          total_income: Number(json.total_income) || 0,
+          total_withdrawn: Number(json.total_withdrawn) || 0,
+          net_system_balance: Number(json.net_system_balance) || 0,
         };
-
-        if (!mountedRef.current) return;
 
         setData(normalized);
         setLastUpdated(new Date());
-      } catch (e: any) {
-        if (!mountedRef.current) return;
-        setError(e?.message || "Error desconocido");
+      } catch (err: any) {
+        if (err.name === "AbortError") return; // Ignoramos errores por cancelación intencional
+        setError(err.message || "Ocurrió un error inesperado.");
       } finally {
-        if (!mountedRef.current) return;
+        // No necesitamos verificar 'mounted' gracias al AbortController (aunque React setState en un componente desmontado ya no es crítico en React 18, es buena práctica limpiar)
         setInitialLoading(false);
-        setRefreshing(false);
+        setIsRefreshing(false);
       }
+
+      return () => controller.abort();
     },
-    [status, token, data, refreshing]
+    [status, getToken, data]
   );
 
+  // Efecto inicial y limpieza
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const cancelRequest = fetchData();
+    // TypeScript infiere que fetchData devuelve una función de limpieza si retorna controller.abort
+    return () => {
+      if (typeof cancelRequest === 'function') cancelRequest(); // Cleanup manual si fuera necesario (aunque el useEffect de abajo maneja el intervalo)
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo al montar
 
+  // Efecto de Auto-refresh
   useEffect(() => {
-    if (status === "loading") return;
+    if (status !== "authenticated" || error) return;
 
-    const id = window.setInterval(() => {
+    const intervalId = setInterval(() => {
       fetchData({ silent: true });
     }, REFRESH_MS);
 
-    return () => window.clearInterval(id);
-  }, [status, fetchData]);
+    return () => clearInterval(intervalId);
+  }, [status, fetchData, error]);
 
   const generatePDF = () => {
     if (!data) return;
 
     const doc = new jsPDF();
+    const lineHeight = 10;
+    let y = 20;
 
-    doc.setFontSize(16);
-    doc.text("Utilidades y Caja", 20, 18);
-
+    // Título
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Reporte de Utilidades y Caja", 20, y);
+    
+    // Metadata
+    y += lineHeight;
     doc.setFontSize(10);
-    doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 26);
-    if (lastUpdated) doc.text(`Última actualización: ${lastUpdated.toLocaleTimeString()}`, 20, 32);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    doc.text(`Generado: ${new Date().toLocaleString()}`, 20, y);
+    
+    if (lastUpdated) {
+      y += 6;
+      doc.text(`Última actualización de datos: ${lastUpdated.toLocaleTimeString()}`, 20, y);
+    }
 
+    // Datos
+    y += 20;
     doc.setFontSize(12);
-    doc.text(`Ingresos Totales: ${fmtMoney(data.total_income)}`, 20, 48);
-    doc.text(`Egresos Totales: ${fmtMoney(data.total_withdrawn)}`, 20, 58);
-    doc.text(`Dinero en Sistema (Pasivo): ${fmtMoney(data.net_system_balance)}`, 20, 68);
+    doc.setTextColor(0);
+    
+    const rows = [
+      { label: "Ingresos Totales:", value: formatCurrency(data.total_income) },
+      { label: "Egresos Totales:", value: formatCurrency(data.total_withdrawn) },
+      { label: "Dinero en Sistema (Pasivo):", value: formatCurrency(data.net_system_balance) },
+    ];
 
-    doc.setFontSize(10);
-    doc.text(
-      "Este reporte se genera en tiempo real basándose en transacciones DEPOSIT (Ingreso) y WITHDRAW (Egreso).",
-      20,
-      85,
-      { maxWidth: 170 }
+    rows.forEach((row) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(row.label, 20, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(row.value, 80, y);
+      y += lineHeight;
+    });
+
+    // Disclaimer
+    y += 10;
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    const splitText = doc.splitTextToSize(
+      "Este reporte representa el estado financiero del sistema en tiempo real basado en las transacciones registradas.",
+      170
     );
+    doc.text(splitText, 20, y);
 
-    doc.save("reporte_utilidades.pdf");
+    doc.save(`reporte_utilidades_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  if (initialLoading && !data) {
+  /* ================= RENDERS ================= */
+
+  if (initialLoading) {
     return (
-      <div className="flex h-96 w-full items-center justify-center text-slate-400 gap-2 animate-pulse">
-        <PresentationChartLineIcon className="w-8 h-8 text-[#E33127] animate-bounce" />
-        <span className="font-bold text-lg">Calculando finanzas...</span>
+      <div className="flex h-96 w-full flex-col items-center justify-center gap-4 text-slate-400 animate-in fade-in">
+        <PresentationChartLineIcon className="w-10 h-10 text-[#E33127] animate-bounce" />
+        <span className="font-medium text-lg animate-pulse">Sincronizando finanzas...</span>
       </div>
     );
   }
 
-  if (!data && error) {
+  if (error && !data) {
     return (
-      <div className="max-w-4xl mx-auto mt-10 p-8 bg-red-50 border border-red-100 rounded-2xl text-center">
-        <ExclamationTriangleIcon className="w-12 h-12 text-red-500 mx-auto mb-3" />
-        <h2 className="text-xl font-bold text-red-700">No se pudo cargar el reporte</h2>
-        <p className="text-red-600 mt-2">{error}</p>
+      <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-red-100 bg-red-50 p-8 text-center shadow-sm">
+        <ExclamationTriangleIcon className="mx-auto mb-4 h-12 w-12 text-red-500" />
+        <h2 className="text-xl font-bold text-red-700">Error de Conexión</h2>
+        <p className="mt-2 text-red-600">{error}</p>
         <button
           onClick={() => fetchData()}
-          className="mt-4 px-6 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-bold"
+          className="mt-6 rounded-lg border border-red-200 bg-white px-6 py-2.5 font-bold text-red-600 hover:bg-red-50 hover:shadow transition-all"
         >
-          Reintentar
+          Reintentar conexión
         </button>
       </div>
     );
   }
 
-  if (!data) return null;
+  if (!data) return null; // Should not happen
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 animate-in fade-in duration-500">
-      <div className="mb-3 text-xs text-slate-400">
-        Auto-refresh: cada {Math.round(REFRESH_MS / 1000)} segundos.
-        {lastUpdated && <span className="ml-2">Última actualización: {lastUpdated.toLocaleTimeString()}</span>}
+    <div className="mx-auto max-w-7xl pb-20 animate-in fade-in duration-500">
+      {/* HEADER INFO */}
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2">
+          <span className={`inline-block w-2 h-2 rounded-full ${isRefreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></span>
+          {isRefreshing ? "Actualizando datos..." : `Actualización auto: ${Math.round(REFRESH_MS / 1000)}s`}
+        </div>
+        {lastUpdated && <span>Última carga: {lastUpdated.toLocaleTimeString()}</span>}
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
-          {error}
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm shadow-sm">
+           <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
+           <span>{error}</span>
         </div>
       )}
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      {/* MAIN CARD */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100 shadow-sm">
-            <PresentationChartLineIcon className="w-8 h-8 text-indigo-600" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 shadow-sm text-indigo-600">
+            <PresentationChartLineIcon className="h-8 w-8" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Utilidades y Caja</h1>
-            <p className="text-slate-500 font-medium text-sm">Flujo de efectivo global del sistema.</p>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">Utilidades y Caja</h1>
+            <p className="text-sm font-medium text-slate-500">Visión global del flujo de efectivo.</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => fetchData()}
-            className="group p-3 hover:bg-slate-50 rounded-full text-slate-400 hover:text-[#E33127] transition-all border border-transparent hover:border-slate-200 disabled:opacity-50"
-            title="Actualizar datos"
-            disabled={refreshing}
+            disabled={isRefreshing}
+            className="group flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-slate-400 hover:bg-slate-50 hover:text-[#E33127] hover:border-slate-200 transition-all disabled:opacity-50"
+            title="Refrescar datos"
           >
-            <ArrowPathIcon className="w-5 h-5" />
+            <ArrowPathIcon className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
 
           <button
             onClick={generatePDF}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#E33127] rounded-xl hover:bg-red-700 transition-opacity shadow-md shadow-red-200 disabled:opacity-50"
-            title="Exportar PDF"
-            disabled={refreshing}
+            className="flex items-center gap-2 rounded-xl bg-[#E33127] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-red-100 transition-transform hover:bg-red-700 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70"
           >
-            <IconDownload className="w-4 h-4" />
-            Exportar PDF
+            <IconDownload className="h-4 w-4" />
+            <span>Exportar PDF</span>
           </button>
         </div>
       </div>
 
-      {/* TARJETAS FINANCIERAS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* 1. INGRESOS */}
-        <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-xl shadow-emerald-500/5 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <ArrowTrendingUpIcon className="w-24 h-24 text-emerald-500" />
-          </div>
-          <div className="flex items-center gap-3 mb-4 text-emerald-600 font-bold uppercase tracking-wider text-xs">
-            <span className="p-1.5 bg-emerald-100 rounded-lg">
-              <ArrowTrendingUpIcon className="w-4 h-4" />
-            </span>
-            Ingresos Totales
-          </div>
-          <p className="text-4xl font-black text-slate-900 mb-1">{fmtMoney(data.total_income)}</p>
-          <p className="text-sm text-slate-400 font-medium">Depósitos aprobados históricamente</p>
-        </div>
+      {/* KPI GRID */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <KpiCard
+          title="Ingresos Totales"
+          amount={data.total_income}
+          subtitle="Depósitos históricos"
+          color="emerald"
+          icon={<ArrowTrendingUpIcon className="h-24 w-24 text-emerald-500" />}
+          smallIcon={<ArrowTrendingUpIcon className="h-4 w-4" />}
+        />
+        
+        <KpiCard
+          title="Egresos Totales"
+          amount={data.total_withdrawn}
+          subtitle="Retiros procesados"
+          color="red"
+          icon={<ArrowDownIcon className="h-24 w-24 text-red-500" />}
+          smallIcon={<ArrowDownIcon className="h-4 w-4" />}
+        />
 
-        {/* 2. EGRESOS */}
-        <div className="bg-white p-8 rounded-3xl border border-red-100 shadow-xl shadow-red-500/5 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <ArrowDownIcon className="w-24 h-24 text-red-500" />
-          </div>
-          <div className="flex items-center gap-3 mb-4 text-red-600 font-bold uppercase tracking-wider text-xs">
-            <span className="p-1.5 bg-red-100 rounded-lg">
-              <ArrowDownIcon className="w-4 h-4" />
-            </span>
-            Egresos Totales
-          </div>
-          <p className="text-4xl font-black text-slate-900 mb-1">{fmtMoney(data.total_withdrawn)}</p>
-          <p className="text-sm text-slate-400 font-medium">Dinero retirado por usuarios</p>
-        </div>
-
-        {/* 3. NETO (AHORA EN VERDE COMO INGRESOS) */}
-        <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-xl shadow-emerald-500/5 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/15 transition-colors"></div>
-
-          <div className="flex items-center gap-3 mb-4 font-bold uppercase tracking-wider text-xs relative z-10 text-emerald-600">
-            <span className="p-1.5 rounded-lg bg-emerald-100 border border-emerald-100">
-              <BanknotesIcon className="w-4 h-4 text-emerald-600" />
-            </span>
-            Dinero en Sistema (Pasivo)
-          </div>
-
-          <p className="text-4xl font-black mb-1 relative z-10 text-slate-900 tracking-tight">
-            {fmtMoney(data.net_system_balance)}
-          </p>
-
-          <p className="text-sm text-slate-400 font-medium relative z-10">
-            Saldo vivo en billeteras de usuarios
-          </p>
-        </div>
+        <KpiCard
+          title="Dinero en Sistema"
+          amount={data.net_system_balance}
+          subtitle="Pasivo corriente (Usuarios)"
+          color="emerald" // Mantenemos verde como en tu diseño
+          highlight
+          icon={<BanknotesIcon className="h-24 w-24 text-emerald-600" />} // Icono grande añadido para consistencia
+          smallIcon={<BanknotesIcon className="h-4 w-4" />}
+        />
       </div>
 
-      {/* NOTA */}
-      <div className="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-800 text-xs font-medium flex gap-3 items-center shadow-sm">
-        <span className="font-bold bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm">INFO</span>
-        <p>
-          Este reporte se genera en tiempo real basándose en todas las transacciones de tipo <b>DEPOSIT</b> (Ingreso) y{" "}
-          <b>WITHDRAW</b> (Egreso) registradas en la base de datos.
+      {/* INFO FOOTER */}
+      <div className="mt-8 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-xs font-medium text-blue-900">
+        <span className="flex-shrink-0 rounded bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+          INFO
+        </span>
+        <p className="leading-relaxed opacity-80">
+          Cálculo en tiempo real basado en transacciones tipo <b>DEPOSIT</b> y <b>WITHDRAW</b>. 
+          Los datos pueden variar si existen transacciones pendientes de aprobación.
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ================= SUB-COMPONENTE DE TARJETA (Mejora la legibilidad) ================= */
+interface KpiCardProps {
+  title: string;
+  amount: number;
+  subtitle: string;
+  color: "emerald" | "red";
+  icon: React.ReactNode;
+  smallIcon: React.ReactNode;
+  highlight?: boolean;
+}
+
+function KpiCard({ title, amount, subtitle, color, icon, smallIcon, highlight }: KpiCardProps) {
+  const colorClasses = {
+    emerald: {
+      bgIcon: "bg-emerald-100",
+      text: "text-emerald-600",
+      border: "border-emerald-100",
+      shadow: "shadow-emerald-500/5",
+      glow: "bg-emerald-500/10 hover:bg-emerald-500/15",
+    },
+    red: {
+      bgIcon: "bg-red-100",
+      text: "text-red-600",
+      border: "border-red-100",
+      shadow: "shadow-red-500/5",
+      glow: "bg-red-500/10 hover:bg-red-500/15",
+    },
+  };
+
+  const theme = colorClasses[color];
+
+  return (
+    <div className={`relative overflow-hidden rounded-3xl border bg-white p-8 shadow-xl transition-all duration-300 hover:-translate-y-1 ${theme.border} ${theme.shadow} group`}>
+      {/* Background Decor */}
+      <div className="absolute right-0 top-0 p-4 opacity-10 transition-opacity group-hover:opacity-20">
+        {icon}
+      </div>
+      
+      {highlight && (
+        <div className={`absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl transition-colors ${theme.glow}`}></div>
+      )}
+
+      {/* Content */}
+      <div className={`relative z-10 mb-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider ${theme.text}`}>
+        <span className={`rounded-lg p-1.5 ${theme.bgIcon}`}>
+          {smallIcon}
+        </span>
+        {title}
+      </div>
+
+      <p className="relative z-10 mb-1 text-4xl font-black tracking-tight text-slate-900">
+        {formatCurrency(amount)}
+      </p>
+      <p className="relative z-10 text-sm font-medium text-slate-400">{subtitle}</p>
     </div>
   );
 }

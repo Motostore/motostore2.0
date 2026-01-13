@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { jsPDF } from "jspdf";
 import {
@@ -42,7 +42,7 @@ interface ApiErrorResponse {
   message?: string;
 }
 
-// Extender el tipo de Session si es necesario, o usar una interfaz auxiliar
+// Extender el tipo de Session si es necesario
 interface ExtendedUser {
   accessToken?: string;
   token?: string;
@@ -59,24 +59,25 @@ function IconDownload({ className }: { className?: string }) {
   );
 }
 
+/* ================= COMPONENTE PRINCIPAL ================= */
 export default function UtilidadesPage() {
   const { data: session, status } = useSession();
 
   // Estados
   const [data, setData] = useState<UtilitiesData | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false); // Nombre más semántico
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // 3. Extracción segura del token (Sin casting agresivo de 'any')
+  // 3. Extracción segura del token
   const getToken = useCallback(() => {
     if (!session?.user) return null;
     const user = session.user as ExtendedUser;
-    // Ajusta esto según donde realmente guardes tu token en NextAuth
     return user.accessToken || user.token || (session as any).accessToken || null;
   }, [session]);
 
+  // 4. Función de carga de datos optimizada
   const fetchData = useCallback(
     async (opts: { silent?: boolean } = {}) => {
       if (status === "loading") return;
@@ -88,7 +89,7 @@ export default function UtilidadesPage() {
         return;
       }
 
-      // 4. AbortController: El estándar moderno para cancelar peticiones
+      // AbortController para cancelar peticiones si es necesario internamente
       const controller = new AbortController();
       const signal = controller.signal;
 
@@ -107,7 +108,7 @@ export default function UtilidadesPage() {
             "Content-Type": "application/json",
           },
           cache: "no-store",
-          signal, // Vinculamos la señal
+          signal,
         });
 
         if (!res.ok) {
@@ -120,7 +121,7 @@ export default function UtilidadesPage() {
 
         const json = await res.json();
 
-        // Validación básica de tipos al recibir (Sanitization)
+        // Validación y sanitización
         const normalized: UtilitiesData = {
           total_income: Number(json.total_income) || 0,
           total_withdrawn: Number(json.total_withdrawn) || 0,
@@ -130,28 +131,27 @@ export default function UtilidadesPage() {
         setData(normalized);
         setLastUpdated(new Date());
       } catch (err: any) {
-        if (err.name === "AbortError") return; // Ignoramos errores por cancelación intencional
+        if (err.name === "AbortError") return;
         setError(err.message || "Ocurrió un error inesperado.");
       } finally {
-        // No necesitamos verificar 'mounted' gracias al AbortController (aunque React setState en un componente desmontado ya no es crítico en React 18, es buena práctica limpiar)
         setInitialLoading(false);
         setIsRefreshing(false);
       }
-
-      return () => controller.abort();
     },
     [status, getToken, data]
   );
 
-  // Efecto inicial y limpieza
+  // ==================== ZONA CORREGIDA (SOLUCIÓN DEL BUG) ====================
+  
+  // Efecto inicial (Solo al montar)
   useEffect(() => {
-    const cancelRequest = fetchData();
-    // TypeScript infiere que fetchData devuelve una función de limpieza si retorna controller.abort
-    return () => {
-      if (typeof cancelRequest === 'function') cancelRequest(); // Cleanup manual si fuera necesario (aunque el useEffect de abajo maneja el intervalo)
-    };
+    fetchData();
+    // NOTA: No retornamos nada aquí porque fetchData es async y retornaba una Promesa.
+    // TypeScript fallaba al intentar ejecutar una promesa como función de limpieza.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Solo al montar
+  }, []); 
+
+  // ===========================================================================
 
   // Efecto de Auto-refresh
   useEffect(() => {
@@ -247,7 +247,7 @@ export default function UtilidadesPage() {
     );
   }
 
-  if (!data) return null; // Should not happen
+  if (!data) return null;
 
   return (
     <div className="mx-auto max-w-7xl pb-20 animate-in fade-in duration-500">
@@ -323,9 +323,9 @@ export default function UtilidadesPage() {
           title="Dinero en Sistema"
           amount={data.net_system_balance}
           subtitle="Pasivo corriente (Usuarios)"
-          color="emerald" // Mantenemos verde como en tu diseño
+          color="emerald" 
           highlight
-          icon={<BanknotesIcon className="h-24 w-24 text-emerald-600" />} // Icono grande añadido para consistencia
+          icon={<BanknotesIcon className="h-24 w-24 text-emerald-600" />}
           smallIcon={<BanknotesIcon className="h-4 w-4" />}
         />
       </div>
@@ -401,7 +401,6 @@ function KpiCard({ title, amount, subtitle, color, icon, smallIcon, highlight }:
     </div>
   );
 }
-
 
 
 

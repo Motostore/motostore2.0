@@ -1,4 +1,4 @@
-// src/app/api/reports/utilities/route.ts
+// src/app/api/api/v1/reports/utilities/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
   try {
     const query = qs.toString();
-    const endpoint = `${BASE}/reports/utilities${query ? `?${query}` : ""}`;
+    const endpoint = `${BASE}/api/v1/reports/utilities${query ? `?${query}` : ""}`;
 
     const res = await fetch(endpoint, {
       headers: {

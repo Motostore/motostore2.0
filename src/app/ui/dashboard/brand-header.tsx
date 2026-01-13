@@ -61,7 +61,7 @@ export default function BrandHeader({ toggleSidebar }: BrandHeaderProps) {
 
             const promises = [fetch(`${API_BASE}/me`, { headers, cache: 'no-store' })];
             if (isAdmin) {
-                promises.push(fetch(`${API_BASE}/reports/utilities`, { headers, cache: 'no-store' }));
+                promises.push(fetch(`${API_BASE}/api/v1/reports/utilities`, { headers, cache: 'no-store' }));
             }
 
             const responses = await Promise.all(promises);

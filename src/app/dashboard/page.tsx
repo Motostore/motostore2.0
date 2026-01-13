@@ -76,7 +76,7 @@ function AdminDashboard({ token, role }: { token: string, role: string }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`${API_BASE}/reports/utilities`, {
+        const res = await fetch(`${API_BASE}/api/v1/reports/utilities`, {
           headers: { "Authorization": `Bearer ${token}` },
           cache: "no-store",
         });

@@ -48,7 +48,7 @@ export default function SummaryWidget() {
         // La ruta /wallet/me a veces tiene caché o datos viejos.
         const [userRes, utilRes] = await Promise.all([
           fetch(`${API_BASE}/me`, { cache: 'no-store', headers }), // <--- CAMBIO AQUÍ
-          fetch(`${API_BASE}/reports/utilities`, { cache: 'no-store', headers }),
+          fetch(`${API_BASE}/api/v1/reports/utilities`, { cache: 'no-store', headers }),
         ]);
 
         // --- PROCESAR SALDO (Desde /me) ---

@@ -25,7 +25,7 @@ function getApiBase(): string {
   return base.replace(/\/+$/, "");
 }
 
-const UTILITIES_PATH = "/reports/utilities";
+const UTILITIES_PATH = "/api/v1/reports/utilities";
 const REFRESH_MS = 30_000;
 
 /* ================= TIPOS ================= */

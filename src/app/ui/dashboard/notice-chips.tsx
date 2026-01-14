@@ -45,6 +45,7 @@ const ICONS: Record<Variant, any> = {
 };
 
 function apiBase() {
+  // Aseguramos que termine sin barra
   return (process.env.NEXT_PUBLIC_API_FULL || process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
 }
 
@@ -77,33 +78,34 @@ export default function NoticeChips() {
       };
       if (token) headers.Authorization = token;
 
-      const endpoints = [
-        "/users/announcement-bar/current",
-        "/users/announcement-bar",
-        "/announcement-bar"
-      ];
-
-      for (const ep of endpoints) {
-        try {
-          const res = await fetch(`${base}${ep}`, { headers, cache: "no-store" });
-          if (!res.ok) continue;
-          
+      try {
+        // 🔥 CORRECCIÓN: Apuntamos directo a la colección de anuncios
+        // El backend filtrará los activos o devolverá una lista
+        const res = await fetch(`${base}/announcements`, { headers, cache: "no-store" });
+        
+        if (res.ok) {
           const data = await res.json();
-          const item = Array.isArray(data) ? data[0] : (data?.data || data);
+          // Buscamos el primero que esté activo
+          // Adaptamos por si el backend devuelve { data: [...] } o [...]
+          const list = Array.isArray(data) ? data : (data?.data || []);
+          const item = list.find((a: any) => a.active === true);
 
-          if (item && item.active && item.message) {
+          if (item && item.message) {
             const now = new Date().getTime();
             const start = item.startsAt ? new Date(item.startsAt).getTime() : 0;
             const end = item.endsAt ? new Date(item.endsAt).getTime() : Infinity;
 
             if (now >= start && now <= end) {
-              if (active) setAnnouncement(item);
-              return;
+              if (active) setAnnouncement({
+                ...item,
+                variant: item.variant || 'info' // Fallback si no viene variante
+              });
             }
           }
-        } catch (e) {
-          console.error("Error fetching announcement:", e);
         }
+      } catch (e) {
+        // Silenciamos el error para no ensuciar la consola si no hay anuncios
+        // console.error("Notice error:", e);
       }
     }
 
@@ -117,10 +119,10 @@ export default function NoticeChips() {
   const styleClass = VARIANT_STYLES[announcement.variant as Variant] || VARIANT_STYLES.info;
 
   return (
-    // 1. FONDO FULL WIDTH (Para que se pinte de lado a lado)
+    // 1. FONDO FULL WIDTH
     <div className="w-full bg-slate-50 border-b border-slate-200 hidden md:block">
       
-      {/* 2. CONTENEDOR CENTRAL (Alineado EXACTAMENTE con Header y TopNav) */}
+      {/* 2. CONTENEDOR CENTRAL */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         
         {/* LA TARJETA DEL ANUNCIO */}

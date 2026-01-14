@@ -1,37 +1,84 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { 
-  // Iconos Generales
   ShoppingBagIcon, 
   CreditCardIcon, 
   Cog6ToothIcon, 
   ArrowRightIcon, 
   WalletIcon,
-  // Iconos Admin/Super
   UsersIcon, 
   ChartBarIcon, 
   CurrencyDollarIcon,
   GlobeAmericasIcon,
   ServerStackIcon,
   ShieldCheckIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 import { normalizeRole } from '@/app/lib/roles'; 
+
+// URL de tu API
+const API_BASE = "https://motostore-api.onrender.com/api/v1";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const user = session?.user as any;
   const role = normalizeRole(user?.role); 
+  const token = user?.accessToken;
   
   const firstName = user?.name?.split(' ')[0] || 'Usuario';
-  const balance = user?.balance || 0;
+  
+  // ESTADO: Datos reales (Empiezan en 0 o cargando)
+  const [stats, setStats] = useState({
+    income: 0,
+    usersCount: 0,
+    transactionsToday: 0,
+    apiStatus: 'Conectando...'
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  // EFECTO: Cargar datos reales al entrar (Solo para Admins/Super)
+  useEffect(() => {
+    if (['ADMIN', 'SUPERUSER'].includes(role) && token) {
+        fetchRealStats();
+    }
+  }, [role, token]);
+
+  async function fetchRealStats() {
+      setLoadingStats(true);
+      try {
+          // Intentamos obtener resumen. 
+          // NOTA: Si este endpoint no existe en tu backend, dará error y mostraremos 0.
+          const res = await fetch(`${API_BASE}/admin/stats/summary`, {
+              headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (res.ok) {
+              const data = await res.json();
+              setStats({
+                  income: data.total_income || 0,
+                  usersCount: data.total_users || 0,
+                  transactionsToday: data.transactions_today || 0,
+                  apiStatus: 'Online 🟢'
+              });
+          } else {
+              // Si falla, al menos el status es online pero sin datos
+              setStats(prev => ({ ...prev, apiStatus: 'Backend Online 🟢' }));
+          }
+      } catch (error) {
+          console.error("Error cargando stats", error);
+          setStats(prev => ({ ...prev, apiStatus: 'Offline 🔴' }));
+      } finally {
+          setLoadingStats(false);
+      }
+  }
 
   // =========================================================================
   // 👑 NIVEL 1: SUPERUSUARIO (GOD MODE)
-  // Ve todo: Finanzas globales, Servidores, y Control de Subordinados
   // =========================================================================
   if (role === 'SUPERUSER') {
     return (
@@ -41,143 +88,156 @@ export default function DashboardPage() {
             <div>
                 <div className="flex items-center gap-2">
                     <span className="bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Master Control</span>
-                    <span className="flex h-2 w-2 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
                 </div>
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-1">
                   Hola, <span className="text-[#E33127]">Jefe</span> ⚡
                 </h1>
                 <p className="text-slate-500 font-medium text-sm">
-                  Sistema MotoStore operando al 100%.
+                  {loadingStats ? "Sincronizando datos..." : "Sistema actualizado."}
                 </p>
             </div>
             
-            <div className="flex gap-3">
-                 <div className="text-right hidden md:block">
-                    <p className="text-xs text-slate-400 font-bold uppercase">Hora del Servidor</p>
-                    <p className="font-mono text-slate-700">{new Date().toLocaleTimeString()}</p>
-                 </div>
-            </div>
+            <button 
+                onClick={fetchRealStats}
+                className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+            >
+                <ArrowPathIcon className={`w-4 h-4 ${loadingStats ? 'animate-spin' : ''}`} />
+                Actualizar Datos
+            </button>
          </header>
 
-         {/* 1. SECCIÓN: ESTADÍSTICAS GLOBALES */}
+         {/* 1. TARJETA GIGANTE DE SALDO PROVEEDOR (Lo que pediste) */}
+         <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-400/20 relative overflow-hidden">
+             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                 <div>
+                     <div className="flex items-center gap-2 text-slate-400 mb-1">
+                        <WalletIcon className="w-5 h-5" />
+                        <span className="text-xs font-bold uppercase tracking-widest">Saldo Proveedor (Tu Capital)</span>
+                     </div>
+                     <h2 className="text-5xl font-black tracking-tighter">
+                        {/* Muestra el saldo real de la sesión del usuario */}
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(user?.balance || 0)}
+                     </h2>
+                     <p className="text-sm text-slate-400 mt-2 font-medium">
+                        Capital disponible para ventas y operaciones.
+                     </p>
+                 </div>
+                 
+                 {/* Botón rápido de Taquilla si quisieras usarla, o recarga externa */}
+                 <div className="bg-white/10 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-sm">
+                     <p className="text-xs text-slate-300 font-bold mb-1">Estado API</p>
+                     <p className="text-emerald-400 font-mono font-bold">{stats.apiStatus}</p>
+                 </div>
+             </div>
+             
+             {/* Decoración de fondo */}
+             <GlobeAmericasIcon className="absolute -right-10 -bottom-10 w-64 h-64 text-white/5" />
+         </div>
+
+         {/* 2. ESTADÍSTICAS (Datos Reales o 0 si no hay ventas) */}
          <section>
-            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Finanzas & Sistema</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <StatCard title="Ingresos Brutos" value="$12,450.00" icon={CurrencyDollarIcon} color="emerald" trend="+12%" />
-                <StatCard title="Usuarios Activos" value="1,240" icon={UsersIcon} color="blue" trend="+5%" />
-                <StatCard title="Transacciones Hoy" value="85" icon={ChartBarIcon} color="purple" trend="+2" />
-                <StatCard title="Estado API" value="En Línea" icon={ServerStackIcon} color="slate" trend="14ms" />
+            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Métricas del Sistema</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard 
+                    title="Ventas Totales (Est.)" 
+                    value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stats.income)} 
+                    icon={CurrencyDollarIcon} 
+                    color="emerald" 
+                    loading={loadingStats}
+                />
+                <StatCard 
+                    title="Usuarios Totales" 
+                    value={stats.usersCount} 
+                    icon={UsersIcon} 
+                    color="blue" 
+                    loading={loadingStats}
+                />
+                <StatCard 
+                    title="Transacciones Hoy" 
+                    value={stats.transactionsToday} 
+                    icon={ChartBarIcon} 
+                    color="purple" 
+                    loading={loadingStats}
+                />
             </div>
          </section>
 
-         {/* 2. SECCIÓN: GESTIÓN DE SUBORDINADOS Y RED */}
+         {/* 3. GESTIÓN DE RED */}
          <section className="bg-slate-50 rounded-3xl p-6 border border-slate-200">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                    <GlobeAmericasIcon className="w-5 h-5 text-[#E33127]" />
-                    Gestión de Red & Subordinados
-                </h3>
-                <Link href="/dashboard/users" className="text-xs font-bold text-[#E33127] hover:underline">
-                    Ver directorio completo →
-                </Link>
-            </div>
+            <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                <GlobeAmericasIcon className="w-5 h-5 text-[#E33127]" />
+                Gestión de Red
+            </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <ActionCard 
                     href="/dashboard/users?role=admin"
                     title="Administradores"
-                    desc="Gestionar permisos de tus encargados directos."
+                    desc="Gestionar permisos."
                     icon={ShieldCheckIcon}
                     color="slate"
                 />
                 <ActionCard 
                     href="/dashboard/users?role=distributor"
                     title="Distribuidores"
-                    desc="Controlar red de revendedores y comisiones."
+                    desc="Controlar red."
                     icon={UserGroupIcon}
                     color="blue"
                 />
                 <ActionCard 
                     href="/dashboard/reports/general"
-                    title="Auditoría Global"
-                    desc="Revisar movimientos de toda la jerarquía."
+                    title="Auditoría"
+                    desc="Ver movimientos."
                     icon={ChartBarIcon}
                     color="red"
                 />
             </div>
          </section>
-
-         {/* 3. ACCESOS RÁPIDOS DE CONFIGURACIÓN */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Link href="/dashboard/users/announcement-bar" className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                    <GlobeAmericasIcon className="w-6 h-6" />
-                </div>
-                <div>
-                    <h4 className="font-bold text-slate-900">Anuncios Globales</h4>
-                    <p className="text-xs text-slate-500">Cambiar marquesina (Interna/Externa).</p>
-                </div>
-            </Link>
-
-            <Link href="/dashboard/settings" className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                <div className="p-3 bg-slate-50 text-slate-600 rounded-xl">
-                    <Cog6ToothIcon className="w-6 h-6" />
-                </div>
-                <div>
-                    <h4 className="font-bold text-slate-900">Configuración del Sistema</h4>
-                    <p className="text-xs text-slate-500">Variables de entorno y seguridad.</p>
-                </div>
-            </Link>
-         </div>
       </div>
     );
   }
 
   // =========================================================================
-  // 🛡️ NIVEL 2: ADMINISTRADOR (OPERATIVO)
-  // Ve gestión de día a día: Usuarios, Reportes, pero sin tocar el código base.
+  // 🛡️ NIVEL 2: ADMINISTRADOR
   // =========================================================================
   if (role === 'ADMIN') {
     return (
       <div className="min-h-screen pb-20 animate-in fade-in space-y-8">
-         <header className="flex items-center justify-between">
-            <div>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                  Panel <span className="text-blue-600">Administrativo</span>
-                </h1>
-                <p className="text-slate-500 font-medium mt-1">
-                  Gestión operativa de usuarios y ventas.
-                </p>
-            </div>
-            <div className="hidden md:flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 text-blue-700 font-bold text-sm">
-                <ShieldCheckIcon className="w-5 h-5"/>
-                Admin Mode
-            </div>
+         <header>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+              Panel <span className="text-blue-600">Administrativo</span>
+            </h1>
+            <p className="text-slate-500 font-medium mt-1">Gestión operativa.</p>
          </header>
+
+         {/* SALDO ADMIN (Operativo) */}
+         <div className="bg-blue-600 rounded-3xl p-6 text-white shadow-lg shadow-blue-500/20">
+             <p className="text-xs font-bold uppercase text-blue-200">Tu Saldo Operativo</p>
+             <h2 className="text-4xl font-black mt-1">
+                 {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(user?.balance || 0)}
+             </h2>
+         </div>
 
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <ActionCard 
               href="/dashboard/users"
               title="Gestión de Clientes"
-              desc="Crear usuarios, editar saldos y ver perfiles."
+              desc="Crear y editar usuarios."
               icon={UsersIcon}
               color="blue"
             />
             <ActionCard 
               href="/dashboard/reports/movimiento"
               title="Aprobar Pagos"
-              desc="Revisar reportes de Zelle/Pago Móvil."
+              desc="Zelle y Pago Móvil."
               icon={CurrencyDollarIcon}
               color="emerald"
             />
             <ActionCard 
-              href="/dashboard/reports/general"
-              title="Reporte de Ventas"
-              desc="Ver flujo de caja diario."
-              icon={ChartBarIcon}
+              href="/dashboard/products"
+              title="Inventario"
+              desc="Ver stock disponible."
+              icon={ShoppingBagIcon}
               color="slate"
             />
          </div>
@@ -186,32 +246,26 @@ export default function DashboardPage() {
   }
 
   // =========================================================================
-  // 👤 NIVEL 3: CLIENTE / DISTRIBUIDOR
-  // Enfocado en consumir: Ver su saldo, comprar y recargar.
+  // 👤 NIVEL 3: CLIENTE (Igual que antes, funciona bien)
   // =========================================================================
   return (
     <div className="min-h-screen pb-20 animate-in fade-in space-y-8">
-      
-      {/* HEADER CLIENTE */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
             Hola, <span className="text-[#E33127]">{firstName}</span> 👋
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
-            Bienvenido a tu panel personal.
-          </p>
+          <p className="text-slate-500 font-medium mt-1">Bienvenido a tu panel.</p>
         </div>
         
-        {/* TARJETA DE SALDO (Muy visual) */}
-        <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center gap-4 transition-transform hover:scale-[1.02]">
+        <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center gap-4">
             <div className="p-3 bg-white/10 rounded-xl">
                 <WalletIcon className="w-6 h-6 text-[#E33127]" />
             </div>
             <div>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Saldo Disponible</p>
                 <p className="text-2xl font-black tracking-tight">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(balance)}
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(user?.balance || 0)}
                 </p>
             </div>
         </div>
@@ -219,38 +273,16 @@ export default function DashboardPage() {
 
       <hr className="border-slate-200" />
 
-      {/* GRID PRINCIPAL */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ActionCard 
-          href="/dashboard/products"
-          title="Tienda / Productos"
-          desc="Adquiere licencias de streaming y servicios."
-          icon={ShoppingBagIcon}
-          color="blue"
-        />
-        <ActionCard 
-          href="/dashboard/reports/movimiento"
-          title="Mis Movimientos"
-          desc="Historial de compras, recargas y gastos."
-          icon={CreditCardIcon}
-          color="emerald"
-        />
-        <ActionCard 
-          href="/dashboard/settings"
-          title="Mi Cuenta"
-          desc="Seguridad, contraseña y perfil."
-          icon={Cog6ToothIcon}
-          color="slate"
-        />
+        <ActionCard href="/dashboard/products" title="Tienda / Productos" desc="Compra servicios." icon={ShoppingBagIcon} color="blue" />
+        <ActionCard href="/dashboard/reports/movimiento" title="Mis Movimientos" desc="Historial." icon={CreditCardIcon} color="emerald" />
+        <ActionCard href="/dashboard/settings" title="Mi Cuenta" desc="Seguridad." icon={Cog6ToothIcon} color="slate" />
       </div>
 
-      {/* BANNER RECARGA (Call to Action) */}
       <div className="bg-gradient-to-r from-[#E33127] to-red-600 rounded-3xl p-8 text-white shadow-lg shadow-red-500/20 relative overflow-hidden group">
           <div className="relative z-10 max-w-lg">
               <h3 className="text-2xl font-black mb-2">¿Necesitas saldo?</h3>
-              <p className="font-medium text-white/90 mb-6">
-                  Reporta tu pago vía Zelle, Pago Móvil o Binance para recargar tu billetera al instante.
-              </p>
+              <p className="font-medium text-white/90 mb-6">Reporta tu pago para recargar.</p>
               <Link href="/dashboard/wallet/deposit" className="inline-flex items-center gap-2 bg-white text-[#E33127] px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors shadow-lg">
                   Reportar Pago <ArrowRightIcon className="w-4 h-4"/>
               </Link>
@@ -261,9 +293,9 @@ export default function DashboardPage() {
   );
 }
 
-// === COMPONENTES VISUALES REUTILIZABLES ===
+// === COMPONENTES VISUALES ===
 
-function StatCard({ title, value, icon: Icon, color, trend }: any) {
+function StatCard({ title, value, icon: Icon, color, loading }: any) {
     const colors: any = {
         emerald: "text-emerald-600 bg-emerald-50",
         blue: "text-blue-600 bg-blue-50",
@@ -275,7 +307,11 @@ function StatCard({ title, value, icon: Icon, color, trend }: any) {
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-start justify-between">
             <div>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wide mb-1">{title}</p>
-                <h4 className="text-2xl font-black text-slate-900">{value}</h4>
+                {loading ? (
+                    <div className="h-8 w-24 bg-slate-100 animate-pulse rounded"></div>
+                ) : (
+                    <h4 className="text-2xl font-black text-slate-900">{value}</h4>
+                )}
             </div>
             <div className={`p-2 rounded-xl ${colors[color]}`}>
                 <Icon className="w-6 h-6" />

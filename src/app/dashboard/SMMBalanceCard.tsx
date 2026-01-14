@@ -30,24 +30,21 @@ export default function SMMBalanceCard() {
         if (!silent) setLoading(true);
 
         const authHeaders = {
-            'Authorization': `Bearer ${token}`, // Token clave para que Render responda
+            'Authorization': `Bearer ${token}`, 
             'Content-Type': 'application/json',
         };
         
         try {
-            // 🔥 CORRECCIÓN CLAVE: Usamos /api-proxy/ para llegar a Render
-            // Render (Python) espera: /api/v1/marketing/balance y /api/v1/danlipagos/balance
-            // El proxy en next.config.mjs ya añade el /api/v1
-            
+            // ✅ RUTAS ACTUALIZADAS: Ahora apuntan a /api/proxy/...
+            // Esto coincide con la carpeta que acabamos de crear (src/app/api/proxy)
             const [resLegion, resDanlipagos] = await Promise.all([
-                fetch('/api-proxy/marketing/balance', { cache: 'no-store', headers: authHeaders }),
-                fetch('/api-proxy/danlipagos/balance', { cache: 'no-store', headers: authHeaders }) 
+                fetch('/api/proxy/marketing/balance', { cache: 'no-store', headers: authHeaders }),
+                fetch('/api/proxy/danlipagos/balance', { cache: 'no-store', headers: authHeaders }) 
             ]);
 
             // --- PROCESAR LEGION (Marketing) ---
             if (resLegion.ok) {
                 const data = await resLegion.json();
-                // A veces el backend devuelve { data: { balance: ... } }
                 const bal = data.balance ?? data.data?.balance ?? '0.00';
                 setLegionData({ 
                     balance: bal, 
@@ -90,17 +87,17 @@ export default function SMMBalanceCard() {
     useEffect(() => {
         if (status === 'authenticated' && isAuthorized && token) {
             fetchBalances(false);
-            const intervalo = setInterval(() => fetchBalances(true), 15000); // 15s es más prudente que 5s
+            const intervalo = setInterval(() => fetchBalances(true), 15000); 
             return () => clearInterval(intervalo);
         }
-    }, [status, isAuthorized, token]); // Agregamos token a las dependencias
+    }, [status, isAuthorized, token]); 
     
     if (status === 'loading') return <SkeletonLoader />;
     if (!isAuthorized) return null; 
 
     return (
         <div className="h-full flex flex-col">
-            {/* ENCABEZADO SIN BOTÓN */}
+            {/* ENCABEZADO */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <div className="p-3 rounded-2xl bg-gradient-to-br from-red-50 to-white text-[#E33127] shadow-sm border border-red-100">
@@ -153,7 +150,8 @@ export default function SMMBalanceCard() {
     );
 }
 
-// ... El resto del código (WalletCard, formatMoney, SkeletonLoader) déjalo igual, está perfecto ...
+// --- UTILIDADES Y COMPONENTES VISUALES ---
+
 const formatMoney = (amount: string | number | undefined, currency: string) => {
     const num = Number(amount || 0);
     if (isNaN(num)) return currency === 'VES' ? 'Bs 0.00' : '$0.00';

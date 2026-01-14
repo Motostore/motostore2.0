@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 // Configuración API
+// NOTA: Esto ya incluye "/api/v1" al final
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1").replace(/\/$/, "");
 
 // Roles con acceso
@@ -44,17 +45,19 @@ export default function SummaryWidget() {
           Authorization: `Bearer ${token}`,
         };
 
-        // 🔥 CORRECCIÓN CLAVE: Usamos /me porque esa ruta devuelve datos FRESCOS de la DB
-        // La ruta /wallet/me a veces tiene caché o datos viejos.
         const [userRes, utilRes] = await Promise.all([
-          fetch(`${API_BASE}/me`, { cache: 'no-store', headers }), // <--- CAMBIO AQUÍ
-          fetch(`${API_BASE}/api/v1/reports/utilities`, { cache: 'no-store', headers }),
+          // Ruta correcta para datos del usuario
+          fetch(`${API_BASE}/me`, { cache: 'no-store', headers }), 
+          
+          // 🔥 CORRECCIÓN: Quitamos "/api/v1" porque API_BASE ya lo trae.
+          // Antes: .../api/v1/api/v1/reports/utilities (Error 404)
+          // Ahora: .../api/v1/reports/utilities (Correcto)
+          fetch(`${API_BASE}/reports/utilities`, { cache: 'no-store', headers }),
         ]);
 
         // --- PROCESAR SALDO (Desde /me) ---
         if (userRes.ok) {
             const userJson = await userRes.json().catch(() => ({}));
-            // El endpoint /me devuelve el objeto usuario con el campo "balance"
             const val = userJson.balance ?? 0;
             setBalance(Number(val));
         }
@@ -64,7 +67,9 @@ export default function SummaryWidget() {
             const uJson = await utilRes.json().catch(() => ({}));
             const rawVal = uJson.net_system_balance ?? uJson.utilities ?? uJson.total ?? uJson.balance ?? 0;
             setUtilities(Number(rawVal));
-        } 
+        } else {
+            console.warn("Utilidades error:", utilRes.status);
+        }
 
       } catch (e) {
         console.error("Error cargando dashboard:", e);
@@ -73,11 +78,11 @@ export default function SummaryWidget() {
       }
   };
 
-  // Auto-refresco cada 10 seg (para no saturar tanto)
+  // Auto-refresco cada 10 seg
   useEffect(() => {
     if (status === 'authenticated') {
       loadData(false);
-      const intervalo = setInterval(() => loadData(true), 10000); // 10s es suficiente
+      const intervalo = setInterval(() => loadData(true), 10000); 
       return () => clearInterval(intervalo);
     }
   }, [status]);
@@ -92,7 +97,6 @@ export default function SummaryWidget() {
       
       {/* TARJETA 1: SALDO */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-         {/* Indicador 'En Vivo' */}
          <div className="absolute top-4 right-4 flex h-2 w-2" title="Actualización en tiempo real">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>

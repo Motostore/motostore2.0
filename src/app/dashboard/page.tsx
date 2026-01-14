@@ -32,7 +32,7 @@ export default function DashboardPage() {
   
   const firstName = user?.name?.split(' ')[0] || 'Usuario';
   
-  // ESTADO: Datos reales (Empiezan en 0 o cargando)
+  // ESTADO: Datos reales
   const [stats, setStats] = useState({
     income: 0,
     usersCount: 0,
@@ -51,8 +51,6 @@ export default function DashboardPage() {
   async function fetchRealStats() {
       setLoadingStats(true);
       try {
-          // Intentamos obtener resumen. 
-          // NOTA: Si este endpoint no existe en tu backend, dará error y mostraremos 0.
           const res = await fetch(`${API_BASE}/admin/stats/summary`, {
               headers: { Authorization: `Bearer ${token}` }
           });
@@ -66,7 +64,6 @@ export default function DashboardPage() {
                   apiStatus: 'Online 🟢'
               });
           } else {
-              // Si falla, al menos el status es online pero sin datos
               setStats(prev => ({ ...prev, apiStatus: 'Backend Online 🟢' }));
           }
       } catch (error) {
@@ -87,7 +84,10 @@ export default function DashboardPage() {
          <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
             <div>
                 <div className="flex items-center gap-2">
-                    <span className="bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Master Control</span>
+                    {/* Badge corregido: Rojo claro en vez de negro */}
+                    <span className="bg-red-50 text-[#E33127] text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-red-100">
+                        Master Control
+                    </span>
                 </div>
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-1">
                   Hola, <span className="text-[#E33127]">Jefe</span> ⚡
@@ -99,23 +99,24 @@ export default function DashboardPage() {
             
             <button 
                 onClick={fetchRealStats}
-                className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#E33127] transition-colors bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm"
             >
                 <ArrowPathIcon className={`w-4 h-4 ${loadingStats ? 'animate-spin' : ''}`} />
                 Actualizar Datos
             </button>
          </header>
 
-         {/* 1. TARJETA GIGANTE DE SALDO PROVEEDOR (Lo que pediste) */}
-         <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-400/20 relative overflow-hidden">
+         {/* 1. TARJETA DE SALDO PROVEEDOR (DISEÑO BLANCO LIMPIO) */}
+         <div className="bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200 relative overflow-hidden group">
              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                  <div>
-                     <div className="flex items-center gap-2 text-slate-400 mb-1">
-                        <WalletIcon className="w-5 h-5" />
-                        <span className="text-xs font-bold uppercase tracking-widest">Saldo Proveedor (Tu Capital)</span>
+                     <div className="flex items-center gap-2 text-slate-400 mb-2">
+                        <div className="p-1.5 bg-red-50 rounded-lg">
+                            <WalletIcon className="w-5 h-5 text-[#E33127]" />
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Saldo Proveedor (Capital)</span>
                      </div>
-                     <h2 className="text-5xl font-black tracking-tighter">
-                        {/* Muestra el saldo real de la sesión del usuario */}
+                     <h2 className="text-5xl font-black tracking-tighter text-slate-900">
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(user?.balance || 0)}
                      </h2>
                      <p className="text-sm text-slate-400 mt-2 font-medium">
@@ -123,20 +124,21 @@ export default function DashboardPage() {
                      </p>
                  </div>
                  
-                 {/* Botón rápido de Taquilla si quisieras usarla, o recarga externa */}
-                 <div className="bg-white/10 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-sm">
-                     <p className="text-xs text-slate-300 font-bold mb-1">Estado API</p>
-                     <p className="text-emerald-400 font-mono font-bold">{stats.apiStatus}</p>
+                 <div className="bg-slate-50 px-6 py-4 rounded-2xl border border-slate-100">
+                     <p className="text-xs text-slate-400 font-bold mb-1 uppercase">Estado API</p>
+                     <p className="text-emerald-600 font-mono font-bold text-sm bg-emerald-50 px-2 py-1 rounded inline-block border border-emerald-100">
+                        {stats.apiStatus}
+                     </p>
                  </div>
              </div>
              
-             {/* Decoración de fondo */}
-             <GlobeAmericasIcon className="absolute -right-10 -bottom-10 w-64 h-64 text-white/5" />
+             {/* Decoración sutil en rojo */}
+             <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-bl-[100px] -z-0 opacity-50 group-hover:scale-110 transition-transform duration-700"></div>
          </div>
 
-         {/* 2. ESTADÍSTICAS (Datos Reales o 0 si no hay ventas) */}
+         {/* 2. ESTADÍSTICAS */}
          <section>
-            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Métricas del Sistema</h3>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 ml-1">Métricas del Sistema</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <StatCard 
                     title="Ventas Totales (Est.)" 
@@ -163,7 +165,7 @@ export default function DashboardPage() {
          </section>
 
          {/* 3. GESTIÓN DE RED */}
-         <section className="bg-slate-50 rounded-3xl p-6 border border-slate-200">
+         <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
             <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
                 <GlobeAmericasIcon className="w-5 h-5 text-[#E33127]" />
                 Gestión de Red
@@ -205,15 +207,18 @@ export default function DashboardPage() {
       <div className="min-h-screen pb-20 animate-in fade-in space-y-8">
          <header>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-              Panel <span className="text-blue-600">Administrativo</span>
+              Panel <span className="text-[#E33127]">Administrativo</span>
             </h1>
             <p className="text-slate-500 font-medium mt-1">Gestión operativa.</p>
          </header>
 
-         {/* SALDO ADMIN (Operativo) */}
-         <div className="bg-blue-600 rounded-3xl p-6 text-white shadow-lg shadow-blue-500/20">
-             <p className="text-xs font-bold uppercase text-blue-200">Tu Saldo Operativo</p>
-             <h2 className="text-4xl font-black mt-1">
+         {/* SALDO ADMIN (DISEÑO BLANCO) */}
+         <div className="bg-white rounded-3xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200 border-l-8 border-l-[#E33127]">
+             <div className="flex items-center gap-3 mb-2">
+                <WalletIcon className="w-5 h-5 text-slate-400" />
+                <p className="text-xs font-bold uppercase text-slate-500">Tu Saldo Operativo</p>
+             </div>
+             <h2 className="text-4xl font-black text-slate-900">
                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(user?.balance || 0)}
              </h2>
          </div>
@@ -246,7 +251,7 @@ export default function DashboardPage() {
   }
 
   // =========================================================================
-  // 👤 NIVEL 3: CLIENTE (Igual que antes, funciona bien)
+  // 👤 NIVEL 3: CLIENTE (CLEAN DESIGN)
   // =========================================================================
   return (
     <div className="min-h-screen pb-20 animate-in fade-in space-y-8">
@@ -258,13 +263,14 @@ export default function DashboardPage() {
           <p className="text-slate-500 font-medium mt-1">Bienvenido a tu panel.</p>
         </div>
         
-        <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl shadow-slate-200 flex items-center gap-4">
-            <div className="p-3 bg-white/10 rounded-xl">
+        {/* Tarjeta de Saldo Cliente: Blanca con detalles Rojos */}
+        <div className="bg-white border border-slate-200 px-6 py-4 rounded-2xl shadow-xl shadow-slate-200/50 flex items-center gap-4">
+            <div className="p-3 bg-red-50 rounded-xl">
                 <WalletIcon className="w-6 h-6 text-[#E33127]" />
             </div>
             <div>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Saldo Disponible</p>
-                <p className="text-2xl font-black tracking-tight">
+                <p className="text-2xl font-black tracking-tight text-slate-900">
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(user?.balance || 0)}
                 </p>
             </div>
@@ -304,7 +310,7 @@ function StatCard({ title, value, icon: Icon, color, loading }: any) {
     };
 
     return (
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-start justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow">
             <div>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wide mb-1">{title}</p>
                 {loading ? (

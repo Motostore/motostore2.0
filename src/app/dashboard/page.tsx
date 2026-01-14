@@ -94,7 +94,7 @@ export default function DashboardPage() {
   }, [role, token]);
 
   // =========================================================================
-  // 👑 VISTA: SUPERUSUARIO (Control de Proveedores + Red)
+  // 👑 VISTA: SUPERUSUARIO
   // =========================================================================
   if (role === 'SUPERUSER') {
     return (
@@ -121,27 +121,30 @@ export default function DashboardPage() {
              </h2>
          </div>
 
-         {/* SALDOS PROVEEDORES TIEMPO REAL */}
+         {/* SALDOS PROVEEDORES TIEMPO REAL (VES y USD) */}
          <section>
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 ml-1">Saldos APIs Proveedores</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between">
+                {/* DANLIPAGOS - BOLIVARES */}
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between group">
                     <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase">Danlipagos API</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase">Danlipagos API (Bs.)</p>
                         <h4 className="text-2xl font-black text-slate-900">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(providerBalances.danlipagos)}
+                            {new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'VES' }).format(providerBalances.danlipagos)}
                         </h4>
                     </div>
-                    <GlobeAmericasIcon className="w-10 h-10 text-blue-500 opacity-20" />
+                    <div className="bg-blue-50 p-3 rounded-2xl text-blue-600 font-black text-xs">VES</div>
                 </div>
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between">
+
+                {/* LEGIOMMS - DOLARES */}
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between group">
                     <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase">Legiomms API</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase">Legiomms API ($)</p>
                         <h4 className="text-2xl font-black text-slate-900">
                             {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(providerBalances.legiomms)}
                         </h4>
                     </div>
-                    <ServerStackIcon className="w-10 h-10 text-orange-500 opacity-20" />
+                    <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600 font-black text-xs">USD</div>
                 </div>
             </div>
          </section>

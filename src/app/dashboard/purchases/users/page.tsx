@@ -1,247 +1,236 @@
-import { cookies } from "next/headers";
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { 
-  CheckCircleIcon, 
-  ClockIcon, 
-  XCircleIcon, 
+  MagnifyingGlassIcon, 
+  ArrowPathIcon,
   UserGroupIcon,
-  BanknotesIcon,
-  CalendarDaysIcon,
-  DocumentTextIcon
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  BanknotesIcon
 } from "@heroicons/react/24/outline";
 
-export const dynamic = "force-dynamic";
-
-// --- TIPOS (Adaptados al Backend Python) ---
+/* ================= TIPOS ================= */
 type Transaction = {
   id: number;
-  type: string;        // deposit, order, payment-approved, etc.
+  user_id: number;
+  type: string;
   amount: number;
-  note?: string;       // Aquí suele venir info extra
-  created_at: string;  // ISO Date
-  // Campos opcionales por si el backend evoluciona
+  note?: string;
+  created_at: string;
   status?: string;
-  user_email?: string; 
 };
 
-// --- DATA FETCHING ---
-async function getAllPurchases(): Promise<Transaction[]> {
-  // 1. Configuración de API (Fix para Mac 127.0.0.1)
-  let baseUrl = process.env.API_BASE || "http://127.0.0.1:8000/api/v1";
-  baseUrl = baseUrl.replace(/\/$/, "");
+/* ================= COMPONENTE PRINCIPAL ================= */
+export default function AdminPurchasesPage() {
+  const { data: session } = useSession();
+  const [loading, setLoading] = useState(true);
+  const [purchases, setPurchases] = useState<Transaction[]>([]);
+  const [filter, setFilter] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  // 2. Endpoint correcto
-  const path = baseUrl.endsWith("/api/v1") 
-      ? "/transactions/all" 
-      : "/api/v1/transactions/all";
+  // 1. Carga de datos
+  const fetchAllPurchases = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = (session as any)?.accessToken;
+      if (!token) return; // Esperamos a que cargue la sesión
 
-  // 3. Actor ID (Admin) - Requerido por Python
-  // Usamos el ID del admin actual (o 1 por defecto en dev)
-  const actorId = process.env.NEXT_PUBLIC_WALLET_STATIC_USERID || "1";
-  
-  const endpoint = `${baseUrl}${path}?actor_id=${actorId}`;
+      let baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://motostore-api.onrender.com/api/v1";
+      baseUrl = baseUrl.replace(/\/$/, ""); 
+      if (!baseUrl.endsWith("/api/v1")) baseUrl += "/api/v1";
+      
+      // Llamamos al endpoint de transacciones globales (limit 100 para no saturar)
+      const res = await fetch(`${baseUrl}/transactions?limit=100`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-  console.log("📡 Admin fetching all transactions:", endpoint);
+      if (!res.ok) throw new Error("Error al obtener las ventas globales.");
+      
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.items || data.data || []);
+      
+      // Filtramos para ver movimientos relevantes (compras, órdenes, depósitos)
+      // O puedes quitar el filtro si quieres ver absolutamente todo
+      setPurchases(list);
 
-  // 4. Cookies (Next.js 15 Async)
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Error de conexión");
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
 
-  const res = await fetch(endpoint, {
-    method: "GET",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Cookie": cookieHeader,
-    },
-    cache: "no-store",
+  useEffect(() => {
+    if (session) fetchAllPurchases();
+  }, [session, fetchAllPurchases]);
+
+  // 2. Lógica de Filtrado (Buscador)
+  const filteredPurchases = purchases.filter(p => {
+    const term = filter.toLowerCase();
+    const note = (p.note || "").toLowerCase();
+    const type = (p.type || "").toLowerCase();
+    const id = p.id.toString();
+    const userId = (p.user_id || "").toString();
+
+    return note.includes(term) || type.includes(term) || id.includes(term) || userId.includes(term);
   });
 
-  const text = await res.text();
-
-  if (!res.ok) {
-    console.error(`❌ Error Fetching All Transactions (${res.status}):`, text);
-    throw new Error(`Error ${res.status}: ${res.statusText}`);
-  }
-
-  return text ? JSON.parse(text) : [];
-}
-
-// --- HELPERS VISUALES ---
-const nfCurrency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-});
-
-function getStatusBadge(type: string = "") {
-  const t = type.toLowerCase();
-  
-  // Lógica de colores basada en el tipo de transacción de Python
-  if (t.includes("approved") || t.includes("deposit") || t.includes("completed")) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
-        <CheckCircleIcon className="w-4 h-4" /> Completado
-      </span>
-    );
-  }
-  if (t.includes("pending") || t.includes("process")) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100">
-        <ClockIcon className="w-4 h-4" /> Pendiente
-      </span>
-    );
-  }
-  if (t.includes("reject") || t.includes("fail") || t.includes("withdraw")) {
-    // Withdraw lo ponemos gris o rojo según prefieras, aquí rojo para atención
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100">
-        <XCircleIcon className="w-4 h-4" /> {t.includes("withdraw") ? "Retiro" : "Rechazado"}
-      </span>
-    );
-  }
-  
-  // Default
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase">
-      {type}
-    </span>
-  );
-}
-
-function prettyService(type: string) {
-  const t = type.toLowerCase();
-  if (t.includes("streaming")) return "🎬 Streaming";
-  if (t.includes("license")) return "🔑 Licencias";
-  if (t.includes("recharge")) return "⚡ Recargas";
-  if (t.includes("order")) return "📦 Orden de Compra";
-  if (t.includes("deposit")) return "💰 Depósito Wallet";
-  if (t.includes("payment")) return "💳 Reporte Pago";
-  return type.toUpperCase();
-}
-
-// --- COMPONENTE PRINCIPAL ---
-export default async function UsersPurchasesPage() {
-  let data: Transaction[] = [];
-  let errorMsg: string | null = null;
-
-  try {
-    data = await getAllPurchases();
-  } catch (e: any) {
-    errorMsg = e?.message ?? "Error desconocido";
-  }
-
-  return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="mx-auto max-w-7xl space-y-6 pb-20 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-red-50 rounded-2xl shadow-sm border border-red-100">
-          <UserGroupIcon className="w-8 h-8 text-[#E33127]" />
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-slate-900 rounded-xl shadow-sm">
+            <UserGroupIcon className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Ventas Globales</h1>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+              Control Maestro de Transacciones
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Ventas Globales</h1>
-          <p className="text-slate-500 text-sm font-medium">Monitoreo de todas las transacciones de usuarios en tiempo real.</p>
-        </div>
+
+        <button 
+          onClick={fetchAllPurchases}
+          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95"
+        >
+          <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? "Cargando..." : "Actualizar Lista"}
+        </button>
+      </header>
+
+      {/* BARRA DE BÚSQUEDA */}
+      <div className="relative group">
+        <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#E33127] transition-colors" />
+        <input 
+          type="text"
+          placeholder="🔍 Buscar por ID, Cliente, Producto o Tipo..."
+          className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-red-500/10 focus:border-[#E33127] outline-none transition-all font-medium text-slate-700 placeholder:text-slate-400"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
       </div>
 
-      {/* ERROR STATE */}
-      {errorMsg && (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-center shadow-sm">
-           <p className="text-[#E33127] font-bold mb-1">Error de Conexión</p>
-           <p className="text-sm text-red-600/80">{errorMsg}</p>
+      {/* ESTADO DE ERROR */}
+      {error && (
+        <div className="bg-red-50 border border-red-100 p-4 rounded-xl text-red-600 text-sm font-medium text-center">
+          {error}
         </div>
       )}
 
-      {/* EMPTY STATE */}
-      {!errorMsg && data.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 bg-white border border-dashed border-slate-200 rounded-3xl">
-          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-            <BanknotesIcon className="w-8 h-8 text-slate-300" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-400">Sin registros</h3>
-          <p className="text-sm text-slate-400">No hay movimientos registrados en el sistema global.</p>
-        </div>
-      )}
-
-      {/* DATA TABLE */}
-      {!errorMsg && data.length > 0 && (
-        <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="px-6 py-4">ID</th>
-                  <th className="px-6 py-4">Tipo / Detalle</th>
-                  <th className="px-6 py-4">Referencia / Nota</th>
-                  <th className="px-6 py-4 text-right">Monto</th>
-                  <th className="px-6 py-4 text-center">Estado</th>
-                  <th className="px-6 py-4 text-right">Fecha</th>
+      {/* TABLA DE VENTAS */}
+      <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">
+              <tr>
+                <th className="px-6 py-5 text-center w-20">ID</th>
+                <th className="px-6 py-5">Concepto</th>
+                <th className="px-6 py-5">Detalles</th>
+                <th className="px-6 py-5">Fecha</th>
+                <th className="px-6 py-5 text-right">Monto</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {loading && purchases.length === 0 ? (
+                // Skeleton Loader
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={5} className="px-6 py-6"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
+                  </tr>
+                ))
+              ) : filteredPurchases.length === 0 ? (
+                // Empty State
+                <tr>
+                  <td colSpan={5} className="px-6 py-20 text-center text-slate-400">
+                    <BanknotesIcon className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p className="font-medium">No se encontraron movimientos</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {data.map((t) => {
-                  const monto = Number(t.amount);
-                  
-                  return (
-                    <tr key={t.id} className="group hover:bg-red-50/10 transition-colors duration-200">
-                      
-                      {/* ID */}
-                      <td className="px-6 py-4">
-                        <span className="font-bold text-slate-700 text-sm">#{t.id}</span>
-                      </td>
+              ) : (
+                // Lista Real
+                filteredPurchases.map((p) => (
+                  <tr key={p.id} className="group hover:bg-slate-50 transition-colors">
+                    
+                    {/* ID */}
+                    <td className="px-6 py-5 text-center">
+                      <span className="inline-block bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-md">
+                        #{p.id}
+                      </span>
+                    </td>
 
-                      {/* Tipo */}
-                      <td className="px-6 py-4">
-                        <span className="font-bold text-slate-800 text-sm group-hover:text-[#E33127] transition-colors block">
-                          {prettyService(t.type)}
+                    {/* Concepto (Tipo + Status) */}
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-slate-800 text-sm uppercase group-hover:text-[#E33127] transition-colors">
+                          {p.type}
                         </span>
-                      </td>
+                        <StatusBadge status={p.type} />
+                      </div>
+                    </td>
 
-                      {/* Nota / Referencia */}
-                      <td className="px-6 py-4">
-                         <div className="flex items-start gap-2 max-w-[250px]">
-                            {t.note ? (
-                              <>
-                                <DocumentTextIcon className="w-4 h-4 text-slate-300 mt-0.5 flex-shrink-0" />
-                                <span className="text-xs text-slate-500 font-medium truncate" title={t.note}>
-                                  {t.note}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-xs text-slate-300 italic">Sin nota</span>
-                            )}
-                         </div>
-                      </td>
+                    {/* Nota / Cliente */}
+                    <td className="px-6 py-5">
+                       <div className="flex flex-col max-w-xs">
+                          <span className="text-sm font-medium text-slate-600 truncate" title={p.note}>
+                            {p.note || "—"}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400 mt-0.5">
+                            USER ID: {p.user_id}
+                          </span>
+                       </div>
+                    </td>
 
-                      {/* Monto */}
-                      <td className="px-6 py-4 text-right">
-                        <span className={`font-black text-sm tracking-tight ${monto < 0 ? 'text-red-500' : 'text-slate-900'}`}>
-                          {Number.isFinite(monto) ? nfCurrency.format(monto) : "—"}
-                        </span>
-                      </td>
+                    {/* Fecha */}
+                    <td className="px-6 py-5">
+                      <span className="text-xs font-bold text-slate-400">
+                        {p.created_at ? new Date(p.created_at).toLocaleDateString("es-VE", { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '—'}
+                      </span>
+                    </td>
 
-                      {/* Estado */}
-                      <td className="px-6 py-4 text-center">
-                        {getStatusBadge(t.type)}
-                      </td>
+                    {/* Monto */}
+                    <td className="px-6 py-5 text-right">
+                      <span className={`font-black text-base tracking-tight ${p.amount < 0 ? 'text-[#E33127]' : 'text-emerald-600'}`}>
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p.amount)}
+                      </span>
+                    </td>
 
-                      {/* Fecha */}
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2 text-sm text-slate-500 font-medium">
-                          {t.created_at ? new Date(t.created_at).toLocaleDateString("es-VE", { day: '2-digit', month: '2-digit', year: 'numeric' }) : "—"}
-                          <CalendarDaysIcon className="w-4 h-4 text-slate-300" />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+        
+        {/* Footer de conteo */}
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 font-medium flex justify-between items-center">
+            <span>Mostrando {filteredPurchases.length} registros</span>
+            <span>Total: {purchases.length}</span>
+        </div>
+      </div>
     </div>
   );
+}
+
+/* ================= HELPER DE ESTADO VISUAL ================= */
+function StatusBadge({ status }: { status: string }) {
+  const s = (status || "").toLowerCase();
+  
+  if (s.includes('pend') || s.includes('proc')) {
+    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase"><ClockIcon className="w-3 h-3"/> Pendiente</span>;
+  }
+  if (s.includes('rej') || s.includes('fail') || s.includes('cancel')) {
+    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 uppercase"><XCircleIcon className="w-3 h-3"/> Fallido</span>;
+  }
+  // Default success
+  return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase"><CheckCircleIcon className="w-3 h-3"/> Exitoso</span>;
 }
 
 

@@ -1,12 +1,14 @@
-import { getServerSession } from "next-auth"; // 👈 IMPORTACIÓN CORRECTA PARA V4
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // 👈 IMPORTAMOS TU CONFIGURACIÓN
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { 
   CheckCircleIcon, 
   ClockIcon, 
   XCircleIcon, 
-  ReceiptRefundIcon, 
   ShoppingBagIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  CreditCardIcon,
+  TicketIcon,
+  EyeIcon
 } from "@heroicons/react/24/outline";
 
 // --- TIPOS ---
@@ -14,225 +16,148 @@ type Transaction = {
   id: number;
   type?: string; 
   amount?: number;
-  note?: string;
+  note?: string; // Aquí suele venir el nombre del producto
+  description?: string; // A veces viene aquí
   created_at?: string;
   status?: string; 
+  reference?: string;
 };
 
-// Forzamos renderizado dinámico porque depende de datos del usuario
 export const dynamic = "force-dynamic"; 
 
 // --- DATA FETCHING ---
 async function getPurchases() {
-  // 1. OBTENER SESIÓN USANDO getServerSession Y TUS OPCIONES
   const session = await getServerSession(authOptions);
-
-  // Extraemos el token. En tu config lo guardaste en session.user.accessToken
-  // Usamos 'any' o casting seguro por si TypeScript se queja del tipo
   const token = (session?.user as any)?.accessToken || (session as any)?.accessToken;
 
-  if (!token) {
-    console.error("❌ No hay token de sesión. El usuario no está logueado.");
+  if (!token) return [];
+
+  // Conexión Inteligente (Render o Local)
+  let baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://motostore-api.onrender.com/api/v1";
+  baseUrl = baseUrl.replace(/\/$/, ""); // Quitar slash final si existe
+  if (!baseUrl.endsWith("/api/v1")) baseUrl += "/api/v1";
+
+  // Endpoint: Pedimos las transacciones del usuario
+  const endpoint = `${baseUrl}/transactions?limit=50`; 
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return [];
+    
+    const data = await res.json();
+    // Si el backend devuelve { items: [...] } o array directo
+    const list = Array.isArray(data) ? data : (data.items || data.data || []);
+    
+    // FILTRO IMPORTANTE: Solo mostramos 'compras' (purchase/order) o transacciones negativas (gastos)
+    // Ajusta esta lógica según cómo tu backend nombre las compras
+    return list.filter((t: Transaction) => {
+        const type = (t.type || "").toLowerCase();
+        return type.includes('purchase') || type.includes('order') || type.includes('compra') || (t.amount || 0) < 0;
+    });
+
+  } catch (err) {
+    console.error("Error fetching purchases:", err);
     return [];
   }
-
-  // 2. Definir URL Base
-  let baseUrl = process.env.API_BASE || "http://127.0.0.1:8000/api/v1";
-  baseUrl = baseUrl.replace(/\/$/, "");
-
-  const path = baseUrl.endsWith("/api/v1") 
-      ? "/transactions" 
-      : "/api/v1/transactions";
-
-  // 3. Construcción de URL (Mantenemos user_id por compatibilidad con tu backend)
-  const userId = process.env.NEXT_PUBLIC_WALLET_STATIC_USERID || "1";
-  const endpoint = `${baseUrl}${path}?user_id=${userId}`;
-
-  console.log("🚀 FETCHING CON TOKEN:", endpoint); 
-
-  // 4. FETCH CON AUTHORIZATION HEADER
-  const res = await fetch(endpoint, {
-    method: "GET",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      // 🔥 LA CLAVE DEL ÉXITO: Inyectamos el Token Bearer
-      "Authorization": `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
-
-  const text = await res.text();
-
-  if (!res.ok) {
-    console.error(`❌ ERROR BACKEND (${res.status}):`, text);
-    if (res.status === 401) {
-        // Opcional: Podrías lanzar un error específico o retornar vacío
-        console.error("Token expirado o inválido");
-    }
-    throw new Error(`Error ${res.status}: ${res.statusText} - ${text}`);
-  }
-
-  return text ? JSON.parse(text) : [];
 }
 
-// --- HELPERS VISUALES ---
-function getStatusBadge(item: Transaction) {
-  let label = "Completado";
-  let colorClass = "bg-emerald-50 text-emerald-600 border-emerald-100";
-  let Icon = CheckCircleIcon;
-
-  const type = (item.type || "").toLowerCase();
-  
-  if (type.includes("pending") || type.includes("proces")) {
-    label = "Pendiente";
-    colorClass = "bg-amber-50 text-amber-600 border-amber-100";
-    Icon = ClockIcon;
-  } else if (type.includes("reject") || type.includes("fail")) {
-    label = "Rechazado";
-    colorClass = "bg-red-50 text-red-600 border-red-100";
-    Icon = XCircleIcon;
-  } else if (type === "withdraw") {
-    label = "Retiro";
-    colorClass = "bg-slate-100 text-slate-600 border-slate-200";
-  } else if (type === "deposit") {
-    label = "Depósito";
-  }
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${colorClass}`}>
-      <Icon className="w-4 h-4" /> {label}
-    </span>
-  );
-}
-
+// --- HELPERS ---
 function formatMoney(amount: any) {
-  const num = Number(amount);
-  return Number.isFinite(num) 
-    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num) 
-    : "$0.00";
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(Number(amount) || 0));
+}
+
+function getProductIcon(note: string = "") {
+  const lower = note.toLowerCase();
+  if (lower.includes("netflix") || lower.includes("screen") || lower.includes("tv")) return "📺";
+  if (lower.includes("capcut") || lower.includes("edit")) return "🎬";
+  if (lower.includes("spotify") || lower.includes("music")) return "🎵";
+  if (lower.includes("xbox") || lower.includes("game")) return "🎮";
+  return "📦";
 }
 
 // --- COMPONENTE PRINCIPAL ---
 export default async function MyPurchasesPage() {
-  let purchases: Transaction[] = [];
-  let errorMsg = null;
-
-  try {
-    purchases = await getPurchases();
-  } catch (err: any) {
-    console.error("❌ Error UI:", err);
-    errorMsg = String(err?.message ?? "Error desconocido");
-  }
+  const purchases = await getPurchases();
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       
       {/* HEADER */}
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-red-50 rounded-2xl shadow-sm">
-          <ReceiptRefundIcon className="w-8 h-8 text-[#E33127]" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Mis Movimientos</h1>
-          <p className="text-slate-500 text-sm font-medium">Historial de transacciones, recargas y pagos.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-[#E33127]/10 rounded-2xl shadow-sm border border-[#E33127]/20">
+            <ShoppingBagIcon className="w-8 h-8 text-[#E33127]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Mis Compras</h1>
+            <p className="text-slate-500 text-sm font-medium">Licencias, cuentas y servicios adquiridos.</p>
+          </div>
         </div>
       </div>
 
-      {/* ESTADO DE ERROR */}
-      {errorMsg && (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-center shadow-sm">
-          <p className="text-[#E33127] font-bold mb-2 flex items-center justify-center gap-2">
-            <XCircleIcon className="w-5 h-5" />
-            No pudimos cargar tus movimientos
-          </p>
-          <code className="text-xs text-red-800 bg-red-100/50 px-2 py-1 rounded block mt-2 max-w-xl mx-auto overflow-x-auto">
-            {errorMsg}
-          </code>
+      {/* LISTA DE COMPRAS (ESTILO TARJETA, NO TABLA ABURRIDA) */}
+      {purchases.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 bg-white border border-dashed border-slate-200 rounded-3xl">
+          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+            <TicketIcon className="w-10 h-10 text-slate-300" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-400">Sin compras recientes</h3>
+          <p className="text-sm text-slate-400 mt-1">Visita la tienda para adquirir tus primeros servicios.</p>
         </div>
-      )}
-
-      {/* TABLA DE COMPRAS */}
-      {!errorMsg && (
-        <>
-          {purchases.length === 0 ? (
-            // ESTADO VACÍO
-            <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-slate-200 rounded-3xl">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                <ShoppingBagIcon className="w-8 h-8 text-slate-300" />
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {purchases.map((p) => (
+            <div key={p.id} className="group relative flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white border border-slate-100 p-6 rounded-2xl shadow-sm hover:shadow-md hover:border-red-100 transition-all duration-300">
+              
+              {/* IZQUIERDA: Info del Producto */}
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center text-2xl border border-slate-100 group-hover:bg-red-50 group-hover:border-red-100 transition-colors">
+                  {getProductIcon(p.note || p.description)}
+                </div>
+                
+                <div>
+                  {/* Aquí convertimos la NOTA en el TÍTULO del producto */}
+                  <h3 className="text-lg font-bold text-slate-800 group-hover:text-[#E33127] transition-colors">
+                    {p.note || p.description || "Producto Digital"}
+                  </h3>
+                  
+                  <div className="flex flex-wrap items-center gap-3 mt-1 text-xs font-medium text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <CalendarDaysIcon className="w-3.5 h-3.5" />
+                      {p.created_at ? new Date(p.created_at).toLocaleDateString("es-VE", { month: 'short', day: 'numeric', year: 'numeric' }) : "Fecha desc."}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                    <span className="font-mono">REF: {p.reference || p.id}</span>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-slate-400">Aún no tienes movimientos</h3>
-              <p className="text-sm text-slate-400 max-w-xs text-center mt-1">
-                Tus recargas y transacciones aparecerán aquí.
-              </p>
-            </div>
-          ) : (
-            // LISTADO DE DATOS
-            <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="px-6 py-4">ID</th>
-                      <th className="px-6 py-4">Tipo / Nota</th>
-                      <th className="px-6 py-4">Fecha</th>
-                      <th className="px-6 py-4">Estado</th>
-                      <th className="px-6 py-4 text-right">Monto</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {purchases.map((p) => (
-                      <tr key={p.id} className="group hover:bg-red-50/10 transition-colors duration-200">
-                        
-                        {/* ID */}
-                        <td className="px-6 py-4">
-                          <span className="font-bold text-slate-700 text-sm">#{p.id}</span>
-                        </td>
 
-                        {/* Tipo / Nota */}
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-800 text-sm uppercase group-hover:text-[#E33127] transition-colors">
-                              {p.type || "Transacción"}
-                            </span>
-                            {p.note && (
-                              <span className="text-xs text-slate-400 mt-0.5 max-w-[200px] truncate" title={p.note}>
-                                {p.note}
-                              </span>
-                            )}
-                          </div>
-                        </td>
+              {/* DERECHA: Precio y Botón */}
+              <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto pl-18 md:pl-0">
+                <div className="text-right">
+                  <p className="text-xs text-slate-400 font-semibold uppercase">Pagado</p>
+                  <p className="text-xl font-black text-slate-900">{formatMoney(p.amount)}</p>
+                </div>
 
-                        {/* Fecha */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-                            <CalendarDaysIcon className="w-4 h-4 text-slate-300" />
-                            {p.created_at ? new Date(p.created_at).toLocaleDateString("es-VE", { day: '2-digit', month: 'short', year: 'numeric' }) : "—"}
-                          </div>
-                        </td>
-
-                        {/* Estado */}
-                        <td className="px-6 py-4">
-                          {getStatusBadge(p)}
-                        </td>
-
-                        {/* Monto */}
-                        <td className="px-6 py-4 text-right">
-                          <span className={`font-black text-base tracking-tight ${
-                             (p.amount || 0) < 0 ? 'text-red-500' : 'text-slate-900'
-                          }`}>
-                            {formatMoney(p.amount)}
-                          </span>
-                        </td>
-
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {/* Botón Simulado (En el futuro abrirá un Modal con la clave) */}
+                <button className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-[#E33127] hover:shadow-lg hover:shadow-red-500/30 transition-all transform active:scale-95">
+                  <EyeIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Ver Datos</span>
+                  <span className="sm:hidden">Ver</span>
+                </button>
               </div>
+
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </div>
   );

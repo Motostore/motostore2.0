@@ -6,61 +6,54 @@ import { jsPDF } from "jspdf";
 import { 
   ArrowPathIcon, 
   ArrowDownTrayIcon, 
-  ExclamationTriangleIcon 
+  ExclamationTriangleIcon,
+  CalendarDaysIcon,
+  FunnelIcon
 } from "@heroicons/react/24/outline";
-
-/* ================= CONFIGURACIÓN ================= */
-// 1. Conexión Directa a Render
-const API_BASE = "https://motostore-api.onrender.com/api/v1";
-const ENDPOINT = "/reports/general";
-const REFRESH_MS = 30_000;
 
 /* ================= TIPOS ================= */
 type ReportData = {
   ventas: number;
   compras: number;
-  utilidades: number;
+  utilidades: number; // Esto será (Ventas - Costos)
   usuariosActivos: number;
   ticketPromedio: number;
   totalOrdenes: number;
   tasaConversion: number;
 };
 
-interface ExtendedUser {
-  accessToken?: string;
-  token?: string;
-}
+/* ================= HELPERS DE FECHA ================= */
+const getDateRange = (type: 'today' | 'month' | 'all') => {
+    const now = new Date();
+    const start = new Date(now);
+    const end = new Date(now);
+
+    if (type === 'today') {
+        start.setHours(0,0,0,0);
+        end.setHours(23,59,59,999);
+    } else if (type === 'month') {
+        start.setDate(1); // Primer día del mes
+        start.setHours(0,0,0,0);
+        // End ya es hoy
+    } else {
+        // All time: Dejamos fechas vacías o muy antiguas
+        return { start: "", end: "" }; 
+    }
+    return { 
+        start: start.toISOString().split('T')[0], 
+        end: end.toISOString().split('T')[0] 
+    };
+};
 
 /* ================= ICONOS CUSTOM (SVG) ================= */
-function IconDollar(props: any) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 1v22" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 5H10a3 3 0 000 6h4a3 3 0 010 6H7" /></svg>;
-}
-function IconCart(props: any) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6h15l-2 9H7L6 6Z" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6 5 3H2" /><circle cx="9" cy="21" r="1" /><circle cx="17" cy="21" r="1" /></svg>;
-}
-function IconTrend(props: any) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 17l6-6 4 4 8-8" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M14 7h7v7" /></svg>;
-}
-function IconUsers(props: any) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 20a8 8 0 0 1 16 0" /></svg>;
-}
+function IconDollar(props: any) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 1v22" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 5H10a3 3 0 000 6h4a3 3 0 010 6H7" /></svg>; }
+function IconCart(props: any) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6h15l-2 9H7L6 6Z" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6 5 3H2" /><circle cx="9" cy="21" r="1" /><circle cx="17" cy="21" r="1" /></svg>; }
+function IconTrend(props: any) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 17l6-6 4 4 8-8" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M14 7h7v7" /></svg>; }
+function IconUsers(props: any) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 20a8 8 0 0 1 16 0" /></svg>; }
 
-/* ================= HELPERS ================= */
-const fmtMoney = (n?: number) => {
-  if (n === undefined || n === null) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(n);
-};
+const fmtMoney = (n?: number) => n === undefined ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+const fmtNumber = (n?: number) => n === undefined ? "—" : new Intl.NumberFormat("es-ES").format(n);
 
-const fmtNumber = (n?: number) => {
-  if (n === undefined || n === null) return "—";
-  return new Intl.NumberFormat("es-ES").format(n);
-};
-
-/* ================= COMPONENTE PRINCIPAL ================= */
 export default function ReportsGeneralPage() {
   const { data: session, status } = useSession();
 
@@ -69,47 +62,51 @@ export default function ReportsGeneralPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // 2. Extracción segura del Token
+  // ESTADO DE FILTROS
+  const [filterType, setFilterType] = useState<'today' | 'month' | 'custom' | 'all'>('month');
+  const [dateFrom, setDateFrom] = useState(getDateRange('month').start as string);
+  const [dateTo, setDateTo] = useState(getDateRange('month').end as string);
+
+  // 1. URL DINÁMICA (Seguridad)
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://motostore-api.onrender.com/api/v1";
+
   const token = useMemo(() => {
     if (!session?.user) return null;
-    const user = session.user as ExtendedUser;
-    return user.accessToken || user.token || (session as any).accessToken || null;
+    return (session as any).accessToken || (session.user as any).token || null;
   }, [session]);
 
-  // 3. Fetch Optimizado
-  const fetchData = useCallback(async (opts: { silent?: boolean } = {}) => {
-    if (status === "loading") return;
+  // 2. FETCH CON FILTROS
+  const fetchData = useCallback(async () => {
+    if (status === "loading" || !token) return;
 
-    if (!token) {
-      if (status === "authenticated") setError("Token no encontrado.");
-      setLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    if (!opts.silent) {
-      setLoading(true);
-      setError(null);
-    }
+    setLoading(true);
+    setError(null);
 
     try {
-      const res = await fetch(`${API_BASE}${ENDPOINT}`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
+      // Construimos la Query String con las fechas
+      let query = `${API_URL}/reports/general`;
+      
+      const params = new URLSearchParams();
+      if (filterType !== 'all') {
+         if (dateFrom) params.append('start_date', dateFrom);
+         if (dateTo) params.append('end_date', dateTo);
+      }
+      
+      const finalUrl = `${query}?${params.toString()}`;
+      console.log("Fetching Report:", finalUrl);
+
+      const res = await fetch(finalUrl, {
+        headers: { 
+            Accept: "application/json",
+            Authorization: `Bearer ${token}` 
         },
-        signal: controller.signal,
       });
 
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}: No se pudo cargar el reporte general.`);
-      }
+      if (!res.ok) throw new Error("Error al cargar reporte financiero.");
 
       const json = await res.json();
       
-      const safeData: ReportData = {
+      setData({
         ventas: Number(json.ventas || 0),
         compras: Number(json.compras || 0),
         utilidades: Number(json.utilidades || 0),
@@ -117,118 +114,83 @@ export default function ReportsGeneralPage() {
         ticketPromedio: Number(json.ticketPromedio || 0),
         totalOrdenes: Number(json.totalOrdenes || 0),
         tasaConversion: Number(json.tasaConversion || 0),
-      };
-
-      setData(safeData);
+      });
       setLastUpdated(new Date());
+
     } catch (e: any) {
-      if (e.name !== "AbortError") {
-        console.error(e);
-        setError(e.message || "Error al conectar con el servidor.");
-      }
+      console.error(e);
+      setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [status, token]);
+  }, [status, token, dateFrom, dateTo, filterType, API_URL]);
 
-  // ==================== ZONA CORREGIDA ====================
-  // Efecto inicial simple para evitar error de TypeScript
+  // Manejo de cambio de filtros rápidos
+  const handleFilterChange = (type: 'today' | 'month' | 'all') => {
+      setFilterType(type);
+      if (type === 'all') {
+          setDateFrom("");
+          setDateTo("");
+      } else {
+          const { start, end } = getDateRange(type);
+          setDateFrom(start || "");
+          setDateTo(end || "");
+      }
+  };
+
+  // Cargar datos cuando cambien las fechas o el token
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
-  // ========================================================
-
-  useEffect(() => {
-    if (status !== "authenticated" || error) return;
-    const id = setInterval(() => fetchData({ silent: true }), REFRESH_MS);
-    return () => clearInterval(id);
-  }, [status, fetchData, error]);
+  }, [fetchData]); // Se dispara automáticamente al cambiar fechas gracias a useCallback
 
   const generatePDF = () => {
     if (!data) return;
     const doc = new jsPDF();
+    doc.setFontSize(20); doc.setTextColor(227, 49, 39);
+    doc.text("Reporte Financiero Moto Store", 20, 20);
+    doc.setFontSize(10); doc.setTextColor(100);
+    doc.text(`Período: ${filterType === 'all' ? 'Histórico Completo' : `${dateFrom} al ${dateTo}`}`, 20, 28);
     
-    doc.setFontSize(20);
-    doc.setTextColor(227, 49, 39);
-    doc.text("Reporte General", 20, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 28);
-
-    doc.setTextColor(0);
-    doc.setFontSize(12);
     let y = 40;
+    doc.setTextColor(0); doc.setFontSize(12);
+    [`Ventas: ${fmtMoney(data.ventas)}`, `Utilidad Neta: ${fmtMoney(data.utilidades)}`, `Costos: ${fmtMoney(data.compras)}`].forEach(l => { doc.text(l, 20, y); y += 10; });
     
-    const lines = [
-      `Ventas Totales: ${fmtMoney(data.ventas)}`,
-      `Compras / Gastos: ${fmtMoney(data.compras)}`,
-      `Utilidad Neta: ${fmtMoney(data.utilidades)}`,
-      `Usuarios Activos: ${fmtNumber(data.usuariosActivos)}`,
-      `Ticket Promedio: ${fmtMoney(data.ticketPromedio)}`,
-      `Órdenes Totales: ${fmtNumber(data.totalOrdenes)}`,
-      `Tasa de Conversión: ${data.tasaConversion}%`
-    ];
-
-    lines.forEach(line => {
-      doc.text(line, 20, y);
-      y += 10;
-    });
-
-    doc.save(`reporte_general_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`finanzas_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   return (
     <div className="mx-auto max-w-7xl pb-20 animate-in fade-in duration-500">
       
-      {/* HEADER */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* HEADER + FILTROS */}
+      <div className="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
-            Reporte General
-          </h1>
-          <p className="text-slate-500 font-medium">
-            Visión panorámica del rendimiento del negocio.
-          </p>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">Reporte Financiero</h1>
+          <p className="text-slate-500 font-medium">Balance de ingresos, costos y utilidad neta.</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {lastUpdated && (
-            <span className="text-xs text-slate-400 hidden sm:block mr-2">
-              Actualizado: {lastUpdated.toLocaleTimeString()}
-            </span>
-          )}
-          
-          <button
-            onClick={() => fetchData()}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-[#E33127] transition-all disabled:opacity-50"
-          >
-            <ArrowPathIcon className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Actualizar
-          </button>
+        <div className="flex flex-col sm:flex-row gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+            {/* Botones Rápidos */}
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+                <button onClick={() => handleFilterChange('today')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${filterType === 'today' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>Hoy</button>
+                <button onClick={() => handleFilterChange('month')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${filterType === 'month' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>Este Mes</button>
+                <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${filterType === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>Todo</button>
+            </div>
 
-          <button
-            onClick={generatePDF}
-            disabled={!data || loading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#E33127] rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-100 disabled:opacity-50"
-          >
-            <ArrowDownTrayIcon className="w-4 h-4" />
-            PDF
-          </button>
+            {/* Selector de Fechas Personalizado */}
+            <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
+                <CalendarDaysIcon className="w-4 h-4 text-slate-400"/>
+                <input type="date" value={dateFrom} onChange={(e) => { setFilterType('custom'); setDateFrom(e.target.value); }} className="text-xs font-bold text-slate-600 bg-transparent outline-none w-24"/>
+                <span className="text-slate-300">-</span>
+                <input type="date" value={dateTo} onChange={(e) => { setFilterType('custom'); setDateTo(e.target.value); }} className="text-xs font-bold text-slate-600 bg-transparent outline-none w-24"/>
+            </div>
+
+            <button onClick={generatePDF} disabled={!data} className="px-3 bg-slate-900 text-white rounded-lg hover:bg-[#E33127] transition-colors"><ArrowDownTrayIcon className="w-4 h-4"/></button>
         </div>
       </div>
 
-      {/* ERROR ALERT */}
-      {error && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
-          <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{error}</span>
-        </div>
-      )}
+      {error && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 flex gap-2 font-bold text-sm"><ExclamationTriangleIcon className="w-5 h-5"/> {error}</div>}
 
-      {/* KPI CARDS */}
+      {/* KPI CARDS - CALCULADOS CON FILTRO */}
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <KpiCard
           label="Ventas Totales"
@@ -238,23 +200,24 @@ export default function ReportsGeneralPage() {
           className="border-emerald-100 shadow-emerald-500/5"
           bgIcon="bg-emerald-50"
         />
+        {/* Aquí mostramos Utilidad REAL */}
         <KpiCard
-          label="Compras / Gastos"
+          label="Utilidad Neta (Ganancia)"
+          value={fmtMoney(data?.utilidades)}
+          icon={<IconTrend className="w-6 h-6 text-[#E33127]" />}
+          loading={loading}
+          className="border-red-100 shadow-red-500/5 ring-1 ring-red-50"
+          bgIcon="bg-red-50"
+        />
+        <KpiCard
+          label="Costos Operativos"
           value={fmtMoney(data?.compras)}
           icon={<IconCart className="w-6 h-6 text-blue-600" />}
           loading={loading}
           className="border-blue-100 shadow-blue-500/5"
           bgIcon="bg-blue-50"
         />
-        <KpiCard
-          label="Utilidad Neta"
-          value={fmtMoney(data?.utilidades)}
-          icon={<IconTrend className="w-6 h-6 text-indigo-600" />}
-          loading={loading}
-          className="border-indigo-100 shadow-indigo-500/5"
-          bgIcon="bg-indigo-50"
-        />
-        <KpiCard
+         <KpiCard
           label="Usuarios Activos"
           value={fmtNumber(data?.usuariosActivos)}
           icon={<IconUsers className="w-6 h-6 text-orange-600" />}
@@ -264,48 +227,20 @@ export default function ReportsGeneralPage() {
         />
       </section>
 
-      {/* TABLE SECTION */}
+      {/* DETALLES */}
       <section className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
-          <h3 className="font-bold text-slate-800">Métricas Operativas</h3>
+        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-between items-center">
+          <h3 className="font-bold text-slate-800">Desglose Operativo</h3>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+             {filterType === 'all' ? 'Histórico' : 'Rango Seleccionado'}
+          </span>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-400 font-bold uppercase text-xs tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Indicador</th>
-                <th className="px-6 py-4">Valor</th>
-                <th className="px-6 py-4">Descripción</th>
-                <th className="px-6 py-4 text-right">Estado</th>
-              </tr>
-            </thead>
             <tbody className="divide-y divide-slate-100">
-              <Row
-                name="Ticket Promedio"
-                value={fmtMoney(data?.ticketPromedio)}
-                desc="Valor medio por transacción aprobada."
-                status="Healthy"
-                loading={loading}
-              />
-              <Row
-                name="Órdenes Totales"
-                value={fmtNumber(data?.totalOrdenes)}
-                desc="Volumen total de operaciones procesadas."
-                status="Neutral"
-                loading={loading}
-              />
-              <Row
-                name="Tasa de Conversión"
-                value={
-                  data?.tasaConversion !== undefined
-                    ? `${data.tasaConversion}%`
-                    : "—"
-                }
-                desc="Efectividad de ventas vs visitas."
-                status={Number(data?.tasaConversion) > 5 ? "Healthy" : "Warning"}
-                loading={loading}
-              />
+              <Row name="Ticket Promedio" value={fmtMoney(data?.ticketPromedio)} desc="Promedio de gasto por cliente en este período." status="Healthy" loading={loading} />
+              <Row name="Órdenes Procesadas" value={fmtNumber(data?.totalOrdenes)} desc="Cantidad de ventas completadas." status="Neutral" loading={loading} />
+              <Row name="Tasa de Conversión" value={data?.tasaConversion ? `${data.tasaConversion}%` : "—"} desc="Eficiencia de ventas." status={Number(data?.tasaConversion) > 5 ? "Healthy" : "Warning"} loading={loading} />
             </tbody>
           </table>
         </div>
@@ -314,8 +249,7 @@ export default function ReportsGeneralPage() {
   );
 }
 
-/* ================= COMPONENTES VISUALES ================= */
-
+/* ================= COMPONENTES VISUALES (Sin cambios grandes) ================= */
 function KpiCard({ label, value, icon, loading, className, bgIcon }: any) {
   return (
     <div className={`relative overflow-hidden rounded-3xl border bg-white p-6 shadow-xl transition-all hover:-translate-y-1 ${className || 'border-slate-100'}`}>
@@ -336,24 +270,10 @@ function Row({ name, value, desc, status, loading }: any) {
   return (
     <tr className="hover:bg-slate-50 transition-colors group">
       <td className="px-6 py-4 font-bold text-slate-700">{name}</td>
-      <td className="px-6 py-4 font-mono font-medium text-slate-900">
-        {loading ? <div className="h-5 w-16 bg-slate-100 rounded animate-pulse"></div> : value}
-      </td>
-      <td className="px-6 py-4 text-slate-400 text-xs sm:text-sm">{desc}</td>
+      <td className="px-6 py-4 font-mono font-medium text-slate-900">{loading ? "..." : value}</td>
+      <td className="px-6 py-4 text-slate-400 text-xs">{desc}</td>
       <td className="px-6 py-4 text-right">
-        {!loading && (
-          <span
-            className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border ${
-              status === "Healthy"
-                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                : status === "Warning"
-                ? "bg-amber-50 text-amber-600 border-amber-100"
-                : "bg-slate-100 text-slate-600 border-slate-200"
-            }`}
-          >
-            {status === "Healthy" ? "Bueno" : status === "Warning" ? "Revisar" : "Normal"}
-          </span>
-        )}
+        {!loading && <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border ${status === "Healthy" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-100 text-slate-600 border-slate-200"}`}>{status === "Healthy" ? "Bueno" : "Normal"}</span>}
       </td>
     </tr>
   );

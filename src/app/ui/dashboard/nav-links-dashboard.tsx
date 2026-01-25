@@ -21,7 +21,8 @@ import {
   CheckBadgeIcon, 
   ArrowDownCircleIcon, 
   WalletIcon,
-  ArrowRightOnRectangleIcon // Agregado por si acaso
+  PlayCircleIcon, // Agregado para Streaming
+  TicketIcon      // Agregado para Historial
 } from '@heroicons/react/24/outline';
 
 // Importación de tu componente RBAC
@@ -86,17 +87,29 @@ export default function NavLinksDashboard() {
         <span className="flex items-center gap-2"><HomeIcon className="w-5 h-5"/> Inicio</span>
       </Item>
 
-      <Item href="/dashboard/products">
-        <span className="flex items-center gap-2"><ShoppingBagIcon className="w-5 h-5"/> Productos</span>
+      {/* --- NUEVA SECCIÓN DE VENTAS (Separada para claridad) --- */}
+      
+      {/* 1. Tienda (Donde compran) */}
+      <Item href="/dashboard/store">
+        <span className="flex items-center gap-2">
+            <ShoppingBagIcon className="w-5 h-5"/> Tienda Oficial
+        </span>
       </Item>
 
-      {/* --- MENÚ DE COMPRAS --- */}
-      <details open={purchasesOpen} className="group">
+      {/* 2. Streaming (Donde consumen lo comprado) */}
+      <Item href="/dashboard/products/streaming">
+        <span className="flex items-center gap-2">
+            <PlayCircleIcon className="w-5 h-5"/> Mis Suscripciones
+        </span>
+      </Item>
+
+      {/* --- MENÚ DE COMPRAS (Finanzas) --- */}
+      <details open={purchasesOpen} className="group pt-2">
         <summary className={summaryClass(purchasesOpen)}>
-          <ShoppingBagIcon className="w-5 h-5"/> Compras
+          <TicketIcon className="w-5 h-5"/> Finanzas / Compras
         </summary>
         <div className="mt-1 ml-3 border-l-2 border-slate-100 pl-3 space-y-1">
-          <Item href="/dashboard/purchases">Listado de Compras</Item>
+          <Item href="/dashboard/purchases">Historial Global</Item>
           
           {/* Opción protegida: Solo Admins */}
           <IfCan permission="manage_payments">
@@ -118,7 +131,7 @@ export default function NavLinksDashboard() {
                 <WalletIcon className="w-5 h-5 text-blue-500"/> Mi Billetera / Retirar
             </span>
           </Item>
-          <Item href="/dashboard/purchases/mine">Mis Compras</Item>
+          <Item href="/dashboard/purchases/mine">Mis Recibos</Item>
           <Item href="/dashboard/payment-methods">Métodos de Pago</Item>
         </div>
       </details>

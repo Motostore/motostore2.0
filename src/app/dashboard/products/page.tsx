@@ -5,9 +5,7 @@ import {
   DevicePhoneMobileIcon, 
   RocketLaunchIcon, 
   ChevronRightIcon, 
-  ShieldCheckIcon,
-  ShoppingCartIcon, // Nuevo icono para la Tienda
-  PlayCircleIcon
+  ShieldCheckIcon
 } from "@heroicons/react/24/solid";
 
 export default function ProductsPage() {
@@ -19,8 +17,7 @@ export default function ProductsPage() {
       icon: <DevicePhoneMobileIcon className="w-6 h-6 text-white" />,
       color: "from-blue-600 to-cyan-500",
       bg: "bg-blue-50",
-      status: "Oficial",
-      actionText: "Gestionar"
+      status: "Oficial"
     },
     {
       title: "Marketing",
@@ -29,19 +26,24 @@ export default function ProductsPage() {
       icon: <RocketLaunchIcon className="w-6 h-6 text-white" />,
       color: "from-orange-500 to-red-600",
       bg: "bg-orange-50",
-      status: "Activo",
-      actionText: "Gestionar"
+      status: "Activo"
     },
-    // 🔥 CAMBIO CLAVE: Streaming ahora apunta a la TIENDA OFICIAL
     {
       title: "Streaming",
       desc: "Netflix, Disney+, Max y más.",
-      href: "/dashboard/store", // <--- Redirige a la Tienda Automática
-      icon: <ShoppingCartIcon className="w-6 h-6 text-white" />, // Icono de compra
+      // 🔥 ÚNICO CAMBIO: Ahora lleva a la Tienda Nueva
+      href: "/dashboard/store", 
+      icon: (
+        // MANTENEMOS TU ICONO ORIGINAL (Se ve mejor)
+        <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7 text-white" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 3l14 9-14 9V3z" fill="currentColor" stroke="none" />
+          <path d="M19 12a9 9 0 0 1-2.5 6.5" stroke="currentColor" strokeWidth={2.5} opacity="0.7"/>
+          <path d="M22 12a12 12 0 0 1-3.5 9" stroke="currentColor" strokeWidth={2.5} opacity="0.4"/>
+        </svg>
+      ),
       color: "from-violet-600 to-fuchsia-600",
       bg: "bg-violet-50",
-      status: "Venta Auto", // Etiqueta actualizada
-      actionText: "Ir a la Tienda" // Texto claro para el usuario
+      status: "Tienda" // Pequeño cambio de texto para indicar venta
     },
     {
       title: "Licencias Software",
@@ -50,76 +52,83 @@ export default function ProductsPage() {
       icon: <ShieldCheckIcon className="w-6 h-6 text-white" />,
       color: "from-emerald-500 to-teal-600",
       bg: "bg-emerald-50",
-      status: "Nuevo",
-      actionText: "Gestionar"
+      status: "Nuevo"
     }
   ];
 
+  // Recuperamos el diseño de pantalla completa y padding original
   return (
-    <div className="w-full animate-in fade-in duration-500">
+    <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6">
       
-      {/* HEADER COMPACTO */}
-      <div className="max-w-6xl mx-auto mb-6 mt-2">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-6 h-1 bg-[#E33127] rounded-full" />
-          <span className="text-[#E33127] font-black uppercase tracking-widest text-[9px]">
-            Directorio
+      {/* HEADER ORIGINAL */}
+      <div className="max-w-6xl mx-auto mb-10">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-8 h-1 bg-red-600 rounded-full" />
+          <span className="text-red-600 font-black uppercase tracking-widest text-[10px]">
+            Catálogo
           </span>
         </div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-          Panel de <span className="text-slate-500">Servicios</span>
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+          Panel de <span className="text-slate-500">Productos</span>
         </h1>
       </div>
 
-      {/* GRID */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* GRID ORIGINAL */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {categories.map((cat, i) => (
           <Link
             key={i}
             href={cat.href}
-            className="group relative bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
+            className="group relative bg-white rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
           >
             {/* STATUS MINI */}
-            <div className="absolute top-3 right-3 z-10">
-              <span className={`flex items-center gap-1 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-bold border shadow-sm ${cat.title === 'Streaming' ? 'text-[#E33127] border-red-100' : 'text-slate-600 border-slate-100'}`}>
-                {cat.title === 'Streaming' ? <ShoppingCartIcon className="w-2.5 h-2.5"/> : <ShieldCheckIcon className="w-2.5 h-2.5 text-emerald-500" />}
+            <div className="absolute top-4 right-4 z-10">
+              <span className="flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-slate-600 border border-slate-100 shadow-sm">
+                <ShieldCheckIcon className="w-3 h-3 text-emerald-500" />
                 {cat.status}
               </span>
             </div>
 
-            {/* ÁREA VISUAL */}
-            <div className={`h-28 flex items-center justify-center ${cat.bg} relative overflow-hidden`}>
+            {/* ÁREA VISUAL (GRADIENTE) */}
+            <div className={`h-32 flex items-center justify-center ${cat.bg} relative overflow-hidden`}>
               <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-10 group-hover:opacity-20 transition-opacity`} />
               
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:shadow-2xl transition-all duration-500 relative z-10`}>
+              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:shadow-2xl transition-all duration-500 relative z-10`}>
                 {cat.icon}
               </div>
             </div>
 
             {/* CONTENIDO */}
-            <div className="p-4 flex flex-col flex-1">
-              <h2 className="text-lg font-black text-slate-900 mb-1 group-hover:text-[#E33127] transition-colors">
+            <div className="p-6 flex flex-col flex-1">
+              <h2 className="text-xl font-black text-slate-900 mb-2 group-hover:text-red-600 transition-colors">
                 {cat.title}
               </h2>
-              <p className="text-slate-500 text-xs font-medium leading-snug mb-4">
+              <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">
                 {cat.desc}
               </p>
 
-              <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
-                <span className={`text-[10px] font-black uppercase tracking-tighter ${cat.title === 'Streaming' ? 'text-[#E33127]' : 'text-slate-400'}`}>
-                  {cat.actionText || "Gestionar"}
+              <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                  Gestionar
                 </span>
-                <ChevronRightIcon className="w-4 h-4 text-slate-300 group-hover:text-[#E33127] transition-colors" />
+                <div className="p-1.5 rounded-full bg-slate-50 group-hover:bg-red-50 transition-colors">
+                   <ChevronRightIcon className="w-4 h-4 text-slate-300 group-hover:text-red-600 transition-colors" />
+                </div>
               </div>
             </div>
           </Link>
         ))}
 
-        {/* BOTÓN "CONFIGURAR" (Solo visual) */}
-        <div className="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-6 bg-slate-50/30 opacity-60 hover:opacity-100 transition-all cursor-pointer hover:border-red-200 group min-h-[200px] sm:min-h-0">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center group-hover:text-[#E33127] transition-colors">
-              Próximamente<br/>Más Servicios
-            </p>
+        {/* BOTÓN "CONFIGURAR" */}
+        <div className="border-2 border-dashed border-slate-200 rounded-[2rem] flex items-center justify-center p-6 bg-slate-50/50 opacity-60 hover:opacity-100 transition-all cursor-pointer hover:border-red-200 group min-h-[250px] sm:min-h-0">
+            <div className="text-center">
+                <div className="w-12 h-12 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-red-50 transition-colors">
+                    <RocketLaunchIcon className="w-5 h-5 text-slate-400 group-hover:text-red-500"/>
+                </div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-red-500 transition-colors">
+                  Próximamente
+                </p>
+            </div>
         </div>
       </div>
     </div>

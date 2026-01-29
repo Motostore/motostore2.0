@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react'; // 1. IMPORTAR SESIÓN
 import Image from 'next/image';
 import toast, { Toaster } from "react-hot-toast";
 import { 
@@ -18,8 +19,9 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
-// API PYTHON
-const API_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1") + "/payment-methods";
+// 2. CORRECCIÓN DE URL (Consistencia)
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://motostore-api.onrender.com/api/v1";
+const API_ENDPOINT = `${API_BASE}/payment-methods`;
 
 const LOGO_MAP: Record<string, string> = {
   'MOBILE_PAYMENT': '/logos/pago_movil.png',
@@ -60,6 +62,8 @@ export interface PM {
 }
 
 export default function PaymentMethodsPage() {
+  const { data: session } = useSession(); // 3. HOOK DE SESIÓN
+  
   const [payments, setPayments] = useState<PM[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,23 +72,41 @@ export default function PaymentMethodsPage() {
   const [editingId, setLocalEditingId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
 
+  // 4. OBTENER TOKEN SEGURO
+  const token = useMemo(() => {
+    if (!session?.user) return null;
+    return (session as any).accessToken || (session.user as any).token || null;
+  }, [session]);
+
   const fetchPayments = async () => {
+    if (!token) return; // Esperar token
     setLoading(true);
     try {
-      const res = await fetch(API_URL, { cache: 'no-store' });
+      const res = await fetch(API_ENDPOINT, { 
+        headers: { Authorization: `Bearer ${token}` }, // Header Auth
+        cache: 'no-store' 
+      });
+      
       if (!res.ok) throw new Error(`Error ${res.status}: Conexión fallida`);
-      const data = await res.json();
+      
+      const json = await res.json();
+      // Asegurar que sea array (algunos backends devuelven { data: [...] })
+      const data = Array.isArray(json) ? json : json.data || [];
+      
       setPayments(data);
       setError(null);
     } catch (e: any) {
       console.error(e);
-      setError("No se pudo conectar al servidor Python.");
+      setError("No se pudo cargar la lista de pagos.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchPayments(); }, []);
+  // Cargar cuando tengamos token
+  useEffect(() => { 
+    if (token) fetchPayments(); 
+  }, [token]);
 
   const grouped = useMemo(() => {
     const out: Record<string, PM[]> = { 'Venezuela': [], 'Internacional / Panamá': [], 'Cripto & Wallets': [] };
@@ -106,17 +128,25 @@ export default function PaymentMethodsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return toast.error("No hay sesión activa");
     if (!newPayment.name) return toast.error("Falta el nombre");
+    
     const toastId = toast.loading("Guardando...");
     try {
       const method = editingId ? "PUT" : "POST";
-      const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+      const url = editingId ? `${API_ENDPOINT}/${editingId}` : API_ENDPOINT;
+      
       const res = await fetch(url, {
         method: method,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // 5. AUTH EN SAVE
+        },
         body: JSON.stringify(newPayment)
       });
-      if (!res.ok) throw new Error("Error guardando");
+      
+      if (!res.ok) throw new Error("Error guardando datos");
+      
       toast.success(editingId ? "¡Actualizado!" : "¡Creado!", { id: toastId });
       setShowForm(false);
       fetchPayments();
@@ -124,12 +154,19 @@ export default function PaymentMethodsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Eliminar?")) return;
+    if (!token) return;
+    if (!confirm("¿Seguro que deseas eliminar este método?")) return;
+    
     const toastId = toast.loading("Eliminando...");
     try {
-      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_ENDPOINT}/${id}`, { 
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` } // 6. AUTH EN DELETE
+      });
+      
       if (!res.ok) throw new Error("Error borrando");
-      toast.success("Eliminado", { id: toastId });
+      
+      toast.success("Eliminado correctamente", { id: toastId });
       fetchPayments();
     } catch (e) { toast.error("Error al eliminar", { id: toastId }); }
   };
@@ -137,11 +174,11 @@ export default function PaymentMethodsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in duration-500">
       
-      {/* HEADER LIMPIO Y PREMIUM */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
           <div className="flex items-center gap-5">
             <div className="p-4 bg-red-50 rounded-2xl border border-red-100 shadow-sm"><BuildingLibraryIcon className="w-8 h-8 text-[#E33127]" /></div>
-            <div><h1 className="text-3xl font-black text-slate-900 tracking-tight">Cuentas y Pagos</h1><p className="text-slate-500 font-medium mt-1">Gestión centralizada (Python).</p></div>
+            <div><h1 className="text-3xl font-black text-slate-900 tracking-tight">Cuentas y Pagos</h1><p className="text-slate-500 font-medium mt-1">Configuración de métodos de recarga.</p></div>
           </div>
           <button onClick={openNew} className="group flex items-center justify-center gap-2 px-6 py-3 bg-[#E33127] hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg active:scale-95"><PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform" /><span>Agregar Cuenta</span></button>
       </div>
@@ -178,11 +215,21 @@ export default function PaymentMethodsPage() {
             <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-black text-slate-900">{editingId ? 'Editar' : 'Nuevo'}</h2><button onClick={() => setShowForm(false)} className="p-2 rounded-full hover:bg-slate-100"><XMarkIcon className="w-6 h-6 text-slate-400"/></button></div>
             <form onSubmit={handleSave} className="space-y-6">
                <div><label className="block text-xs font-bold text-slate-400 uppercase mb-2">Plataforma</label><select className="input-premium" value={newPayment.type} onChange={e => setNewPayment({...newPayment, type: e.target.value as any})}><optgroup label="Venezuela"><option value="MOBILE_PAYMENT">📱 Pago Móvil</option><option value="BANK_TRANSFER">🏦 Transferencia Bancaria</option><option value="CASH_PAYMENT">💵 Efectivo (Tienda)</option></optgroup><optgroup label="Internacional"><option value="ZELLE_PAYMENT">🇺🇸 Zelle</option><option value="PAYPAL_PAYMENT">🅿️ PayPal</option><option value="BANESCO_PANAMA">🇵🇦 Banesco Panamá</option><option value="MERCANTIL_PANAMA">🇵🇦 Mercantil Panamá</option><option value="FACEBANK_PAYMENT">🏦 Facebank</option><option value="PIPOL_PAYMENT">🟣 Pipol Pay</option></optgroup><optgroup label="Cripto"><option value="BINANCE_PAYMENT">🟡 Binance Pay</option><option value="USDT_PAYMENT">🟢 USDT</option><option value="ZINLI_PAYMENT">🟣 Zinli</option><option value="WALLY_PAYMENT">📱 Wally</option><option value="RESERVE_PAYMENT">®️ Reserve</option><option value="ELDORADO_PAYMENT">🔶 El Dorado</option></optgroup></select></div>
-               <div><label className="block text-xs font-bold text-slate-400 uppercase mb-2">Alias</label><input className="input-premium" placeholder="Ej: Banesco Principal" value={newPayment.name} onChange={e => setNewPayment({...newPayment, name: e.target.value})} /></div>
-               {(['BANK_TRANSFER', 'MOBILE_PAYMENT'].includes(newPayment.type)) && (<><input className="input-premium" placeholder="Banco" value={newPayment.bank_name || ''} onChange={e => setNewPayment({...newPayment, bank_name: e.target.value})} /><input className="input-premium" placeholder="Cédula/RIF" value={newPayment.id_number || ''} onChange={e => setNewPayment({...newPayment, id_number: e.target.value})} />{newPayment.type === 'MOBILE_PAYMENT' && <input className="input-premium" placeholder="Teléfono" value={newPayment.phone || ''} onChange={e => setNewPayment({...newPayment, phone: e.target.value})} />}{newPayment.type === 'BANK_TRANSFER' && <input className="input-premium" placeholder="Nro Cuenta" value={newPayment.account_number || ''} onChange={e => setNewPayment({...newPayment, account_number: e.target.value})} />}</>)}
-               {newPayment.type === 'CASH_PAYMENT' && <textarea rows={3} className="input-premium" placeholder="Dirección..." value={newPayment.address || ''} onChange={e => setNewPayment({...newPayment, address: e.target.value})} />}
-               {(!['BANK_TRANSFER', 'MOBILE_PAYMENT', 'CASH_PAYMENT'].includes(newPayment.type)) && (<><input className="input-premium" placeholder="Email / Usuario" value={newPayment.email || ''} onChange={e => setNewPayment({...newPayment, email: e.target.value})} /></>)}
-               <button type="submit" className="w-full py-4 bg-[#E33127] text-white font-bold rounded-xl shadow-xl hover:bg-red-600 transition-all active:scale-[0.98]">{editingId ? 'Guardar' : 'Crear'}</button>
+               <div><label className="block text-xs font-bold text-slate-400 uppercase mb-2">Alias / Nombre</label><input className="input-premium" placeholder="Ej: Banesco Principal" value={newPayment.name} onChange={e => setNewPayment({...newPayment, name: e.target.value})} /></div>
+               {(['BANK_TRANSFER', 'MOBILE_PAYMENT'].includes(newPayment.type)) && (<><input className="input-premium" placeholder="Nombre Banco" value={newPayment.bank_name || ''} onChange={e => setNewPayment({...newPayment, bank_name: e.target.value})} /><input className="input-premium" placeholder="Cédula/RIF" value={newPayment.id_number || ''} onChange={e => setNewPayment({...newPayment, id_number: e.target.value})} />{newPayment.type === 'MOBILE_PAYMENT' && <input className="input-premium" placeholder="Teléfono" value={newPayment.phone || ''} onChange={e => setNewPayment({...newPayment, phone: e.target.value})} />}{newPayment.type === 'BANK_TRANSFER' && <input className="input-premium" placeholder="Nro Cuenta" value={newPayment.account_number || ''} onChange={e => setNewPayment({...newPayment, account_number: e.target.value})} />}</>)}
+               {newPayment.type === 'CASH_PAYMENT' && <textarea rows={3} className="input-premium" placeholder="Dirección de la tienda..." value={newPayment.address || ''} onChange={e => setNewPayment({...newPayment, address: e.target.value})} />}
+               {(!['BANK_TRANSFER', 'MOBILE_PAYMENT', 'CASH_PAYMENT'].includes(newPayment.type)) && (<><input className="input-premium" placeholder="Email / Usuario / Cuenta" value={newPayment.email || ''} onChange={e => setNewPayment({...newPayment, email: e.target.value})} /></>)}
+               
+               {/* Campos adicionales útiles para transferencias internacionales */}
+               {['BANESCO_PANAMA', 'MERCANTIL_PANAMA'].includes(newPayment.type) && (
+                   <div className="space-y-3 pt-2 border-t border-slate-100">
+                       <p className="text-xs font-bold text-slate-400 uppercase">Datos Adicionales (Opcional)</p>
+                       <input className="input-premium" placeholder="Titular de la cuenta" value={newPayment.bank_name || ''} onChange={e => setNewPayment({...newPayment, bank_name: e.target.value})} />
+                       <input className="input-premium" placeholder="Número de Cuenta" value={newPayment.account_number || ''} onChange={e => setNewPayment({...newPayment, account_number: e.target.value})} />
+                   </div>
+               )}
+
+               <button type="submit" className="w-full py-4 bg-[#E33127] text-white font-bold rounded-xl shadow-xl hover:bg-red-600 transition-all active:scale-[0.98]">{editingId ? 'Guardar Cambios' : 'Crear Cuenta'}</button>
             </form>
           </div>
         </div>
@@ -193,32 +240,28 @@ export default function PaymentMethodsPage() {
   );
 }
 
-// ============================================================
-// 👇 AQUÍ ESTÁ EL CAMBIO DE DISEÑO (UNIFICACIÓN PREMIUM)
-// ============================================================
 function PremiumCard({ data, onEdit, onDelete }: any) {
-  const copy = (text: string) => { if (text) { navigator.clipboard.writeText(text); toast.success("Copiado"); }};
+  const copy = (text: string) => { if (text) { navigator.clipboard.writeText(text); toast.success("Copiado al portapapeles"); }};
   
-  // Iconos por tipo (pero ya no cambian el fondo de la tarjeta)
   const isCrypto = ['BINANCE_PAYMENT', 'ZINLI_PAYMENT', 'USDT_PAYMENT', 'WALLY_PAYMENT', 'RESERVE_PAYMENT', 'ELDORADO_PAYMENT'].includes(data.type);
   const isUSD = ['ZELLE_PAYMENT', 'PAYPAL_PAYMENT', 'BANESCO_PANAMA', 'MERCANTIL_PANAMA', 'FACEBANK_PAYMENT', 'PIPOL_PAYMENT', 'VENMO_PAYMENT', 'CASHAPP_PAYMENT'].includes(data.type);
   
   let Icon = isCrypto ? QrCodeIcon : isUSD ? GlobeAmericasIcon : BanknotesIcon;
   if (data.type === 'BANK_TRANSFER' || data.type === 'MOBILE_PAYMENT') Icon = CreditCardIcon;
 
-  const mainInfo = data.account_number || data.phone || data.email || data.address || "N/A";
+  // Lógica inteligente para mostrar el dato más relevante
+  const mainInfo = data.account_number || data.phone || data.email || data.address || "Ver detalles";
+  const secondaryInfo = (data.account_number && data.id_number) ? `C.I/RIF: ${data.id_number}` : (data.bank_name || "");
+
   const logoSrc = LOGO_MAP[data.type];
 
   return (
-    // ✅ FONDO SIEMPRE BLANCO (bg-white), BORDE GRIS CLARO, SOMBRA SUAVE
     <div className="relative group p-6 rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-xl hover:border-red-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
       
-      {/* Decoración sutil de fondo (rojo muy suave) */}
       <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl"></div>
 
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-6">
-          {/* Contenedor del Icono/Logo siempre consistente */}
           <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden bg-slate-50 border border-slate-100 group-hover:border-red-100 transition-colors">
              {logoSrc ? (
                <Image src={logoSrc} alt={data.name} width={48} height={48} className="object-contain w-full h-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
@@ -241,8 +284,9 @@ function PremiumCard({ data, onEdit, onDelete }: any) {
         <div className="space-y-3">
            <div onClick={() => copy(mainInfo)} className="p-3 rounded-xl bg-slate-50 border border-slate-100 group-hover:border-red-100 cursor-pointer flex justify-between items-center group/copy active:scale-95 transition-all">
               <div className="overflow-hidden">
-                 <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Cuenta / ID</p>
+                 <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Cuenta / Usuario</p>
                  <p className="font-mono text-sm font-bold text-slate-700 truncate">{mainInfo}</p>
+                 {secondaryInfo && <p className="text-[10px] text-slate-400 truncate mt-1">{secondaryInfo}</p>}
               </div>
               <ClipboardDocumentIcon className="w-4 h-4 text-slate-300 group-hover/copy:text-[#E33127]"/>
            </div>

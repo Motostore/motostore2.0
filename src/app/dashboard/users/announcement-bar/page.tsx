@@ -42,11 +42,17 @@ async function api(path: string, init?: RequestInit) {
 
       if (!res.ok) {
          const txt = await res.text().catch(() => "");
+         // Manejo silencioso de 404 para evitar pantalla roja si no hay anuncios aún
+         if (res.status === 404) {
+             throw new Error("404 Not Found"); 
+         }
          throw new Error(`Error ${res.status}: ${txt}`);
       }
       return res.json();
   } catch (err: any) {
-      console.error("🔥 Error API:", err);
+      if (err.message !== "404 Not Found") {
+        console.error("🔥 Error API:", err);
+      }
       throw err;
   }
 }
@@ -102,8 +108,11 @@ const VARIANT_PREVIEW: Record<Variant, string> = {
   neutral: "bg-slate-800 text-white border-l-4 border-black",
 };
 
-// --- CORRECCIÓN AQUÍ: Apuntamos a la dirección correcta del Backend ---
-const ENDPOINTS = ["/announcements", "/announcements/bar"];
+// --- CORRECCIÓN FINAL: Rutas exactas encontradas en tu Backend Python ---
+const ENDPOINTS = [
+    "/announcements/announcement-bar",       // Ruta principal (announcements.py)
+    "/dashboard/announcements"               // Ruta alternativa (dashboard.py)
+];
 
 export default function UsersAnnouncementBarPage() {
   const { data: session } = useSession();
@@ -149,9 +158,13 @@ export default function UsersAnnouncementBarPage() {
             startsAt: item.startsAt || null,
             endsAt: item.endsAt || null,
           });
-          return;
+          return; // Éxito, salimos del bucle
         }
-      } catch { /* Probar siguiente endpoint */ }
+      } catch (e: any) { 
+        // Si es 404, simplemente pasamos al siguiente endpoint o terminamos sin error visual
+        if (e.message === "404 Not Found") continue;
+        console.warn(`Intento fallido en ${ep}:`, e);
+      }
     }
   }
 

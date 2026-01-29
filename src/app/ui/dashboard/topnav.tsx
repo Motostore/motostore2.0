@@ -36,9 +36,6 @@ import {
   CodeBracketIcon
 } from '@heroicons/react/24/outline';
 
-// NOTA: Quitamos IfCan para hacer la validación directa y segura aquí mismo
-// import IfCan from '../../rbac/IfCan'; 
-
 function cx(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(' ');
 }
@@ -179,7 +176,6 @@ export default function TopNav() {
 
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
 
-  // 🔥 LÍNEA CORREGIDA: Acceso seguro al rol sin errores de TypeScript
   const user = session?.user as { role?: string } | undefined;
   const role = user?.role?.toUpperCase() || '';
   
@@ -190,24 +186,25 @@ export default function TopNav() {
   const isWalletWithdrawPage = pathname.startsWith('/dashboard/wallet/withdraw');
   const isTreasuryPage = pathname.startsWith('/dashboard/super/treasury');
   const isProductsPage = pathname.startsWith('/dashboard/products');
-  const isRbacTestPage = pathname.startsWith('/dashboard/rbac-test');
 
+  // ✅ 1. Reportes ahora incluye "Reportar Pago"
   const reportesItems: DropItem[] = [
     { label: "Reporte General", href: "/dashboard/reports/general", icon: <ChartPieIcon className="w-5 h-5"/> },
     { label: "Movimientos", href: "/dashboard/reports/movimiento", icon: <PresentationChartLineIcon className="w-5 h-5"/> },
     { label: "Utilidades Neta", href: "/dashboard/reports/utilidades", icon: <CurrencyDollarIcon className="w-5 h-5"/> },
+    { label: "Reportar Pago", href: "/dashboard/payments/report", icon: <DocumentCheckIcon className="w-5 h-5"/> },
   ];
-  const isReportActive = pathname.startsWith("/dashboard/reports") && !isReportPaymentPage;
+  const isReportActive = pathname.startsWith("/dashboard/reports") || pathname.startsWith("/dashboard/payments/report");
 
+  // ✅ 2. Compras
   const comprasItems: DropItem[] = [
     { label: "Admin Retiros", href: "/dashboard/wallet/admin-withdrawals", icon: <ArrowDownCircleIcon className="w-5 h-5"/>, isPremium: true },
     { label: "Aprobar Pagos", href: "/dashboard/payments/approvals", icon: <CheckBadgeIcon className="w-5 h-5"/>, isPremium: true },
-    { label: "Reportar Pago", href: "/dashboard/reports/payment", icon: <DocumentCheckIcon className="w-5 h-5"/> },
     { label: "Mi Billetera / Retirar", href: "/dashboard/wallet/withdraw", icon: <WalletIcon className="w-5 h-5"/> },
     { label: "Mis Compras", href: "/dashboard/purchases/mine", icon: <ShoppingBagIcon className="w-5 h-5"/> },
     { label: "Métodos de Pago", href: "/dashboard/payment-methods", icon: <CreditCardIcon className="w-5 h-5"/> }, 
   ];
-  const isComprasActive = pathname.startsWith("/dashboard/purchases") || pathname.startsWith("/dashboard/payments") || pathname.startsWith("/dashboard/payment-methods") || isReportPaymentPage || isWalletAdminPage || isWalletWithdrawPage; 
+  const isComprasActive = pathname.startsWith("/dashboard/purchases") || pathname.startsWith("/dashboard/payments") && !pathname.startsWith("/dashboard/payments/report") || pathname.startsWith("/dashboard/payment-methods") || isWalletAdminPage || isWalletWithdrawPage; 
 
   const usuariosItems: DropItem[] = [
     { label: "Crear Usuario Nuevo", href: "/dashboard/users/create", icon: <UserPlusIcon className="w-5 h-5"/> },
@@ -217,13 +214,25 @@ export default function TopNav() {
     { label: "Link de Registro", href: "/dashboard/users/register-url", icon: <LinkIcon className="w-5 h-5"/> },
   ];
   
+  // ✅ 3. CONFIGURACIÓN (CORREGIDO)
   const configItems = useMemo(() => {
     const items: DropItem[] = [
         { label: "Mi Perfil", href: "/dashboard/profile", icon: <UserIcon className="w-5 h-5"/> },
-        { label: "Datos de cuenta", href: "/dashboard/settings/account", icon: <IdentificationIcon className="w-5 h-5"/> },
-        { label: "Seguridad / Clave", href: "/dashboard/settings/password", icon: <LockClosedIcon className="w-5 h-5"/> },
-        { label: "Teléfono / WhatsApp", href: "/dashboard/settings/phone", icon: <DevicePhoneMobileIcon className="w-5 h-5"/> },
-        { label: "Correo Electrónico", href: "/dashboard/settings/email", icon: <EnvelopeIcon className="w-5 h-5"/> },
+        
+        // CORREGIDO: Usamos ?tab=profile porque ya no existe la carpeta settings/personal-info
+        { label: "Datos Personales", href: "/dashboard/settings?tab=profile", icon: <IdentificationIcon className="w-5 h-5"/> },
+
+        // ESTE SE MANTIENE porque el archivo src/app/dashboard/settings/account/page.tsx DEBE EXISTIR
+        { label: "Datos de cuenta", href: "/dashboard/settings/account", icon: <BanknotesIcon className="w-5 h-5"/> },
+        
+        // CORREGIDO: Usamos ?tab=security
+        { label: "Seguridad / Clave", href: "/dashboard/settings?tab=security", icon: <LockClosedIcon className="w-5 h-5"/> },
+        
+        // CORREGIDO: Usamos ?tab=phone
+        { label: "Teléfono / WhatsApp", href: "/dashboard/settings?tab=phone", icon: <DevicePhoneMobileIcon className="w-5 h-5"/> },
+        
+        // CORREGIDO: Usamos ?tab=email
+        { label: "Correo Electrónico", href: "/dashboard/settings?tab=email", icon: <EnvelopeIcon className="w-5 h-5"/> },
     ];
     
     if (isAdminOrSuper) {
@@ -235,7 +244,7 @@ export default function TopNav() {
 
   return (
     <>
-    {/* 1. BARRA DE ESCRITORIO (MODERNIZADA) */}
+    {/* 1. BARRA DE ESCRITORIO */}
     <div className="hidden lg:block w-full bg-white border-b border-gray-100 z-20 relative">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -251,7 +260,6 @@ export default function TopNav() {
             <Dropdown label="COMPRAS" icon={<BanknotesIcon className="w-5 h-5"/>} items={comprasItems} isActive={isComprasActive} />
             <Dropdown label="CONFIGURACIÓN" icon={<Cog6ToothIcon className="w-5 h-5"/>} items={configItems} isActive={pathname.startsWith("/dashboard/settings") || pathname.startsWith("/dashboard/profile") || isTreasuryPage} />
             
-            {/* 🔥 CORRECCIÓN: Mostrar SIEMPRE si es ADMIN o SUPERUSER (Sin IfCan) */}
             {isAdminOrSuper && (
                 <Dropdown label="USUARIOS" icon={<UserGroupIcon className="w-5 h-5"/>} items={usuariosItems} isActive={pathname.startsWith("/dashboard/users")} />
             )}
@@ -298,7 +306,6 @@ export default function TopNav() {
               <MobileNavGroup label="COMPRAS" icon={<BanknotesIcon className="w-5 h-5"/>} items={comprasItems} />
               <MobileNavGroup label="CONFIGURACIÓN" icon={<Cog6ToothIcon className="w-5 h-5"/>} items={configItems} />
               
-              {/* 🔥 CORRECCIÓN: Mostrar SIEMPRE si es ADMIN o SUPERUSER (Mobile) */}
               {isAdminOrSuper && (
                   <MobileNavGroup label="USUARIOS" icon={<UserGroupIcon className="w-5 h-5"/>} items={usuariosItems} />
               )}
@@ -318,7 +325,6 @@ export default function TopNav() {
     </>
   );
 }
-
 
 
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
-// Importación limpia y verificada de HeroIcons v2
+// Importación limpia de HeroIcons
 import {
   HomeIcon, 
   ShoppingBagIcon, 
@@ -21,8 +21,8 @@ import {
   CheckBadgeIcon, 
   ArrowDownCircleIcon, 
   WalletIcon,
-  PlayCircleIcon, // Agregado para Streaming
-  TicketIcon      // Agregado para Historial
+  PlayCircleIcon, 
+  TicketIcon
 } from '@heroicons/react/24/outline';
 
 // Importación de tu componente RBAC
@@ -30,7 +30,8 @@ import IfCan from '../../rbac/IfCan';
 
 function Item({ href, children, className = '' }: { href: string; children: React.ReactNode; className?: string; }) {
   const pathname = usePathname();
-  const active = pathname === href || (href !== '/' && pathname.startsWith(href));
+  // Lógica mejorada para detectar pestañas activas
+  const active = pathname === href || (href.includes('?') && pathname + window.location.search === href);
 
   return (
     <Link
@@ -87,23 +88,20 @@ export default function NavLinksDashboard() {
         <span className="flex items-center gap-2"><HomeIcon className="w-5 h-5"/> Inicio</span>
       </Item>
 
-      {/* --- NUEVA SECCIÓN DE VENTAS (Separada para claridad) --- */}
-      
-      {/* 1. Tienda (Donde compran) */}
+      {/* --- TIENDA --- */}
       <Item href="/dashboard/store">
         <span className="flex items-center gap-2">
             <ShoppingBagIcon className="w-5 h-5"/> Tienda Oficial
         </span>
       </Item>
 
-      {/* 2. Streaming (Donde consumen lo comprado) */}
       <Item href="/dashboard/products/streaming">
         <span className="flex items-center gap-2">
             <PlayCircleIcon className="w-5 h-5"/> Mis Suscripciones
         </span>
       </Item>
 
-      {/* --- MENÚ DE COMPRAS (Finanzas) --- */}
+      {/* --- FINANZAS --- */}
       <details open={purchasesOpen} className="group pt-2">
         <summary className={summaryClass(purchasesOpen)}>
           <TicketIcon className="w-5 h-5"/> Finanzas / Compras
@@ -111,7 +109,6 @@ export default function NavLinksDashboard() {
         <div className="mt-1 ml-3 border-l-2 border-slate-100 pl-3 space-y-1">
           <Item href="/dashboard/purchases">Historial Global</Item>
           
-          {/* Opción protegida: Solo Admins */}
           <IfCan permission="manage_payments">
             <Item href="/dashboard/payments/approvals">
                 <span className="flex items-center gap-2">
@@ -136,7 +133,7 @@ export default function NavLinksDashboard() {
         </div>
       </details>
 
-      {/* --- MENÚ DE REPORTES --- */}
+      {/* --- REPORTES --- */}
       <details open={reportsOpen} className="group pt-1">
         <summary className={summaryClass(reportsOpen)}>
           <DocumentChartBarIcon className="w-5 h-5"/> Reportes
@@ -149,8 +146,7 @@ export default function NavLinksDashboard() {
         </div>
       </details>
 
-      {/* --- MENÚ DE USUARIOS --- */}
-      {/* Protegemos el menú completo de usuarios para que no lo vean clientes normales */}
+      {/* --- USUARIOS --- */}
       <IfCan permission="manage_users">
         <details open={usersOpen} className="group pt-1">
             <summary className={summaryClass(usersOpen)}>
@@ -168,22 +164,47 @@ export default function NavLinksDashboard() {
         </details>
       </IfCan>
 
-      {/* --- MENÚ DE CONFIGURACIÓN --- */}
+      {/* --- CONFIGURACIÓN (AQUÍ ESTABAN LOS ERRORES) --- */}
       <details className="group pt-1">
         <summary className="flex items-center gap-2 list-none rounded-lg px-3 py-2 text-sm cursor-pointer select-none transition-all duration-200 font-bold hover:bg-gray-50 text-slate-700 hover:text-black">
         <Cog6ToothIcon className="w-5 h-5"/> Configuración
         </summary>
         <div className="mt-1 ml-3 border-l-2 border-slate-100 pl-3 space-y-1">
-        <Item href="/dashboard/profile"><span className="flex items-center gap-2"><UserIcon className="w-5 h-5"/> Mi Perfil</span></Item>
-        <Item href="/dashboard/settings/account"><span className="flex items-center gap-2"><IdentificationIcon className="w-5 h-5"/> Datos de cuenta</span></Item>
-        <Item href="/dashboard/settings/password"><span className="flex items-center gap-2"><LockClosedIcon className="w-5 h-5"/> Seguridad / Clave</span></Item>
-        <Item href="/dashboard/settings/phone"><span className="flex items-center gap-2"><DevicePhoneMobileIcon className="w-5 h-5"/> Teléfono / WhatsApp</span></Item>
-        <Item href="/dashboard/settings/email"><span className="flex items-center gap-2"><EnvelopeIcon className="w-5 h-5"/> Correo Electrónico</span></Item>
-        
-        {/* Solo Admin ve Comisiones */}
-        <IfCan permission="manage_users">
-            <Item href="/dashboard/settings/commissions"><span className="flex items-center gap-2"><BanknotesIcon className="w-5 h-5"/> Comisiones</span></Item>
-        </IfCan>
+            <Item href="/dashboard/profile">
+                <span className="flex items-center gap-2"><UserIcon className="w-5 h-5"/> Mi Perfil</span>
+            </Item>
+            
+            {/* ✅ CORREGIDO: Redirige a la pestaña 'profile' del settings unificado */}
+            <Item href="/dashboard/settings?tab=profile">
+                <span className="flex items-center gap-2"><IdentificationIcon className="w-5 h-5"/> Datos Personales</span>
+            </Item>
+
+            {/* Este apunta a Mis Cuentas Bancarias (DEBE EXISTIR EL ARCHIVO) */}
+            <Item href="/dashboard/settings/account">
+                <span className="flex items-center gap-2"><BanknotesIcon className="w-5 h-5"/> Cuentas Bancarias</span>
+            </Item>
+            
+            {/* ✅ CORREGIDO: Redirige a la pestaña 'security' */}
+            <Item href="/dashboard/settings?tab=security">
+                <span className="flex items-center gap-2"><LockClosedIcon className="w-5 h-5"/> Seguridad / Clave</span>
+            </Item>
+            
+            {/* ✅ CORREGIDO: Redirige a la pestaña 'phone' */}
+            <Item href="/dashboard/settings?tab=phone">
+                <span className="flex items-center gap-2"><DevicePhoneMobileIcon className="w-5 h-5"/> Teléfono / WhatsApp</span>
+            </Item>
+            
+            {/* ✅ CORREGIDO: Redirige a la pestaña 'email' */}
+            <Item href="/dashboard/settings?tab=email">
+                <span className="flex items-center gap-2"><EnvelopeIcon className="w-5 h-5"/> Correo Electrónico</span>
+            </Item>
+            
+            <IfCan permission="manage_users">
+                {/* ESTE DEBE EXISTIR FÍSICAMENTE EN /settings/commissions */}
+                <Item href="/dashboard/settings/commissions">
+                    <span className="flex items-center gap-2"><BanknotesIcon className="w-5 h-5"/> Comisiones</span>
+                </Item>
+            </IfCan>
         </div>
       </details>
 

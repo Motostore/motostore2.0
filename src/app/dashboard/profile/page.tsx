@@ -13,57 +13,64 @@ import {
   EnvelopeIcon,
   PhoneIcon
 } from '@heroicons/react/24/solid'; 
+
+// Importamos la lógica centralizada de roles
 import { normalizeRole, roleLabel } from '@/app/lib/roles';
 
 export default function ProfilePage() {
   const { data: session } = useSession();
   const user = session?.user as any;
 
-  // --- 1. Extracción de Datos ---
+  // --- 1. Extracción y Normalización de Datos ---
   const id = user?.id || user?.userId || '---';
   const name = user?.name || user?.username || 'Usuario';
   const dni = user?.dni || user?.cedula || user?.identification || 'No registrada';
   const email = user?.email || '---';
   const phone = user?.phone || user?.mobile || '---';
   const balance = typeof user?.balance === 'number' ? user?.balance : 0;
-  const role = normalizeRole(user?.role || user?.rol);
+  
+  // Normalización del Rol
+  const rawRole = user?.role || user?.rol;
+  const role = normalizeRole(rawRole);
+  const displayRole = roleLabel[role];
+
   const createdAt = user?.createdAt ? new Date(user.createdAt).toLocaleDateString('es-VE') : '---';
   const image = user?.image || null;
 
-  // Datos del Distribuidor
-  const parentName = user?.parentName || 'Administrador Principal';
-  const parentPhone = user?.parentPhone || '0412-0000000';
-  const parentEmail = user?.parentEmail || 'soporte@motostore.com';
+  // Datos del Distribuidor (Padre)
+  const parentName = user?.parentName || 'Moto Store Soporte';
+  const parentPhone = user?.parentPhone || '+58 412-0000000';
+  const parentEmail = user?.parentEmail || 'soporte@motostorellc.com';
 
   // --- 2. Formateo de Dinero ---
   const formattedBalance = new Intl.NumberFormat('es-VE', { 
     style: 'currency', currency: 'USD' 
   }).format(balance);
 
-  // --- 3. Componente de Fila (Row) ---
+  // --- 3. Componente de Fila (Reutilizable) ---
   const InfoRow = ({ icon, label, value, actionLink }: { icon?: any, label: string, value: string | React.ReactNode, actionLink?: string }) => (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-5 border-b border-slate-100 last:border-0 hover:bg-red-50/30 transition-colors px-4 -mx-4 rounded-xl">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-5 border-b border-slate-100 last:border-0 hover:bg-red-50/30 transition-colors px-4 -mx-4 rounded-xl group">
         <div className="flex items-center gap-3">
-            {icon && <div className="p-2 bg-red-50 rounded-lg text-[#E33127]">{icon}</div>}
+            {icon && <div className="p-2 bg-red-50 rounded-lg text-[#E33127] group-hover:bg-[#E33127] group-hover:text-white transition-colors">{icon}</div>}
             <div className="flex flex-col">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</span>
-                <span className="font-bold text-base text-slate-800">{value}</span>
+                <span className="font-bold text-base text-slate-800 break-all">{value}</span>
             </div>
         </div>
         
         {actionLink && (
             <Link 
                 href={actionLink} 
-                className="group flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-[#E33127] transition-colors uppercase tracking-wider"
+                className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-[#E33127] transition-colors uppercase tracking-wider bg-white px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm hover:shadow-md"
             >
-                Editar <PencilSquareIcon className="w-3 h-3 group-hover:scale-110 transition-transform"/>
+                Editar <PencilSquareIcon className="w-3 h-3"/>
             </Link>
         )}
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20 p-4 md:p-8">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20 p-4 md:p-8 animate-in fade-in duration-500">
       
       {/* HEADER SUPERIOR */}
       <div className="max-w-6xl mx-auto mb-6">
@@ -71,8 +78,8 @@ export default function ProfilePage() {
            <ArrowLeftIcon className="w-3 h-3" /> Volver al Dashboard
         </Link>
 
-        <div className="flex items-center justify-between bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white relative overflow-hidden">
-            <div className="flex items-center gap-5 relative z-10">
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white relative overflow-hidden gap-6">
+            <div className="flex items-center gap-5 relative z-10 w-full">
                 <div className="p-4 bg-red-50 rounded-2xl border border-red-100 shadow-inner">
                     <UserCircleIcon className="w-10 h-10 text-[#E33127]" />
                 </div>
@@ -85,7 +92,7 @@ export default function ProfilePage() {
                     </p>
                 </div>
             </div>
-            {/* Decoración de fondo sutil ROJA */}
+            {/* Decoración de fondo */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-red-600/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
         </div>
       </div>
@@ -115,14 +122,19 @@ export default function ProfilePage() {
 
                 {/* Nombre y Rol */}
                 <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">{name}</h2>
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black border bg-red-50 text-[#E33127] border-red-100 uppercase tracking-widest mb-8 shadow-sm">
+                
+                {/* Etiqueta de Rol Dinámica */}
+                <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black border uppercase tracking-widest mb-8 shadow-sm ${
+                    role === 'SUPERUSER' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                    role === 'ADMIN' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                    'bg-red-50 text-[#E33127] border-red-100'
+                }`}>
                     <ShieldCheckIcon className="w-3.5 h-3.5" />
-                    {roleLabel[role] || role}
+                    {displayRole}
                 </span>
 
                 {/* Saldo Estilo Tarjeta ROJA (MOTOSTORE) */}
                 <div className="w-full bg-gradient-to-br from-[#E33127] to-red-600 rounded-2xl p-6 text-white shadow-lg shadow-red-200 relative overflow-hidden group">
-                    {/* Brillo blanco sutil */}
                     <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/20 rounded-full blur-xl group-hover:bg-white/30 transition-all"></div>
                     
                     <div className="flex flex-col items-start relative z-10">
@@ -166,12 +178,17 @@ export default function ProfilePage() {
                             icon={<ShieldCheckIcon className="w-4 h-4"/>}
                             label="ID de Cliente" 
                             value={`#${id}`} 
+                            // ID no se edita normalmente
                         />
+                        
+                        {/* ✅ AHORA SI: Documento con Link de Editar */}
                         <InfoRow 
                             icon={<IdentificationIcon className="w-4 h-4"/>}
                             label="Documento (DNI/Cédula)" 
                             value={dni} 
+                            actionLink="/dashboard/settings?tab=profile" 
                         />
+
                         <InfoRow 
                             icon={<EnvelopeIcon className="w-4 h-4"/>}
                             label="Correo Electrónico" 
@@ -195,7 +212,6 @@ export default function ProfilePage() {
                         <InfoRow 
                             label="Distribuidor Asignado" 
                             value={parentName} 
-                            actionLink="/dashboard/settings?tab=distributor"
                         />
                         <InfoRow 
                             label="Contacto Directo" 

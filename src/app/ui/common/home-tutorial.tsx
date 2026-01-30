@@ -1,95 +1,89 @@
 import React from 'react';
-// IMPORTACIÓN DE ICONOS HEROICONS
-import {
-  DevicePhoneMobileIcon, // Recargas
-  KeyIcon, // Licencias Digitales
-  PencilSquareIcon, // Panel de Usuario
-  MegaphoneIcon, // Marketing Digital
-  ShieldCheckIcon, // Métodos Flexibles
-  RssIcon // ICONO PARA STARLINK (Señal de Antena/Broadcast)
-} from "@heroicons/react/24/outline";
 
 export default function HomeTutorial() {
   
-  // Definición del tamaño del icono SVG
-  const iconSvgClass = "w-8 h-8";
-
-  // Componente interno para las tarjetas
-  const ServiceCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
-    <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-default">
+  // Componente de Tarjeta
+  const FeatureCard = ({ image, title, description }: { image: string, title: string, description: string }) => (
+    <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-default flex flex-col items-center text-center">
       
-      {/* ICONO (SVG COMPONENT) */}
-      <div className="h-16 w-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-3xl mb-6 group-hover:scale-110 group-hover:bg-red-600 group-hover:text-white transition-all duration-300 mx-auto shadow-inner">
-        <Icon className={iconSvgClass} /> {/* Usamos el componente SVG */}
+      {/* IMAGEN FLOTANTE */}
+      <div className="h-20 w-20 mb-6 transition-transform duration-500 group-hover:-translate-y-2 group-hover:scale-110">
+        <img 
+          src={image} 
+          alt={title} 
+          className="w-full h-full object-contain drop-shadow-md"
+          loading="lazy"
+        />
       </div>
       
-      {/* Título (Rojo al pasar el mouse) */}
-      <h4 className="text-center font-bold text-xl mb-3 text-slate-900 group-hover:text-red-600 transition-colors">
+      {/* Título */}
+      <h4 className="font-black text-lg uppercase tracking-tight mb-3 text-slate-900 group-hover:text-[#E33127] transition-colors">
         {title}
       </h4>
       
       {/* Descripción */}
-      <p className="text-center text-gray-500 text-sm leading-relaxed">
+      <p className="text-slate-500 text-sm leading-relaxed font-medium max-w-xs">
         {description}
       </p>
     </div>
   );
 
   return (
-    <div className='p-4 md:p-10 bg-gray-50'>
-      <div className='container mx-auto px-2 lg:px-16 my-4'>
+    <div className='py-16 bg-white border-t border-slate-100'>
+      <div className='container mx-auto px-4 lg:px-16'>
         
-        {/* Título de la Sección con Decoración */}
-        <div className="text-center mb-12">
-          <h2 className="text-gray-900 uppercase text-center text-2xl md:text-3xl font-extrabold tracking-tight">
-            Nuestras Soluciones
+        {/* Título */}
+        <div className="text-center mb-16">
+          <span className="text-[#E33127] font-black uppercase tracking-widest text-xs mb-2 block">
+            ¿Por qué elegirnos?
+          </span>
+          <h2 className="text-slate-900 uppercase text-center text-3xl md:text-4xl font-black tracking-tight">
+            Nuestras Ventajas
           </h2>
-          {/* Pequeña línea roja decorativa debajo del título */}
-          <div className="h-1 w-20 bg-red-600 rounded-full mx-auto mt-3 opacity-80"></div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           
-          {/* 1. Starlink (Icono: Antena/Señal de Transmisión) */}
-          <ServiceCard 
-            icon={RssIcon}
-            title="Starlink"
-            description="Gestiona y paga tu servicio de internet satelital Starlink de forma fácil, asegurando tu conexión de alta velocidad sin interrupciones."
+          {/* 1. CALCULADORA (✅ IMAGEN LOCAL) */}
+          <FeatureCard 
+            image="/calculadora-paypal.png" 
+            title="Calculadora PayPal"
+            description="Herramienta exclusiva para calcular comisiones exactas antes de enviar o recibir saldo."
           />
 
-          {/* 2. Recargas (Teléfono Móvil) */}
-          <ServiceCard 
-            icon={DevicePhoneMobileIcon}
-            title="Recargas"
-            description="Saldo al instante para operadoras internacionales (Movistar, Digitel, Claro, Tigo). Conexión inmediata para ti o tus clientes."
+          {/* 2. RESPALDO LEGAL */}
+          <FeatureCard 
+            image="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Classical%20Building.png"
+            title="Empresa Tri-Nacional"
+            description="Operamos legalmente registrados en USA, Colombia y Venezuela. 100% seguro."
           />
 
-          {/* 3. Licencias Digitales (Llave/Acceso) */}
-          <ServiceCard 
-            icon={KeyIcon}
-            title="Licencias Digitales"
-            description="Software y licencias originales activadas al momento. Soluciones legales y seguras para potenciar tu negocio o emprendimiento."
+          {/* 3. MULTI-MONEDA (✅ CAMBIADO A TARJETA CRÉDITO 3D - CARGA SEGURO) */}
+          <FeatureCard 
+            image="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Credit%20Card.png"
+            title="Pagos Flexibles"
+            description="Recibimos y enviamos en tu moneda local: Bolívares, Pesos, Zelle y USDT."
           />
 
-          {/* 4. Panel de Usuario (Lápiz/Control) */}
-          <ServiceCard 
-            icon={PencilSquareIcon}
-            title="Panel de Usuario"
-            description="Accede a un panel intuitivo para gestionar tus compras, ver historial y controlar tus servicios digitales en un solo lugar."
+          {/* 4. SOPORTE HUMANO (✅ CAMBIADO A TECNÓLOGO 3D - CARGA SEGURO) */}
+          <FeatureCard 
+            image="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man%20Technologist.png"
+            title="Soporte Humano"
+            description="Nada de bots. Atención personalizada vía WhatsApp con agentes reales."
           />
 
-          {/* 5. Marketing Digital (Megáfono) */}
-          <ServiceCard 
-            icon={MegaphoneIcon}
-            title="Marketing Digital"
-            description="Estrategias de crecimiento real: Gestión de Ads, Branding y posicionamiento SEO para llevar tu marca al siguiente nivel."
+          {/* 5. GARANTÍA */}
+          <FeatureCard 
+            image="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Check%20Mark%20Button.png"
+            title="Garantía de Servicio"
+            description="En Streaming y Licencias, ofrecemos reposición o te devolvemos el dinero."
           />
 
-          {/* 6. Métodos Flexibles (Escudo/Seguridad) */}
-          <ServiceCard 
-            icon={ShieldCheckIcon}
-            title="Métodos Flexibles"
-            description="Aceptamos múltiples formas de pago adaptadas a tu país: Transferencias, Pago Móvil, Binance, Zelle y Tarjetas Internacionales."
+          {/* 6. VELOCIDAD */}
+          <FeatureCard 
+            image="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Stopwatch.png"
+            title="Entrega Inmediata"
+            description="Sistemas optimizados para procesar y entregar en minutos. Respetamos tu tiempo."
           />
 
         </div>

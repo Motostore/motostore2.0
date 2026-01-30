@@ -1,56 +1,127 @@
-// src/app/page.tsx
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
+// 1. CONFIGURACIÓN SEO (ALCANCE MUNDIAL)
 export const metadata: Metadata = {
-  title: "Moto Store LLC | Soluciones Digitales 24/7",
+  // 🔥 TÍTULO GLOBAL
+  title: "Moto Store LLC | Remesas Globales P2P, PayPal y Desarrollo Web",
+  
   description:
-    "Plataforma oficial de Moto Store LLC con soluciones digitales, herramientas avanzadas y productos seleccionados para tu negocio.",
+    "Plataforma global de servicios digitales. Remesas y Cambios P2P Internacionales (Zelle, USDT, Euros, Bolívares). Agencia de Desarrollo Web, Marketing y Streaming Premium.",
+  
   keywords: [
+    // 1. MARCA
     "Moto Store LLC",
-    "soluciones digitales",
-    "plataforma online",
-    "herramientas digitales",
-    "calculadora PayPal",
-    "Moto Store",
+    
+    // 2. FINANZAS GLOBAL (SIN FRONTERAS)
+    "Remesas Internacionales",
+    "Cambio P2P Global",
+    "Exchange Crypto",
+    "Vender USDT",
+    "Zelle Exchange",
+    "Envío de Dinero al Extranjero",
+    "International Money Transfer",
+    
+    // 3. PAYPAL
+    "Calculadora PayPal",
+    "Vender Saldo PayPal",
+    "Exchange PayPal",
+    
+    // 4. SERVICIOS PROFESIONALES
+    "Desarrollo Web",
+    "Marketing Digital",
+    "Diseño de Apps",
+    "SEO",
+    
+    // 5. ENTRETENIMIENTO
+    "Cuentas Streaming",
+    "Licencias Digitales",
   ],
+  
   alternates: {
     canonical: "https://motostorellc.com",
   },
+  
   openGraph: {
-    title: "Moto Store LLC | Soluciones Digitales 24/7",
+    title: "Moto Store LLC | Servicios Financieros y Digitales Globales",
     description:
-      "Explora la plataforma de Moto Store LLC: herramientas digitales, calculadoras y soluciones profesionales.",
+      "Tu puente financiero global. Cambios P2P seguros (Cripto/Fiat), Remesas Internacionales y Soluciones Web para tu negocio en cualquier parte del mundo.",
     url: "https://motostorellc.com",
     siteName: "Moto Store LLC",
     images: [
       {
-        url: "https://motostorellc.com/og/home-motostore-2025.png",
+        url: "/og/home-motostore-2025.png",
         width: 1200,
         height: 630,
-        alt: "Moto Store LLC - Home",
+        alt: "Moto Store LLC - Global Services",
       },
     ],
-    locale: "es_ES",
+    locale: "es_VE", // Idioma principal español
     type: "website",
   },
+  
   twitter: {
     card: "summary_large_image",
-    title: "Moto Store LLC | Soluciones Digitales 24/7",
+    title: "Moto Store LLC | Remesas y Tech Global",
     description:
-      "Herramientas y soluciones digitales profesionales de Moto Store LLC para tu negocio.",
-    images: ["https://motostorellc.com/og/home-motostore-2025.png"],
+      "Cambios P2P Internacionales, PayPal, Streaming y Desarrollo Web sin fronteras.",
+    images: ["/og/home-motostore-2025.png"],
   },
+  
   robots: {
     index: true,
     follow: true,
     nocache: false,
   },
+  
+  verification: {
+    // google: "TU_CODIGO", 
+  },
 };
 
 export default function HomePage() {
-  // Server component muy ligero: solo envuelve al cliente
-  return <HomeClient />;
+  
+  // 2. DATOS ESTRUCTURADOS (JSON-LD MUNDIAL)
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Moto Store LLC",
+    "url": "https://motostorellc.com",
+    "logo": "https://motostorellc.com/icon-192.png",
+    "description": "Plataforma global de servicios financieros P2P, remesas internacionales y agencia digital.",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+1-352-224-8881",
+      "contactType": "customer service",
+      "areaServed": "World", // 🌍 ¡AQUÍ ESTÁ LA CLAVE! (Mundo entero)
+      "availableLanguage": ["es", "en"]
+    },
+    "sameAs": [
+      "https://facebook.com/MotoStoreLLC",
+      "https://instagram.com/motostorellc",
+      "https://tiktok.com/@motostorellc",
+      "https://youtube.com/@motostorellc"
+    ],
+    "offers": {
+      "@type": "Offer",
+      "itemOffered": [
+        { "@type": "Service", "name": "Remesas y Cambios P2P Internacionales" },
+        { "@type": "Service", "name": "Exchange Cripto y Fiat (Zelle/PayPal)" },
+        { "@type": "Service", "name": "Desarrollo Web y Apps" },
+        { "@type": "Service", "name": "Marketing Digital" }
+      ]
+    }
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <HomeClient />
+    </>
+  );
 }
 
 

@@ -1,5 +1,3 @@
-// src/app/ui/header.tsx (FECHA EN NEGRITA - DISEÑO FINAL)
-
 "use client";
 
 import Link from "next/link";
@@ -12,19 +10,19 @@ export default function Header() {
   const fecha = currentDate();
 
   // Colores Premium
-  const TEXT_DARK = 'text-slate-900'; // Color oscuro para textos principales
-  const TEXT_GRAY = 'text-slate-600'; // Gris un poco más oscuro para que la negrita se note bien
+  const TEXT_DARK = 'text-slate-900'; 
+  const TEXT_GRAY = 'text-slate-600'; 
   const BRAND_HOVER = 'text-[#E33127]';
 
   return (
-    <header className="w-full bg-white relative font-sans z-40">
+    <header className="w-full bg-white relative font-sans z-40 border-b border-gray-100">
       
       <div className="container mx-auto px-4 py-4 md:py-5 md:px-8 max-w-7xl">
         
-        {/* Alineación Horizontal Perfecta */}
+        {/* Alineación Horizontal */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4"> 
           
-          {/* ================= IZQUIERDA: DISEÑO LINEAL (Intacto) ================= */}
+          {/* ================= IZQUIERDA: LOGO Y MARCA ================= */}
           <Link 
             href="/" 
             className="flex items-center gap-4 group md:w-auto justify-center md:justify-start"
@@ -41,7 +39,7 @@ export default function Header() {
                />
             </div>
 
-            {/* 2. TEXTO EN LÍNEA */}
+            {/* 2. TEXTO */}
             <div className="flex items-center text-center md:text-left leading-none">
               
               {/* NOMBRE */}
@@ -60,30 +58,23 @@ export default function Header() {
           
           </Link>
 
-
-          {/* ================= DERECHA: WIDGET (FECHA EN NEGRITA) ================= */}
-          <div className="hidden lg:flex items-center">
+          {/* ================= DERECHA: WIDGET DE FECHA ================= */}
+          <div className="hidden lg:flex items-center gap-6">
             
-            {/* Cápsula elegante sin icono */}
+            {/* Cápsula de Fecha/Hora */}
             <div className="flex items-center justify-center bg-gray-50 px-6 py-2 rounded-full border border-gray-100 transition-shadow hover:shadow-sm">
-              
               <div className="text-right flex flex-col">
-                
-                {/* SALUDO (Negrita) */}
                 <span className={`text-sm font-bold ${TEXT_DARK} leading-none`}>
                   {saludo}
                 </span>
-                
-                {/* FECHA (AHORA EN NEGRITA TAMBIÉN) 
-                    - Cambié font-semibold por font-bold.
-                    - Usé TEXT_GRAY (slate-600) para que se lea nítido.
-                */}
                 <span className={`text-[11px] font-bold ${TEXT_GRAY} uppercase tracking-wide mt-0.5`}>
                   {fecha}
                 </span>
               </div>
-
             </div>
+
+            {/* ⚠️ AQUÍ FALTAN TUS BOTONES DE MENÚ Y LOGIN */}
+            {/* Por ahora solo mostramos Logo y Fecha como pediste */}
 
           </div>
 

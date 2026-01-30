@@ -3,48 +3,44 @@
 /* =========================================
    CONFIGURACIÓN BASE
    ========================================= */
-
 @layer base {
-  /* Suavizado de fuentes para que se vean nítidas en iPhone/Mac */
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
   body {
     @apply bg-gray-50 text-slate-900;
   }
 }
 
 /* =========================================
-   PARCHES CRÍTICOS DE COMPATIBILIDAD
+   PARCHES CRÍTICOS
    ========================================= */
-
-/* 1. CORRECCIÓN DE ICONOS GIGANTES (SVG BUG) */
+/* 1. Arreglo para iconos SVG que se ven gigantes */
 svg:not([fill="currentColor"]):not([viewBox="0 0 24 24"]):not([class*="w-"]):not([class*="h-"]) {
     width: 24px;
     height: 24px;
 }
 
-/* 2. CONTROL DE IMÁGENES Y LOGOS */
-.motostore-logo img, 
-figure img {
+/* 2. Imágenes responsivas */
+.motostore-logo img, figure img {
     max-width: 100%;
     height: auto;
     object-fit: contain;
 }
 
 /* =========================================
-   ANIMACIONES (Marquee / Noticias)
+   🔥 ANIMACIÓN MARQUEE (BARRA DE NOTICIAS)
    ========================================= */
 @keyframes marquee {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); } /* Bucle perfecto */
 }
 
 .animate-marquee {
-  display: inline-block;
-  animation: marquee 30s linear infinite;
+  display: flex;
+  width: max-content;
+  animation: marquee 80s linear infinite; /* Velocidad suave */
 }
 
 .animate-marquee:hover {
@@ -52,34 +48,29 @@ figure img {
 }
 
 /* =========================================
-   🌟 ESTILOS DE CARRUSEL (ULTRA PREMIUM)
-   (Agregados aquí para evitar errores de compilación)
+   ESTILOS DE CARRUSEL (SLIDER)
    ========================================= */
-
 .each-slide-effect > div {
-  /* Contenedor de la imagen: Flexbox moderno + Altura responsiva */
   @apply flex items-center justify-center bg-cover bg-center;
-  @apply h-[220px] md:h-[350px]; /* Altura adaptable móvil/desktop */
+  @apply h-[220px] md:h-[350px]; 
   @apply rounded-2xl shadow-md overflow-hidden; 
 }
 
 .each-slide-effect span {
-  /* Tarjeta flotante de texto (Glassmorphism sutil) */
   @apply px-6 py-4 text-lg font-semibold;
   @apply bg-white/95 backdrop-blur-sm border border-slate-100;
   @apply text-slate-800 text-center rounded-xl shadow-sm;
 }
 
-/* Indicadores (Puntos de navegación) */
+/* Indicadores del Slider */
 .indicator {
   @apply cursor-pointer mx-1 text-center border-2 border-transparent;
   @apply rounded-full transition-all duration-300 ease-out;
-  @apply bg-slate-200 text-transparent; /* Inactivo */
+  @apply bg-slate-200 text-transparent; 
   @apply w-3 h-3 p-0 inline-block;
 }
 
 .indicator.active {
-  /* Estado Activo: Color oscuro elegante + Escala */
   @apply bg-slate-800 border-slate-800 scale-125;
 }
 

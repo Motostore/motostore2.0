@@ -1,122 +1,104 @@
-/*-------------------------------------------------------------------
-|  🐼 React FC Input
-|
-|  🦝 Todo: CREATE RE-USEABLE INPUT COMPOENT
-|
-|  🐸 Returns:  JSX
-*-------------------------------------------------------------------*/
+"use client";
 
-import cn from 'classnames';
-// ⭐ ASUMIMOS que findInputError, isFormInvalid ya están importados
-import { findInputError, isFormInvalid } from '../utils'; 
-// Asegúrate de que estos tipos se exporten correctamente desde el path configurado
-import { FieldValues, RegisterOptions, useFormContext, UseFormSetValue } from 'react-hook-form'; 
-import { AnimatePresence, motion } from 'framer-motion';
-import { MdError } from 'react-icons/md';
-import { InputProps } from '../types/input-props.interface'; // ⭐ Usamos tu interfaz
+import { useFormContext } from "react-hook-form";
+import { AnimatePresence, motion } from "framer-motion";
+import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
+import cn from "classnames";
 
-// 🛑 CORRECCIÓN: Tipar el componente InputError
-interface InputErrorProps {
-  message: string;
+// Definimos la interfaz directamente aquí para evitar conflictos de importación
+interface InputProps {
+  id: string;
+  name: string;
+  label: string;
+  type?: string;
+  placeholder?: string;
+  validation?: object; // Reglas de RHF
+  multiline?: boolean; // Para saber si renderizar <textarea>
+  className?: string;
 }
 
-// 🛑 CORRECCIÓN: Usar la interfaz tipada InputProps
-export const Input = ({ 
-  name, 
-  label, 
-  type, 
-  id, 
-  placeholder, 
-  validation, 
-  className, 
-  value, 
-  functions, 
-  onInputChange 
+export const Input = ({
+  id,
+  name,
+  label,
+  type = "text",
+  placeholder = "",
+  validation = {},
+  multiline = false,
+  className = "",
 }: InputProps) => {
-
-  // 🛑 CORRECCIÓN TS2345: Tipar register y setValue si es necesario, pero UseFormContext
-  // generalmente se encarga de inferir los tipos si el contexto principal es correcto.
+  
+  // 1. Obtenemos los métodos del contexto del formulario padre
   const {
     register,
-    // setValue debe ser tipado para el uso en la línea 40
-    setValue, 
     formState: { errors },
   } = useFormContext();
 
-  // 🛑 CORRECCIÓN TS2345: Aseguramos que 'name' es un string para findInputError 
-  const inputError = findInputError(errors, name as string);
-  const isInvalid = isFormInvalid(inputError);
-  
-  // 🛑 CORRECCIÓN TS2345: Aseguramos que 'validation' es el tipo correcto
-  const valid = validation as RegisterOptions<FieldValues, string>;
-  let params: any = {};
+  // 2. Buscamos errores específicos para este campo
+  // Usamos una lógica segura para encontrar el error incluso si name es "user.name"
+  const inputError = errors?.[name];
+  const isInvalid = !!inputError;
 
-  if (functions) {
-    // 🛑 CORRECCIÓN TS2722 y TS2345: Añadimos chequeos de nulidad y tipado explícito de 'e' si 'onInputChange' existe.
-    params = {
-      ...register(name as string, { ...valid }),
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => onInputChange && onInputChange(e),
-    };
+  // 3. Definimos los estilos base (Moto Store Theme)
+  const baseStyles = `
+    w-full p-4 rounded-xl border-2 outline-none font-medium transition-all duration-200
+    placeholder:text-slate-400
+    disabled:bg-slate-100 disabled:text-slate-400
+  `;
 
-  } else {
-    // 🛑 CORRECCIÓN TS2345: Aseguramos que 'name' es un string
-    params = {...register(name as string, {
-      ...valid,
-    })}
-  }
-
-  // 🛑 CORRECCIÓN TS2345: setValue espera un string para el nombre del campo. Usamos 'as string' o '!'
-  // Además, value debe ser 'string | undefined' según tu interfaz, por eso usamos value || ""
-  (setValue as UseFormSetValue<any>)(name as string, value || "");
-
-
-  const input_tailwind = type === "file" ? "" :
-  'bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-orange-500 dark:focus:border-orange-500'
+  // Estilos según el estado (Error vs Normal)
+  const stateStyles = isInvalid
+    ? "bg-white border-red-100 text-red-600 focus:border-red-500 focus:bg-red-50/10"
+    : "bg-slate-50 border-slate-100 text-slate-700 focus:border-slate-900 focus:bg-white hover:border-slate-200";
 
   return (
-    <div className={cn('flex flex-col w-full gap-2', className)}>
-      <div className="flex justify-between">
-        <label htmlFor={id} className="font-semibold capitalize">
+    <div className={cn("flex flex-col gap-2 w-full", className)}>
+      
+      {/* HEADER DEL INPUT: Label + Mensaje de Error */}
+      <div className="flex justify-between items-center min-h-[24px]">
+        <label 
+          htmlFor={id} 
+          className="text-xs font-black uppercase tracking-wider text-slate-500"
+        >
           {label}
         </label>
+        
         <AnimatePresence mode="wait" initial={false}>
-          {/* 🛑 CORRECCIÓN TS18048: inputError.error es posible que sea undefined 
-             Usamos encadenamiento opcional (?) y aseguramos que inputError existe */}
-          {isInvalid && inputError?.error?.message && (
-            <InputError
-              message={inputError.error.message}
-              key={inputError.error.message}
-            />
+          {isInvalid && (
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center gap-1 text-red-500 bg-red-50 px-2 py-0.5 rounded-md"
+            >
+              <ExclamationCircleIcon className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase tracking-tight">
+                {inputError?.message?.toString()}
+              </span>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* RENDERIZADO CONDICIONAL: Textarea o Input */}
+      {multiline ? (
+        <textarea
+          id={id}
+          placeholder={placeholder}
+          className={cn(baseStyles, stateStyles, "resize-none h-32")}
+          // 🔥 AQUÍ OCURRE LA MAGIA: spread de register conecta todo con RHF
+          {...register(name, validation)} 
+        />
+      ) : (
         <input
           id={id}
           type={type}
-          className={cn(input_tailwind)}
           placeholder={placeholder}
-          {...params}
+          className={cn(baseStyles, stateStyles)}
+          {...register(name, validation)}
         />
+      )}
     </div>
-  )
-}
-
-// 🛑 CORRECCIÓN TS7031: Aplicar la interfaz InputErrorProps
-const InputError = ({ message }: InputErrorProps) => {
-  return (
-    <motion.p
-      className="flex items-center gap-1 px-2 font-semibold text-red-500 bg-red-100 rounded-md"
-      {...framer_error}
-    >
-      <MdError />
-      {message}
-    </motion.p>
-  )
-}
-
-const framer_error = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 10 },
-  transition: { duration: 0.2 },
-}
+  );
+};

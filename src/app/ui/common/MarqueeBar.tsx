@@ -1,5 +1,3 @@
-// src/app/ui/common/MarqueeBar.tsx (SIN BORDES - DISEÑO LIMPIO)
-
 "use client";
 
 import React from "react";
@@ -10,23 +8,38 @@ interface MarqueeBarProps {
 }
 
 export default function MarqueeBar({ text, styleType = "default" }: MarqueeBarProps) {
+  
+  // Componente interno para repetir el texto y mantener el código limpio
+  const MarqueeItem = () => (
+    <div className="flex items-center mx-4">
+      <span className="text-sm font-bold text-slate-700 tracking-wide uppercase whitespace-nowrap">
+        {text}
+      </span>
+      {/* Separador sutil (Punto Rojo Moto Store) */}
+      <span className="text-[#E33127] mx-6 text-xs">•</span>
+    </div>
+  );
+
   return (
-    // 🔥 CAMBIO PRO: 
-    // 1. 'bg-white': Fondo blanco para fusionarse con el resto.
-    // 2. Eliminamos cualquier 'border', 'border-b' o 'shadow'.
-    // 3. 'overflow-hidden': Para asegurar que la animación no rompa el diseño.
-    <div className="w-full bg-white relative overflow-hidden py-2">
+    // CAMBIO PRO:
+    // 1. 'bg-slate-50': Un gris imperceptible que da estructura sin usar bordes.
+    // 2. 'overflow-hidden': Vital para la animación.
+    <div className="w-full bg-slate-50 relative overflow-hidden py-3 z-30">
       
-      {/* Contenedor del texto con animación suave */}
-      <div className="relative flex overflow-x-hidden">
-        <div className="animate-marquee whitespace-nowrap py-1">
-          {/* Texto con estilo profesional y color gris oscuro (slate-700) para buen contraste */}
-          <span className="text-sm md:text-base font-semibold text-slate-700 mx-4">
-            {text}
-          </span>
-          {/* Repetimos el texto para el efecto infinito si es necesario, 
-              o simplemente dejamos el span principal si tu animación CSS ya lo maneja. */}
-        </div>
+      {/* MÁSCARA VISUAL (Opcional): Difumina los bordes izquierdo/derecho para efecto elegante */}
+      <div className="absolute top-0 left-0 w-12 h-full bg-gradient-to-r from-slate-50 to-transparent z-10"></div>
+      <div className="absolute top-0 right-0 w-12 h-full bg-gradient-to-l from-slate-50 to-transparent z-10"></div>
+
+      {/* CONTENEDOR DE ANIMACIÓN */}
+      {/* Usamos 'flex' y duplicamos el contenido para el efecto infinito perfecto */}
+      <div className="flex w-max animate-marquee hover:pause">
+        <MarqueeItem />
+        <MarqueeItem />
+        <MarqueeItem />
+        <MarqueeItem />
+        {/* Repetimos lo suficiente para llenar monitores grandes */}
+        <MarqueeItem /> 
+        <MarqueeItem />
       </div>
 
     </div>

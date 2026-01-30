@@ -1,18 +1,19 @@
-// src/app/common.ts (EDICIÓN FINAL: CÓDIGO LIMPIO Y EFICIENTE)
+// src/app/common.ts
 
 /**
- * Retorna el saludo del día basado en la hora local (0-23h).
- * Optimizado: Sin procesamiento de strings innecesario.
+ * 1. SALUDO (partsOfTheDay)
+ * Retorna el saludo basado en la hora local del negocio (Colombia/USA/Venezuela).
  */
 export const partsOfTheDay = (name: string = "") => {
-  const hour = new Date().getHours();
+  // Usamos hora de Colombia/USA (GMT-5) como referencia central
+  const localTime = new Date().toLocaleString("en-US", { timeZone: "America/Bogota" });
+  const hour = new Date(localTime).getHours();
   
-  // Asignamos directamente el string formateado (Title Case) para ahorrar CPU
-  let greeting = "Buenas Noches"; // Por defecto cubre de 20:00 a 04:59
+  let greeting = "Buenas Noches"; 
 
   if (hour >= 5 && hour < 12) {
     greeting = "Buenos Días";
-  } else if (hour >= 12 && hour < 20) {
+  } else if (hour >= 12 && hour < 19) { 
     greeting = "Buenas Tardes";
   }
 
@@ -20,18 +21,19 @@ export const partsOfTheDay = (name: string = "") => {
 };
 
 /**
- * Retorna la fecha actual con formato completo en español.
- * Ejemplo: "Lunes, 8 de diciembre de 2025"
+ * 2. FECHA (currentDate) -> ¡ESTA ES LA QUE TE FALTABA!
+ * Retorna la fecha actual formateada. Ejemplo: "Viernes, 30 de enero de 2026"
  */
 export const currentDate = () => {
-  const dateString = new Date().toLocaleDateString('es-ES', {
+  const dateString = new Date().toLocaleDateString('es-CO', { 
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'America/Bogota' 
   });
   
-  // JavaScript retorna los días en minúscula ("lunes"), aquí lo capitalizamos.
+  // Capitalizamos la primera letra (ej: "viernes" -> "Viernes")
   return dateString.charAt(0).toUpperCase() + dateString.slice(1);
 };
 

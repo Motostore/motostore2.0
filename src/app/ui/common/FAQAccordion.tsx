@@ -1,5 +1,3 @@
-// src/app/ui/common/FAQAccordion.tsx (CÓDIGO FINAL Nivel PRO - Contenido Simple y Directo)
-
 import { Accordion, AccordionItem, AccordionItemButton, AccordionItemHeading, AccordionItemPanel } from "react-accessible-accordion";
 
 // Este componente utiliza el CSS definido en src/app/ayuda/accordion.css
@@ -7,30 +5,53 @@ export default function FAQAccordion() {
 
     return (
         <Accordion allowZeroExpanded>
+            
+            {/* 1. SERVICIOS GENERALES (ECOSISTEMA) */}
             <AccordionItem>
                 <AccordionItemHeading>
                     <AccordionItemButton>
-                        ¿Cómo funciona el servicio de Recargas Telefónicas?
+                        ¿Qué servicios ofrece Moto Store LLC?
                     </AccordionItemButton>
                 </AccordionItemHeading>
                 <AccordionItemPanel>
-                    <p>
-                    Realiza recargas de saldo para cualquier operador de telefonía móvil en **Colombia, Venezuela, Ecuador, Perú y Chile**. La recarga es **instantánea**, fácil y completamente segura.
+                    <p className="text-slate-600 leading-relaxed">
+                        Somos una plataforma integral registrada en **USA, Colombia y Venezuela**. Ofrecemos: 
+                        <br/>1. **Remesas y Cambios P2P** (Zelle, USDT, Pesos, Bolívares).
+                        <br/>2. **Agencia Digital** (Desarrollo Web, Apps y Marketing).
+                        <br/>3. **Entretenimiento** (Streaming Premium y Recargas).
                     </p>
                 </AccordionItemPanel>
             </AccordionItem>
+
+            {/* 2. REMESAS Y CAMBIOS (NUEVO FUERTE) */}
             <AccordionItem>
                 <AccordionItemHeading>
                     <AccordionItemButton>
-                        ¿Cómo me registro para obtener los servicios?
+                        ¿Cómo funciona el servicio de Remesas y Cambios P2P?
                     </AccordionItemButton>
                 </AccordionItemHeading>
                 <AccordionItemPanel>
-                    <p>
-                    El registro es rápido y se hace directamente en nuestra plataforma. Una vez creada tu cuenta, obtienes un panel personalizado para gestionar tus operaciones digitales de forma sencilla.
+                    <p className="text-slate-600 leading-relaxed">
+                        Es un sistema seguro y rápido. Recibimos tu moneda (Dólares Zelle, USDT, Pesos Colombianos) y te entregamos la moneda que necesitas (Bolívares Pago Móvil, etc.) al instante. Usamos nuestra **Calculadora en tiempo real** para garantizarte la tasa exacta.
                     </p>
                 </AccordionItemPanel>
             </AccordionItem>
+
+            {/* 3. DESARROLLO WEB Y MARKETING (AGENCIA) */}
+            <AccordionItem>
+                <AccordionItemHeading>
+                    <AccordionItemButton>
+                        ¿Realizan Páginas Web y Marketing para empresas?
+                    </AccordionItemButton>
+                </AccordionItemHeading>
+                <AccordionItemPanel>
+                    <p className="text-slate-600 leading-relaxed">
+                        ¡Sí! Contamos con un equipo de desarrolladores y expertos en marketing. Diseñamos tu **Tienda Online, Página Corporativa o Aplicación Móvil**, y gestionamos tus campañas de publicidad en Redes Sociales para hacer crecer tu negocio.
+                    </p>
+                </AccordionItemPanel>
+            </AccordionItem>
+
+            {/* 4. MÉTODOS DE PAGO (LOCALIZADO) */}
             <AccordionItem>
                 <AccordionItemHeading>
                     <AccordionItemButton>
@@ -38,35 +59,29 @@ export default function FAQAccordion() {
                     </AccordionItemButton>
                 </AccordionItemHeading>
                 <AccordionItemPanel>
-                    <p>
-                    Aceptamos métodos de pago flexibles y seguros: **tarjetas de crédito/débito**, transferencias bancarias, pagos en línea, **Zelle** y plataformas cripto como **Binance**.
+                    <p className="text-slate-600 leading-relaxed">
+                        Nos adaptamos a tu país. Aceptamos:
+                        <br/>• **Venezuela:** Pago Móvil, Transferencia Bancaria.
+                        <br/>• **Colombia:** Bancolombia, Nequi.
+                        <br/>• **Internacional:** Zelle, Binance (USDT), Saldo PayPal.
                     </p>
                 </AccordionItemPanel>
             </AccordionItem>
+
+            {/* 5. SOPORTE Y SEGURIDAD */}
             <AccordionItem>
                 <AccordionItemHeading>
                     <AccordionItemButton>
-                        ¿Puedo realizar recargas o pagos para otros países?
+                        ¿Es seguro y ofrecen garantía?
                     </AccordionItemButton>
                 </AccordionItemHeading>
                 <AccordionItemPanel>
-                    <p>
-                    Nuestras recargas están disponibles para operadores en **Venezuela, Colombia, Ecuador, Perú y Chile**. Constantemente estamos trabajando para ampliar nuestros servicios a más países.
+                    <p className="text-slate-600 leading-relaxed">
+                        Totalmente. Al ser una empresa legalmente constituida en 3 países, tus operaciones tienen respaldo. Además, ofrecemos **Soporte Humano 24/7** vía WhatsApp para resolver cualquier duda al momento.
                     </p>
                 </AccordionItemPanel>
             </AccordionItem>
-            <AccordionItem>
-                <AccordionItemHeading>
-                    <AccordionItemButton>
-                        ¿Ofrecen soporte al cliente?
-                    </AccordionItemButton>
-                </AccordionItemHeading>
-                <AccordionItemPanel>
-                    <p>
-                    Sí. Ofrecemos **soporte al cliente 24 horas al día, los 7 días de la semana**, para ayudarte de inmediato con cualquier pregunta o problema que puedas tener con nuestros servicios.
-                    </p>
-                </AccordionItemPanel>
-            </AccordionItem>
+            
         </Accordion>
     )
 }

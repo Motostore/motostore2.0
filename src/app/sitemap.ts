@@ -5,10 +5,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     {
-      url: baseUrl,
+      url: baseUrl, // Tu portada (La más importante)
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
+    },
+    {
+      url: `${baseUrl}/calculadorapaypal`, // 🔥 ¡ESTA ES CLAVE PARA EL SEO!
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9, // Alta prioridad porque trae tráfico
     },
     {
       url: `${baseUrl}/login`,
@@ -22,11 +28,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    // El dashboard es privado, así que le bajamos prioridad (Google no puede entrar ahí sin clave)
     {
       url: `${baseUrl}/dashboard`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.5,
+      priority: 0.3,
     }
   ];
 }

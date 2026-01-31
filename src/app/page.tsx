@@ -3,17 +3,11 @@ import HomeClient from "./HomeClient";
 
 // 1. CONFIGURACIÓN SEO (ALCANCE MUNDIAL)
 export const metadata: Metadata = {
-  // 🔥 TÍTULO GLOBAL
   title: "Moto Store LLC | Remesas Globales P2P, PayPal y Desarrollo Web",
-  
   description:
     "Plataforma global de servicios digitales. Remesas y Cambios P2P Internacionales (Zelle, USDT, Euros, Bolívares). Agencia de Desarrollo Web, Marketing y Streaming Premium.",
-  
   keywords: [
-    // 1. MARCA
     "Moto Store LLC",
-    
-    // 2. FINANZAS GLOBAL (SIN FRONTERAS)
     "Remesas Internacionales",
     "Cambio P2P Global",
     "Exchange Crypto",
@@ -21,27 +15,19 @@ export const metadata: Metadata = {
     "Zelle Exchange",
     "Envío de Dinero al Extranjero",
     "International Money Transfer",
-    
-    // 3. PAYPAL
     "Calculadora PayPal",
     "Vender Saldo PayPal",
     "Exchange PayPal",
-    
-    // 4. SERVICIOS PROFESIONALES
     "Desarrollo Web",
     "Marketing Digital",
     "Diseño de Apps",
     "SEO",
-    
-    // 5. ENTRETENIMIENTO
     "Cuentas Streaming",
     "Licencias Digitales",
   ],
-  
   alternates: {
     canonical: "https://motostorellc.com",
   },
-  
   openGraph: {
     title: "Moto Store LLC | Servicios Financieros y Digitales Globales",
     description:
@@ -56,10 +42,9 @@ export const metadata: Metadata = {
         alt: "Moto Store LLC - Global Services",
       },
     ],
-    locale: "es_VE", // Idioma principal español
+    locale: "es_VE",
     type: "website",
   },
-  
   twitter: {
     card: "summary_large_image",
     title: "Moto Store LLC | Remesas y Tech Global",
@@ -67,21 +52,21 @@ export const metadata: Metadata = {
       "Cambios P2P Internacionales, PayPal, Streaming y Desarrollo Web sin fronteras.",
     images: ["/og/home-motostore-2025.png"],
   },
-  
   robots: {
     index: true,
     follow: true,
     nocache: false,
   },
-  
   verification: {
-    // google: "TU_CODIGO", 
+    // ⚠️ Si ya verificaste por dominio (DNS), puedes dejar esto así. 
+    // Si quieres usar el código de etiqueta, pégalo aquí abajo:
+    // google: "TU_CODIGO_AQUI", 
   },
 };
 
 export default function HomePage() {
   
-  // 2. DATOS ESTRUCTURADOS (JSON-LD MUNDIAL)
+  // 2. DATOS ESTRUCTURADOS MEJORADOS (Para que salgan los enlaces en Google)
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -93,24 +78,35 @@ export default function HomePage() {
       "@type": "ContactPoint",
       "telephone": "+1-352-224-8881",
       "contactType": "customer service",
-      "areaServed": "World", // 🌍 ¡AQUÍ ESTÁ LA CLAVE! (Mundo entero)
+      "areaServed": "World",
       "availableLanguage": ["es", "en"]
     },
+    // 🔥 ESTO ES LO QUE HACE QUE SALGAN LOS ENLACES ABAJO EN GOOGLE
+    "hasPart": [
+      {
+        "@type": "WebPage",
+        "name": "Calculadora PayPal",
+        "description": "Calcula comisiones exactas de PayPal en tiempo real.",
+        "url": "https://motostorellc.com/calculadorapaypal"
+      },
+      {
+        "@type": "WebPage",
+        "name": "Iniciar Sesión",
+        "description": "Accede a tu cuenta de Moto Store LLC.",
+        "url": "https://motostorellc.com/login"
+      },
+      {
+        "@type": "WebPage",
+        "name": "Registro",
+        "description": "Crea una cuenta para enviar remesas y comprar servicios.",
+        "url": "https://motostorellc.com/register"
+      }
+    ],
     "sameAs": [
       "https://facebook.com/MotoStoreLLC",
       "https://instagram.com/motostorellc",
-      "https://tiktok.com/@motostorellc",
-      "https://youtube.com/@motostorellc"
-    ],
-    "offers": {
-      "@type": "Offer",
-      "itemOffered": [
-        { "@type": "Service", "name": "Remesas y Cambios P2P Internacionales" },
-        { "@type": "Service", "name": "Exchange Cripto y Fiat (Zelle/PayPal)" },
-        { "@type": "Service", "name": "Desarrollo Web y Apps" },
-        { "@type": "Service", "name": "Marketing Digital" }
-      ]
-    }
+      "https://tiktok.com/@motostorellc"
+    ]
   };
 
   return (
